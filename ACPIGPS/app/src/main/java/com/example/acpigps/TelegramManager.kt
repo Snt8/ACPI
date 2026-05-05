@@ -12,8 +12,8 @@ import java.io.IOException
 class TelegramManager(private val context: Context) {
 
     // REEMPLAZA ESTOS VALORES CON LOS TUYOS
-    private val botToken = "7812386432:AAHyc1Ej3b2Mf4G_LQuuwHdH73b69I8SqBQ"
-    private val chatId = "7554682683"
+    private val botToken = ""
+    private val chatId = ""
 
     private val client = OkHttpClient()
 
