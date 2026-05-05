@@ -1,8 +1,8 @@
 {
   "project_info": {
-    "project_number": "861434259993",
-    "project_id": "acpi-tracker",
-    "storage_bucket": "acpi-tracker.firebasestorage.app"
+    "project_number": "",
+    "project_id": "",
+    "storage_bucket": ""
   },
   "client": [
     {
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCFBVjg-T0HywwuTxMRdgQARiY6pVdhytA"
+          "current_key": ""
         }
       ],
       "services": {
