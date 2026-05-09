@@ -9,6 +9,7 @@
 #include <BLE2902.h>
 #include "estructura.h" 
 #include <esp_wifi.h>
+#include <cstring>
 
 // --- CONFIGURACIÓN HARDWARE ---
 const int MOTOR_PIN = 16;
@@ -51,24 +52,32 @@ class MyServerCallbacks: public BLEServerCallbacks {
 
 class MyCharacteristicCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
-        String rxValue = pCharacteristic->getValue();
+        const uint8_t* data = pCharacteristic->getData();
+        const size_t len = pCharacteristic->getLength();
 
-        if (rxValue.length() > 0) {
+        if (len > 0 && data != nullptr) {
             Serial.print("BLE: Comando recibido de la App: ");
-            Serial.println(rxValue);
+            Serial.printf("%.*s\n", (int)len, (const char*)data);
 
-            if (rxValue == "VIBRATE_START") {
+            static const char CMD_START[] = "VIBRATE_START";
+            static const char CMD_STOP[] = "VIBRATE_STOP";
+
+            if (len == (sizeof(CMD_START) - 1) && memcmp(data, CMD_START, len) == 0) {
                 isVibrating = true;
-            } else if (rxValue == "VIBRATE_STOP") {
+            } else if (len == (sizeof(CMD_STOP) - 1) && memcmp(data, CMD_STOP, len) == 0) {
                 isVibrating = false;
             }
         }
     }
 };
 
-
 // --- CALLBACK DE ESP-NOW ---
 void OnDataRecv(const esp_now_recv_info * info, const uint8_t *incomingData, int len) {
+  if (len != (int)sizeof(esp_now_data_structure)) {
+    Serial.printf("ESP-NOW: Tamaño inesperado: %d (esperado %d)\n", len, (int)sizeof(esp_now_data_structure));
+    return;
+  }
+
   esp_now_data_structure datosRecibidos;
   memcpy(&datosRecibidos, incomingData, sizeof(datosRecibidos));
   
@@ -81,7 +90,7 @@ void OnDataRecv(const esp_now_recv_info * info, const uint8_t *incomingData, int
   Serial.printf("Estado: %d, Ángulo: %d\n", semaforoEstado, semaforoAngulo);
   Serial.println("---------------------------------");
 }
- 
+
 // --- SETUP ---
 void setup() {
   Serial.begin(115200);
@@ -94,8 +103,7 @@ void setup() {
   BLEDevice::init("ESP32_Cerebro_IoT"); 
 
   if (esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_LR) != ESP_OK) {
-    Serial.println("Error al establecer el protocolo WiFi para coexistencia");
-    return;
+    Serial.println("Aviso: No se pudo activar WIFI_PROTOCOL_LR, continuando en modo normal");
   }
 
   if (esp_now_init() != ESP_OK) {
@@ -128,10 +136,12 @@ void loop() {
 
     if (bleConnected) {
         Serial.println("BLE: Enviando datos del semáforo a la app...");
-        char msg[32];
-        sprintf(msg, "%d,%d", semaforoEstado, semaforoAngulo);
-        pTxCharacteristic->setValue(msg);
-        pTxCharacteristic->notify();
+        char msg[24];
+        int msgLen = snprintf(msg, sizeof(msg), "%d,%d", semaforoEstado, semaforoAngulo);
+        if (msgLen > 0) {
+          pTxCharacteristic->setValue((uint8_t*)msg, (size_t)msgLen);
+          pTxCharacteristic->notify();
+        }
     }
   }
 
