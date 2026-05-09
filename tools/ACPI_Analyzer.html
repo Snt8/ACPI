@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACPI - Panel de Análisis y Detección de Anomalías</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        /* Estilos para un look moderno */
+        body { font-family: 'Inter', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        /* Estilos del mapa Leaflet */
+        .leaflet-container { background: #0F172A; border-radius: 0.75rem; border: 1px solid #334155; }
+        .leaflet-control-zoom-in, .leaflet-control-zoom-out { background-color: #1E293B !important; color: #94A3B8 !important; border-color: #334155 !important; }
+        .leaflet-control-zoom-in:hover, .leaflet-control-zoom-out:hover { background-color: #334155 !important; }
+        .leaflet-control-attribution { background: rgba(15, 23, 42, 0.8) !important; color: #64748B !important; }
+        .leaflet-control-attribution a { color: #818CF8 !important; }
+        .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #1E293B !important; color: #E2E8F0 !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); border-radius: 0.5rem; border: 1px solid #475569; }
+        
+        /* Scrollbar personalizado */
+        #eventLog::-webkit-scrollbar { width: 6px; }
+        #eventLog::-webkit-scrollbar-track { background: #1E293B; }
+        #eventLog::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        #eventLog::-webkit-scrollbar-thumb:hover { background: #64748B; }
+
+        /* Iconos de eventos */
+        .event-icon {
+            width: 2.5rem; height: 2.5rem;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body class="h-full text-slate-300 font-sans antialiased">
+    <div class="flex h-screen bg-slate-900">
+        <aside class="w-96 flex-shrink-0 bg-slate-800/50 p-6 flex flex-col justify-between border-r border-slate-700">
+            <div>
+                <div class="flex items-center gap-4 mb-10">
+                    <img src="https://i.ibb.co/6wm053w/logo-acpi-white.png" alt="Logo ACPI" class="h-12">
+                    <div>
+                        <h1 class="text-xl font-bold text-white">ACPI</h1>
+                        <p class="text-sm text-slate-400">Análisis de Trazado Inteligente</p>
+                    </div>
+                </div>
+                
+                <h2 class="text-lg font-semibold text-indigo-400 mb-2">Panel de Control</h2>
+                <p class="text-sm text-slate-400 mb-8">Selecciona un viaje para analizar su telemetría y detectar anomalías.</p>
+
+                <label for="tripSelector" class="block text-sm font-medium text-slate-300 mb-2">Seleccionar Viaje de Prueba</label>
+                <select id="tripSelector" class="block w-full rounded-md border-0 bg-slate-700 py-2.5 px-3 text-white shadow-sm ring-1 ring-inset ring-slate-600 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6 transition">
+                    <option value="">-- Selecciona un recorrido --</option>
+                </select>
+            </div>
+            <div class="text-xs text-slate-500">
+                <p>&copy; 2025 ACPI Project</p>
+                <p>D. Osorio, A. Cárdenas, N. Rodríguez</p>
+            </div>
+        </aside>
+
+        <main id="mainContent" class="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 transition-all duration-300">
+            <div id="eventLogContainer" class="bg-slate-800/50 rounded-xl p-6 flex flex-col transition-all duration-300 border border-slate-700">
+                <h3 class="text-xl font-bold text-white mb-4">Telemetría del Viaje</h3>
+                <div id="eventLog" class="flex-1 overflow-y-auto pr-2 space-y-4 text-sm">
+                    <p class="text-slate-400 h-full flex items-center justify-center">Selecciona un viaje para ver su telemetría.</p>
+                </div>
+            </div>
+
+            <div id="mapContainer" class="relative transition-all duration-300 min-h-[400px]">
+                <div id="map" class="h-full w-full rounded-xl"></div>
+                <div class="absolute top-3 left-3 z-[500]">
+                    <button id="analyzeTripBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" /></svg>
+                        Analizar Anomalías con IA
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="aiAnalysisModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm items-center justify-center hidden z-50 p-4">
+        <div class="bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl border border-slate-700 transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-indigo-400">Análisis de Viaje por IA</h2>
+                <button id="closeAiModalBtn" class="text-slate-400 hover:text-white transition">&times;</button>
+            </div>
+            <div id="aiAnalysisResult" class="text-slate-300 leading-relaxed max-h-[70vh] overflow-y-auto">
+                </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // --- DATOS DE DEMO MEJORADOS ---
+        const demoTrips = {
+            "trip-1-normal": {
+                name: "Ruta 101 - Recorrido Normal (25/10/2025)",
+                points: [
+                    { latitude: 4.6293, longitude: -74.1894, event: "START", timestamp: 1761420600000 },
+                    { latitude: 4.6288, longitude: -74.1893, event: "TRACK", timestamp: 1761420660000 },
+                    { latitude: 4.6270, longitude: -74.1924, event: "TRACK", timestamp: 1761420720000 },
+                    { latitude: 4.6261, longitude: -74.1945, event: "TRACK", timestamp: 1761420780000 },
+                    { latitude: 4.6253, longitude: -74.1965, event: "END",   timestamp: 1761420840000 }
+                ]
+            },
+            "trip-2-anomalies": {
+                name: "Ruta 203 - Incidente Detectado (26/10/2025)",
+                points: [
+                    { latitude: 4.6350, longitude: -74.1850, event: "START", timestamp: 1761507000000 },
+                    { latitude: 4.6345, longitude: -74.1852, event: "TRACK", timestamp: 1761507060000 },
+                    { latitude: 4.6330, longitude: -74.1880, event: "TRACK", timestamp: 1761507120000 }, // Aceleración normal
+                    { latitude: 4.6280, longitude: -74.1950, event: "TRACK", timestamp: 1761507180000 }, // Aceleración brusca
+                    { latitude: 4.6275, longitude: -74.1960, event: "GEOFENCE_EXIT", timestamp: 1761507240000 }, // Sale de zona
+                    { latitude: 4.6275, longitude: -74.1960, event: "TRACK", timestamp: 1761507540000 }, // Detención inesperada (mismo punto, 5 mins después)
+                    { latitude: 4.6270, longitude: -74.1965, event: "TRACK", timestamp: 1761507600000 },
+                    { latitude: 4.6250, longitude: -74.1980, event: "END",   timestamp: 1761507660000 }
+                ]
+            }
+        };
+
+        // --- ANÁLISIS DE IA SIMULADO ---
+        const fakeAiAnalysis = {
+            "trip-1-normal": {
+                "summary": "El recorrido se completó con éxito en 4 minutos. No se detectaron anomalías ni eventos de seguridad.",
+                "anomalies": []
+            },
+            "trip-2-anomalies": {
+                "summary": "El recorrido se completó en 11 minutos, pero presentó múltiples anomalías. Se detectó una salida de la zona segura y una detención inesperada poco después, lo que requiere revisión.",
+                "anomalies": [
+                    { "type": "ACELERACION_BRUSCA", "description": "Se detectó un desplazamiento inusualmente rápido entre el punto 3 y 4, sugiriendo una posible aceleración anómala.", "timestamp": 1761507180000, "latitude": 4.6280, "longitude": -74.1950 },
+                    { "type": "SALIDA_DE_RUTA", "description": "El dispositivo reportó una salida de la geocerca (zona segura) predefinida.", "timestamp": 1761507240000, "latitude": 4.6275, "longitude": -74.1960 },
+                    { "type": "DETENCION_INESPERADA", "description": "El dispositivo permaneció inmóvil durante 5 minutos tras salir de la zona segura.", "timestamp": 1761507540000, "latitude": 4.6275, "longitude": -74.1960 }
+                ]
+            }
+        };
+
+        let map;
+        let currentPolyline = null;
+        const markers = [];
+        let selectedTripId = null;
+        let selectedTripData = null;
+
+        // --- INICIALIZACIÓN ---
+        function initializeMap() {
+            map = L.map('map').setView([4.65, -74.15], 12);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            }).addTo(map);
+        }
+
+        function loadTrips() {
+            const selector = document.getElementById('tripSelector');
+            for (const tripId in demoTrips) {
+                const option = document.createElement('option');
+                option.value = tripId;
+                option.textContent = demoTrips[tripId].name;
+                selector.appendChild(option);
+            }
+        }
+
+        // --- LÓGICA DE VISUALIZACIÓN ---
+        function drawTrip(tripId) {
+            clearMap();
+            selectedTripId = tripId; // Guardar el ID del viaje seleccionado
+            selectedTripData = demoTrips[tripId];
+            if (!selectedTripData || !selectedTripData.points || selectedTripData.points.length === 0) return;
+
+            const latLngs = selectedTripData.points.map(p => [p.latitude, p.longitude]);
+            currentPolyline = L.polyline(latLngs, { color: '#818CF8', weight: 4, opacity: 0.9 }).addTo(map);
+            addMarkers(selectedTripData.points);
+            map.fitBounds(currentPolyline.getBounds().pad(0.1));
+            
+            populateEventLog(selectedTripData.points);
+            document.getElementById('analyzeTripBtn').disabled = false;
+        }
+        
+        function getEventDetails(point, index, totalPoints) {
+            const details = { icon: '🔵', color: 'bg-blue-500/20', text: `Punto de Trazado #${index + 1}` };
+            if (index === 0 || point.event === 'START') {
+                details.icon = '🟢'; details.color = 'bg-green-500/20'; details.text = 'Inicio del Recorrido';
+            } else if (index === totalPoints - 1 || point.event === 'END') {
+                details.icon = '🏁'; details.color = 'bg-yellow-500/20'; details.text = 'Fin del Recorrido';
+            } else if (point.event === 'GEOFENCE_EXIT') {
+                details.icon = '⚠️'; details.color = 'bg-orange-500/20'; details.text = '<span class="font-bold text-orange-400">ALERTA: Salida de Geocerca</span>';
+            }
+            return details;
+        }
+
+        function addMarkers(points) {
+            points.forEach((point, index) => {
+                const details = getEventDetails(point, index, points.length);
+                 if (details.icon === '🔵' && point.event === 'TRACK') return; // No mostrar marcadores intermedios
+
+                const icon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div style="font-size: 24px;">${details.icon}</div>`,
+                    iconSize: [30, 42],
+                    iconAnchor: [15, 42]
+                });
+                
+                const popupText = `<b>${details.text.replace(/<[^>]*>?/gm, '')}</b><br>Hora: ${new Date(point.timestamp).toLocaleTimeString()}`;
+                const marker = L.marker([point.latitude, point.longitude], { icon: icon }).addTo(map).bindPopup(popupText);
+                markers.push(marker);
+            });
+        }
+        
+        function populateEventLog(points) {
+            const eventLog = document.getElementById('eventLog');
+            eventLog.innerHTML = '';
+            points.forEach((point, index) => {
+                const details = getEventDetails(point, index, points.length);
+                const time = new Date(point.timestamp).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit'});
+                
+                eventLog.innerHTML += `
+                    <div class="flex items-center gap-4 p-2 rounded-lg hover:bg-slate-700/50">
+                        <div class="event-icon ${details.color}">${details.icon}</div>
+                        <div>
+                            <p class="text-slate-200">${details.text}</p>
+                            <p class="text-xs text-slate-400">${time} - [${point.latitude.toFixed(4)}, ${point.longitude.toFixed(4)}]</p>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function clearMap() {
+            if (currentPolyline) map.removeLayer(currentPolyline);
+            markers.forEach(marker => map.removeLayer(marker));
+            markers.length = 0;
+            document.getElementById('eventLog').innerHTML = '<p class="text-slate-400 h-full flex items-center justify-center">Selecciona un viaje para ver su telemetría.</p>';
+            document.getElementById('analyzeTripBtn').disabled = true;
+            selectedTripId = null;
+            selectedTripData = null;
+        }
+
+        // --- LÓGICA DE IA SIMULADA ---
+        function analyzeTripWithAI() {
+            if (!selectedTripId) return;
+            const btn = document.getElementById('analyzeTripBtn');
+            const modal = document.getElementById('aiAnalysisModal');
+            const modalContent = document.getElementById('modalContent');
+            const resultContainer = document.getElementById('aiAnalysisResult');
+            
+            // 1. Mostrar estado de "Cargando"
+            btn.disabled = true;
+            btn.innerHTML = '<div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> Analizando...';
+            
+            modal.style.display = 'flex';
+            setTimeout(() => modalContent.classList.remove('scale-95', 'opacity-0'), 10);
+            resultContainer.innerHTML = '<p>Contactando al analista de IA... Por favor, espera.</p>';
+
+            // 2. Simular el tiempo de espera de la IA
+            setTimeout(() => {
+                try {
+                    // 3. Obtener el análisis simulado correcto
+                    const analysisData = fakeAiAnalysis[selectedTripId];
+                    if (!analysisData) throw new Error("No se encontraron datos de análisis simulados para este viaje.");
+
+                    // 4. Mostrar los resultados
+                    displayAnalysisResults(analysisData);
+
+                } catch (error) {
+                    console.error("Error en el análisis simulado:", error);
+                    resultContainer.innerHTML = `<p class="text-red-400"><b>Error:</b> ${error.message}</p>`;
+                } finally {
+                    // 5. Restaurar el botón
+                    btn.disabled = false;
+                    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" /></svg> Analizar Anomalías con IA';
+                }
+            }, 2500); // 2.5 segundos de retraso simulado
+        }
+
+        function displayAnalysisResults(data) {
+            const resultContainer = document.getElementById('aiAnalysisResult');
+            let html = `<p class="mb-6 pb-4 border-b border-slate-700">${data.summary}</p>`;
+
+            if (data.anomalies && data.anomalies.length > 0) {
+                html += '<h4 class="font-bold text-lg text-white mb-4">Anomalías Detectadas:</h4><div class="space-y-4">';
+                data.anomalies.forEach(anomaly => {
+                    const anomalyTime = new Date(anomaly.timestamp).toLocaleTimeString();
+                    html += `
+                        <div class="flex gap-4 bg-slate-700/50 p-3 rounded-lg">
+                            <div class="text-2xl pt-1">🚨</div>
+                            <div>
+                                <p class="font-semibold text-red-400">${anomaly.type.replace(/_/g, ' ')}</p>
+                                <p class="text-sm text-slate-300">${anomaly.description}</p>
+                                <p class="text-xs text-slate-400 mt-1">Hora: ${anomalyTime}</p>
+                            </div>
+                        </div>
+                    `;
+                    // Añadir marcador de anomalía al mapa
+                    const icon = L.divIcon({
+                        className: 'custom-div-icon',
+                        html: `<div style="font-size: 32px; animation: pulse 1.5s infinite;">🚨</div>`,
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 32]
+                    });
+                     L.marker([anomaly.latitude, anomaly.longitude], { icon: icon, zIndexOffset: 1000 })
+                        .addTo(map)
+                        .bindPopup(`<b>Anomalía: ${anomaly.type}</b><br>${anomaly.description}`)
+                        .openPopup();
+                });
+                html += '</div>';
+            } else {
+                html += '<p class="text-green-400 font-semibold">✅ No se detectaron anomalías significativas en este recorrido.</p>';
+            }
+            resultContainer.innerHTML = html;
+        }
+
+
+        // --- EVENT LISTENERS ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeMap();
+            loadTrips();
+
+            document.getElementById('tripSelector').addEventListener('change', (e) => {
+                const selectedTripId = e.target.value;
+                selectedTripId ? drawTrip(selectedTripId) : clearMap();
+            });
+            
+            document.getElementById('analyzeTripBtn').addEventListener('click', analyzeTripWithAI);
+
+            const modal = document.getElementById('aiAnalysisModal');
+            const modalContent = document.getElementById('modalContent');
+            document.getElementById('closeAiModalBtn').addEventListener('click', () => {
+                modalContent.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => modal.style.display = 'none', 300);
+            });
+        });
+    </script>
+    <style>@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.2); } }</style>
+</body>
+</html>
