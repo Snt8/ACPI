@@ -7,9 +7,8 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
-#include "estructura.h" 
+#include "estructura.h"
 #include <esp_wifi.h>
-#include <cstring>
 
 // --- CONFIGURACIÓN HARDWARE ---
 const int MOTOR_PIN = 16;
@@ -19,7 +18,7 @@ const int MOTOR_PIN = 16;
 #define RX_CHAR_UUID      "11111111-2222-3333-4444-555555555555" // Escritura (App -> ESP32)
 
 // --- VARIABLES GLOBALES ---
-volatile int semaforoEstado = 2; 
+volatile int semaforoEstado = 2;
 volatile int semaforoAngulo = 0;
 volatile bool nuevosDatosEspNow = false;
 volatile bool isVibrating = false;
@@ -43,7 +42,7 @@ class MyServerCallbacks: public BLEServerCallbacks {
 
     void onDisconnect(BLEServer* pServer) {
         bleConnected = false;
-        isVibrating = false; 
+        isVibrating = false;
         digitalWrite(MOTOR_PIN, LOW); // Apagar motor por seguridad
         Serial.println("BLE: Cliente Desconectado, reiniciando advertising...");
         pServer->getAdvertising()->start();
@@ -52,35 +51,27 @@ class MyServerCallbacks: public BLEServerCallbacks {
 
 class MyCharacteristicCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
-        const uint8_t* data = pCharacteristic->getData();
-        const size_t len = pCharacteristic->getLength();
+        String rxValue = pCharacteristic->getValue();
 
-        if (len > 0 && data != nullptr) {
+        if (rxValue.length() > 0) {
             Serial.print("BLE: Comando recibido de la App: ");
-            Serial.printf("%.*s\n", (int)len, (const char*)data);
+            Serial.println(rxValue);
 
-            static const char CMD_START[] = "VIBRATE_START";
-            static const char CMD_STOP[] = "VIBRATE_STOP";
-
-            if (len == (sizeof(CMD_START) - 1) && memcmp(data, CMD_START, len) == 0) {
+            if (rxValue == "VIBRATE_START") {
                 isVibrating = true;
-            } else if (len == (sizeof(CMD_STOP) - 1) && memcmp(data, CMD_STOP, len) == 0) {
+            } else if (rxValue == "VIBRATE_STOP") {
                 isVibrating = false;
             }
         }
     }
 };
 
+
 // --- CALLBACK DE ESP-NOW ---
 void OnDataRecv(const esp_now_recv_info * info, const uint8_t *incomingData, int len) {
-  if (len != (int)sizeof(esp_now_data_structure)) {
-    Serial.printf("ESP-NOW: Tamaño inesperado: %d (esperado %d)\n", len, (int)sizeof(esp_now_data_structure));
-    return;
-  }
-
   esp_now_data_structure datosRecibidos;
   memcpy(&datosRecibidos, incomingData, sizeof(datosRecibidos));
-  
+
   semaforoEstado = datosRecibidos.estado;
   semaforoAngulo = datosRecibidos.angulo;
   nuevosDatosEspNow = true;
@@ -98,12 +89,13 @@ void setup() {
 
   pinMode(MOTOR_PIN, OUTPUT);
   digitalWrite(MOTOR_PIN, LOW);
-  
+
   WiFi.mode(WIFI_STA);
-  BLEDevice::init("ESP32_Cerebro_IoT"); 
+  BLEDevice::init("ESP32_Cerebro_IoT");
 
   if (esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_LR) != ESP_OK) {
-    Serial.println("Aviso: No se pudo activar WIFI_PROTOCOL_LR, continuando en modo normal");
+    Serial.println("Error al establecer el protocolo WiFi para coexistencia");
+    return;
   }
 
   if (esp_now_init() != ESP_OK) {
@@ -115,7 +107,7 @@ void setup() {
 
   pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
-  
+
   BLEService *pService = pServer->createService(SERVICE_UUID);
 
   pTxCharacteristic = pService->createCharacteristic(TX_CHAR_UUID, BLECharacteristic::PROPERTY_NOTIFY);
@@ -128,20 +120,18 @@ void setup() {
   pServer->getAdvertising()->start();
   Serial.println("BLE: Esperando conexión de la app...");
 }
- 
+
 // --- LOOP PRINCIPAL ---
 void loop() {
   if (nuevosDatosEspNow) {
-    nuevosDatosEspNow = false; 
+    nuevosDatosEspNow = false;
 
     if (bleConnected) {
         Serial.println("BLE: Enviando datos del semáforo a la app...");
-        char msg[24];
-        int msgLen = snprintf(msg, sizeof(msg), "%d,%d", semaforoEstado, semaforoAngulo);
-        if (msgLen > 0) {
-          pTxCharacteristic->setValue((uint8_t*)msg, (size_t)msgLen);
-          pTxCharacteristic->notify();
-        }
+        char msg[32];
+        sprintf(msg, "%d,%d", semaforoEstado, semaforoAngulo);
+        pTxCharacteristic->setValue(msg);
+        pTxCharacteristic->notify();
     }
   }
 
@@ -152,7 +142,7 @@ void loop() {
     // Comprueba si ha pasado el tiempo para cambiar el estado del motor
     if (currentTime - lastVibrationTime >= vibrationInterval) {
       lastVibrationTime = currentTime; // Reinicia el cronómetro
-      
+
       // Cambia el estado del motor (de HIGH a LOW o viceversa)
       if (motorState == LOW) {
         motorState = HIGH;

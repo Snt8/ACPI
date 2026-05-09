@@ -20,7 +20,7 @@ void OnDataSent(const wifi_tx_info_t *txInfo, esp_now_send_status_t status) {
 
 void setup() {
   Serial.begin(115200);
-  
+
   // Configurar el modo WiFi
   WiFi.mode(WIFI_STA);
 
@@ -32,14 +32,14 @@ void setup() {
 
   // Registrar el callback de envío
   esp_now_register_send_cb(OnDataSent);
-  
+
   // Registrar el peer (receptor)
   esp_now_peer_info_t peerInfo;
   memset(&peerInfo, 0, sizeof(peerInfo));
   memcpy(peerInfo.peer_addr, MAC_RECEIVER_1, 6);
-  peerInfo.channel = 0;  
+  peerInfo.channel = 0;
   peerInfo.encrypt = false;
-  
+
   if (esp_now_add_peer(&peerInfo) != ESP_OK){
     Serial.println("Fallo al añadir el peer");
     return;
@@ -53,13 +53,13 @@ void loop() {
   Serial.print(ldrValue);
   // Asignar estado: 1 para VERDE (luz detectada), 2 para ROJO (sin luz)
   datosSemaforo.estado = (ldrValue > UMBRAL_LUZ) ? 1 : 2;
-  
+
   // Asignar el ángulo configurado
   datosSemaforo.angulo = anguloSemaforo;
 
   // Enviar la estructura de datos al receptor
   esp_err_t result = esp_now_send(MAC_RECEIVER_1, (uint8_t *) &datosSemaforo, sizeof(datosSemaforo));
-   
+
   if (result == ESP_OK) {
     Serial.printf("Enviado con éxito -> Estado: %d, Ángulo: %d\n", datosSemaforo.estado, datosSemaforo.angulo);
   } else {
