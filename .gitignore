@@ -1,0 +1,40 @@
+#Archivos de la construccion del grandle
+.gradle/
+build/
+captures/
+# Configuración local 
+local.properties
+# Archivos generados por el sistema
+*.ap_
+*.apk
+*.dex
+
+# Archivos compilados
+*.bin
+*.elf
+*.hex
+*.o
+*.d
+
+# Carpetas de construcción de IDEs de microcontroladores
+build/
+bin/
+.pio/
+.clangd/
+
+#Carpetas de construccion de editores
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+cmake-build-*/
+
+#Archivos del Sistema Operativo
+.DS_Store
+Thumbs.db
+
+#Temporales
+*.log
+*.tmp
+*.bak
