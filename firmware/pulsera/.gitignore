@@ -1,2 +1,7 @@
-.pio
-.cmake-build-debug
+#PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+
+#CLion
+.cmake-build-*
