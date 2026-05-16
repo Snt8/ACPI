@@ -7,4 +7,4 @@ typedef struct estado_semaforo {
 
 estado_semaforo estado;
 
-#endif //PULSERA_ESTRUCTURA_SEMAFORO_H
+#endif //PULSERA_ESTRUCTURA_SEMA0-FORO_H
