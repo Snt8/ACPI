@@ -3,6 +3,8 @@
 //Incluimos la cabecera de los sensores
 #include "../sensores/mpu6050.h"
 #include "../sensores/qmc5883l.h"
+//Incluimos la cabecera con la funcion para determinar la orientacion del semaforo
+#include "../utils/calcular_direccion.h"
 //Incluimos otras bibliotecas necesarias
 #include <Arduino.h>
 //Definimos constantes globales
@@ -40,15 +42,10 @@ void ControladorBrujula::obtenerHeading() {
 
 bool ControladorBrujula::revisarSemaforo(uint16_t posicionSemaforo) {
     //Calculamos la diferencia entre la posicion de la pulsera y el semaforo
-    float diferencia = fmod(posicionSemaforo - headingActual + GRADOS_CIRCUNFERENCIA, GRADOS_CIRCUNFERENCIA);
-    //Si la diferencia es muy amplia, determinamos la menor
-    if (diferencia > GRADOS_CIRCUNFERENCIA / 2) {
-        diferencia -= GRADOS_CIRCUNFERENCIA;
-    }
-    //Comparamos la diferencia con el umbral para determinar si ese semaforo es correcto
+    float diferencia = calcularDireccion(posicionSemaforo, headingActual);
+    //Evaluamos si la diferencia es mayor al umbral del semaforo
     if (fabs(diferencia) > UMBRAL_SEMAFORO) {
         return false;
     }
-    //Retornamos si determinamos que el semaforo es correcto
     return true;
 }
