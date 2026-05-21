@@ -8,6 +8,10 @@
 #define RAD_A_GRADOS (180.0 / M_PI)
 #define GRADOS_A_RAD (M_PI / 180.0)
 
+float ControladorMagnetometro::x = 0.0;
+float ControladorMagnetometro::y = 0.0;
+float ControladorMagnetometro::z = 0.0;
+
 bool ControladorMagnetometro::inicializar() {
     //Iniciamos la comunicacion con el sensor
     Wire.begin();

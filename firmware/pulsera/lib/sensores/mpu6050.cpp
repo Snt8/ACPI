@@ -9,6 +9,10 @@
 #define FACTOR_ESCALA 16384.0
 #define RAD_A_GRADOS (180.0 / M_PI)
 
+float ControladorAcelerometro::x = 0.0;
+float ControladorAcelerometro::y = 0.0;
+float ControladorAcelerometro::z = 0.0;
+
 bool ControladorAcelerometro::inicializar() {
     //Iniamos el bus I2C
     Wire.begin();
