@@ -5,9 +5,8 @@
 #include <Arduino.h>
 //Importamos otras bibliotecas necesarias
 #include <math.h>
-//Definimos constantes globales
-#define FACTOR_ESCALA 16384.0
-#define RAD_A_GRADOS (180.0 / M_PI)
+//Incluimos constantes y parametros de configuracion
+#include "../include/constantes.h"
 
 float ControladorAcelerometro::x = 0.0;
 float ControladorAcelerometro::y = 0.0;

@@ -2,8 +2,8 @@
 #include "calcular_direccion.h"
 //Incluimos bibliotecas necesarias
 #include <Arduino.h>
-//Definimos constantes globales
-#define GRADOS_CIRCUNFERENCIA 360.0
+//Incluimos las constantes de configuracion
+#include "../include/constantes.h"
 
 float calcularDireccion(float posicionSemaforo, float headingActual) {
     float diferencia = fmod(posicionSemaforo - headingActual + GRADOS_CIRCUNFERENCIA, GRADOS_CIRCUNFERENCIA);

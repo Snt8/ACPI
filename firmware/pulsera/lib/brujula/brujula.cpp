@@ -7,9 +7,8 @@
 #include "../utils/calcular_direccion.h"
 //Incluimos otras bibliotecas necesarias
 #include <Arduino.h>
-//Definimos constantes globales
-#define GRADOS_CIRCUNFERENCIA 360.0
-#define UMBRAL_SEMAFORO 45.0
+//Incluimos parametros de configuracion
+#include "../include/config.h"
 
 //Inicializamos el headingActual
 float ControladorBrujula::headingActual = 0.0;

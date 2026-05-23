@@ -4,9 +4,8 @@
 #include <Wire.h>
 #include <Arduino.h>
 #include <math.h>
-#define FACTOR_ESCALA 16384.0
-#define RAD_A_GRADOS (180.0 / M_PI)
-#define GRADOS_A_RAD (M_PI / 180.0)
+//Incluimos constantes de configuracion
+#include "../include/constantes.h"
 
 float ControladorMagnetometro::x = 0.0;
 float ControladorMagnetometro::y = 0.0;

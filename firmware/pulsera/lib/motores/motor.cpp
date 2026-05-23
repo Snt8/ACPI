@@ -3,8 +3,8 @@
 //Incluimos otras bibliotecas necesarias
 #include <stdint.h>
 #include <Arduino.h>
-//Definimos constantes globales
-#define APAGAR_MOTOR 0
+//Incluimos constantes de configuracion
+#include "../include/constantes.h"
 
 bool ControladorMotores::inicializar() {
     //Ejecutamos ledcSetup para inicializar el motor derecho, si falla; retornamos

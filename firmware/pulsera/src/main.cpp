@@ -2,15 +2,18 @@
 #include <Arduino.h>
 #include <Wire.h>
 //Incluimos los modulos que componen el funcionamiento de la pulsera
+
+//Brujula y direccion
 #include "../lib/brujula/brujula.h"
-#include "../lib/comunicacion/semaforo/semaforo.h"
 #include "../lib/utils/calcular_direccion.h"
+//Comunicacion semaforo y celular(proximamente)
+#include "../lib/comunicacion/semaforo/semaforo.h"
+//Motores y feedback haptico
 #include "../lib/utils/patrones_vibracion.h"
 #include "../lib/utils/indicar_error.h"
-//Definimos constantes globales
-#define BAUD_RATE 115200
-#define INTENSIDAD_MOTOR 255
-#define INTERVALOS_MILISEGUNDOS 500
+//Parametros y constantes de configuracoion
+#include "../include/config.h"
+#include "../include/constantes.h"
 //Declaramos las variables necesarias durante la ejecucion
 unsigned long ultimo_tiempo_derecho = 0;
 bool motor_derecho_encendido = false;
