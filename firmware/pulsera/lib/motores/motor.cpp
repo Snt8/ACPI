@@ -4,22 +4,22 @@
 #include <stdint.h>
 #include <Arduino.h>
 //Incluimos constantes de configuracion
-#include "../include/constantes.h"
+#include "constantes.h"
 
 bool ControladorMotores::inicializar() {
-    //Ejecutamos ledcSetup para inicializar el motor derecho, si falla; retornamos
-    if (ledcSetup(canal_motor_derecho, frecuencia, resolucion) == 0) {
-        return false;
-    }
-    //Conectamos el pin del motor derecho
+    // 1. Configurar los canales (el ESP32-C3 tiene canales del 0 al 5)
+    // ledcSetup(canal, frecuencia, resolución)
+    if (ledcSetup(canal_motor_derecho, frecuencia, resolucion) == 0) return false;
+    if (ledcSetup(canal_motor_izquierdo, frecuencia, resolucion) == 0) return false;
+
+    // 2. Asociar los pines
     ledcAttachPin(pin_motor_derecho, canal_motor_derecho);
-    //Ejecutamos ledcSetup par inicializar ahora el motor izquierdo
-    if (ledcSetup(canal_motor_izquierdo, frecuencia, resolucion) == 0) {
-        return false;
-    }
-    //Conectamos el pin del motor izquierdo
     ledcAttachPin(pin_motor_izquierdo, canal_motor_izquierdo);
-    //Ejecutamos ledcSetup para inicializar el motor izquierdo, si falla; retornamos
+
+    // 3. Inicializar en 0
+    ledcWrite(canal_motor_derecho, 0);
+    ledcWrite(canal_motor_izquierdo, 0);
+
     return true;
 }
 

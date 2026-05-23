@@ -5,7 +5,7 @@
 #include <Arduino.h>
 #include <math.h>
 //Incluimos constantes de configuracion
-#include "../include/constantes.h"
+#include "constantes.h"
 
 float ControladorMagnetometro::x = 0.0;
 float ControladorMagnetometro::y = 0.0;
@@ -18,7 +18,7 @@ bool ControladorMagnetometro::inicializar() {
     //Configuramos el registro y escribimos el valor
     Wire.write(0x09);
     Wire.write(0x1D);
-    //Evaluamos si la informacion se ha enviado correctamente
+    //Evaluamos si la información se ha enviado correctamente
     if (Wire.endTransmission() != 0) {
         return false;
     }

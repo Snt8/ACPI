@@ -9,7 +9,7 @@
 const uint8_t ComunicadorSemaforo::BROADCAST_MAC[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 estado_semaforo ComunicadorSemaforo::ultimoEstado = {};
 
-//Desarrollamos el metodo para pasar la callback con la informacion
+//Desarrollamos el metodo para pasar la callback con la información
 void ComunicadorSemaforo::onDatosRecibidos(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
     memcpy(&ultimoEstado, data, data_len);
 }
@@ -31,7 +31,7 @@ bool ComunicadorSemaforo::inicializar() {
 
 //Desarrollamos el contenido para desinicializar el dispositivo
 bool ComunicadorSemaforo::desinicializar() {
-    //Evaluamos si se elimino el registro del callback correctamente
+    //Evaluamos si se eliminó el registro del callback correctamente
     if (esp_now_unregister_recv_cb() != ESP_OK) {
         return false;
     }

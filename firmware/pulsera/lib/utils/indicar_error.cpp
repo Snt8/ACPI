@@ -2,8 +2,8 @@
 #include "indicar_error.h"
 #include "../motores/motor.h"
 //Incluimos constantes y parametros de configuracion
-#include "../include/constantes.h"
-#include "../include/config.h"
+#include "constantes.h"
+#include "config.h"
 //Incluimos la cabecera de Arduino
 #include <Arduino.h>
 
@@ -20,6 +20,7 @@ void indicarError() {
 
     //Bloqueamos la ejecucion
     while (true) {
-        //Detendriamos la ejecucion si hay un error de inicializacion
+        Serial.print("Error de inicializacion");
+        delay(10000);
     }
 }

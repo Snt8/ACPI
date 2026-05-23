@@ -8,7 +8,7 @@
 //Incluimos otras bibliotecas necesarias
 #include <Arduino.h>
 //Incluimos parametros de configuracion
-#include "../include/config.h"
+#include "config.h"
 
 //Inicializamos el headingActual
 float ControladorBrujula::headingActual = 0.0;

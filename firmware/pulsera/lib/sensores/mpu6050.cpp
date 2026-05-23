@@ -6,14 +6,14 @@
 //Importamos otras bibliotecas necesarias
 #include <math.h>
 //Incluimos constantes y parametros de configuracion
-#include "../include/constantes.h"
+#include "constantes.h"
 
 float ControladorAcelerometro::x = 0.0;
 float ControladorAcelerometro::y = 0.0;
 float ControladorAcelerometro::z = 0.0;
 
 bool ControladorAcelerometro::inicializar() {
-    //Iniamos el bus I2C
+    //Iniciamos el bus I2C
     Wire.begin();
     //Establecemos la direccion para la comunicacion
     Wire.beginTransmission(0x68);
