@@ -9,5 +9,6 @@
 #define BAUD_RATE 115200
 //Establecer duracion entre vibraciones
 #define INTERVALOS_MILISEGUNDOS 500
+#define INTERVALOS_ERROR 200
 
 #endif
