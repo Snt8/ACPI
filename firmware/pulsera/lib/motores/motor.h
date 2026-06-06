@@ -6,10 +6,10 @@
 class ControladorMotores {
 private:
     //Motor derecho
-    static const uint8_t pin_motor_derecho = 5;
+    static const uint8_t pin_motor_derecho = 10;
     static const uint8_t canal_motor_derecho = 0;
     //Motor izquierdo
-    static const uint8_t pin_motor_izquierdo = 4;
+    static const uint8_t pin_motor_izquierdo = 2;
     static const uint8_t canal_motor_izquierdo = 1;
     //Configuraciones
     static const uint16_t frecuencia = 1000;

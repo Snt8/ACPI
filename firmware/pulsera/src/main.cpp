@@ -44,18 +44,6 @@ void setup()
   Serial.print("[BOOT] BAUD_RATE = ");
   Serial.println(BAUD_RATE);
 
-	//Inicializamos el bus I2C
-	Wire.begin();
-	//Inicializamos la brujula, los motores y la comunicacion por ESP-Now
-	//Si falla algo en el proceso llamamos a la funcion que indica hapticamente el error
-    Serial.println("[BOOT] Inicializando brujula...");
-    if (!ControladorBrujula::inicializar()) {
-        Serial.println("[ERROR] Fallo al inicializar la brujula");
-        Serial.flush();
-        indicarError();
-    }
-    Serial.println("[BOOT] Brujula lista");
-
     Serial.println("[BOOT] Inicializando motores...");
     if (!ControladorMotores::inicializar()) {
         Serial.println("[ERROR] Fallo al inicializar los motores");
@@ -63,6 +51,28 @@ void setup()
         indicarError();
     }
     Serial.println("[BOOT] Motores listos");
+
+	//Inicializamos el bus I2C
+	Wire.begin();
+	//Inicializamos la brujula, los motores y la comunicacion por ESP-Now
+	//Si falla algo en el proceso llamamos a la funcion que indica hapticamente el error
+    Serial.println("[BOOT] Inicializando brujula...");
+    Serial.println("[I2C] Escaneando bus...");
+    for (uint8_t addr = 1; addr < 127; addr++) {
+        Wire.beginTransmission(addr);
+        if (Wire.endTransmission() == 0) {
+            Serial.print("[I2C] Dispositivo encontrado en 0x");
+            Serial.println(addr, HEX);
+        }
+    }
+    Serial.println("[I2C] Scan completo");
+
+    if (!ControladorBrujula::inicializar()) {
+        Serial.println("[ERROR] Fallo al inicializar la brujula");
+        Serial.flush();
+        indicarError();
+    }
+    Serial.println("[BOOT] Brujula lista");
 
     Serial.println("[BOOT] Inicializando comunicacion ESP-NOW...");
     if (!ComunicadorSemaforo::inicializar()) {
