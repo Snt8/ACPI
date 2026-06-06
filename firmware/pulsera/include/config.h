@@ -11,4 +11,7 @@
 #define INTERVALOS_MILISEGUNDOS 500
 #define INTERVALOS_ERROR 200
 
-#endif
+// Botón de pánico (Botón BOOT en ESP32-C3 Super Mini)
+#define PIN_BOTON_PANICO 9
+
+#endif

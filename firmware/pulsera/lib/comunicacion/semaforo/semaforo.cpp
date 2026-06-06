@@ -1,18 +1,22 @@
-//Incluimos el archivo de cabecera de la comunicacion
 #include "semaforo.h"
 //Incluimos las bibliotecas necesarias para ESP-Now
 #include <Arduino.h>
 #include <esp_now.h>
 #include <WiFi.h>
+#include "../../control/fsm.h"
 
 //Inicializamos los atributos de la clase
 const uint8_t ComunicadorSemaforo::BROADCAST_MAC[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 estado_semaforo ComunicadorSemaforo::ultimoEstado = {};
 
 //Desarrollamos el metodo para pasar la callback con la información
-void ComunicadorSemaforo::onDatosRecibidos(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
-    memcpy(&ultimoEstado, data, data_len);
+void ComunicadorSemaforo::onDatosRecibidos(const esp_now_recv_info_t *recv_info, const uint8_t *data, int data_len) {
+    if (data_len >= (int)sizeof(estado_semaforo)) {
+        memcpy(&ultimoEstado, data, sizeof(estado_semaforo));
+        MaquinaEstados::registrarPaqueteRecibido();
+    }
 }
+
 
 //Desarrollamos el contenido del metodo para inicializar el dispositivo
 bool ComunicadorSemaforo::inicializar() {

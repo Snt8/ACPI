@@ -11,6 +11,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import java.util.UUID
+import org.json.JSONObject
 
 // El objeto BLEConstants se mantiene igual
 object BLEConstants {
@@ -23,7 +24,7 @@ object BLEConstants {
 interface ConnectionCallback {
     fun onConnectionStateChanged(isConnected: Boolean, deviceName: String?)
     fun onScanningStateChanged(isScanning: Boolean)
-    fun onTrafficLightAlert(estado: Int, angulo: Int)
+    fun onPulseraDataReceived(data: PulseraData)
     fun logMessage(message: String) // Callback para logs centralizados
 }
 
@@ -43,7 +44,7 @@ class BLEManager(private val context: Context) {
 
     companion object {
         private const val SCAN_PERIOD: Long = 15000 // 15 segundos de escaneo
-        private const val DEVICE_NAME = "ESP32_Cerebro_IoT" // Nombre del dispositivo BLE
+        private const val DEVICE_NAME = "ACPI_Pulsera" // Nombre del dispositivo BLE
     }
 
     @SuppressLint("MissingPermission")
@@ -117,23 +118,29 @@ class BLEManager(private val context: Context) {
             }
         }
 
+        @Deprecated("Deprecated in Java")
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
             if (characteristic.uuid == BLEConstants.TX_CHAR_UUID) {
-                val message = String(characteristic.value, Charsets.UTF_8)
+                val value = characteristic.value ?: return
+                val message = String(value, Charsets.UTF_8)
                 connectionCallback?.logMessage("Notificación recibida: \"$message\"")
 
                 try {
-                    val parts = message.split(",")
-                    if (parts.size == 2) {
-                        val estado = parts[0].toInt()
-                        val angulo = parts[1].toInt()
-                        connectionCallback?.onTrafficLightAlert(estado, angulo)
-                    }
-                } catch (e: NumberFormatException) {
-                    connectionCallback?.logMessage("Error al parsear el mensaje del ESP32: ${e.message}")
+                    val json = JSONObject(message)
+                    val data = PulseraData(
+                        hd = json.getInt("hd"),
+                        st = json.getInt("st"),
+                        ok = json.getBoolean("ok"),
+                        tr = json.getInt("tr"),
+                        bt = json.getInt("bt")
+                    )
+                    connectionCallback?.onPulseraDataReceived(data)
+                } catch (e: Exception) {
+                    connectionCallback?.logMessage("Error al parsear el mensaje JSON del ESP32: ${e.message}")
                 }
             }
         }
+
 
         @SuppressLint("MissingPermission")
         override fun onCharacteristicWrite(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?, status: Int) {

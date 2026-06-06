@@ -15,8 +15,8 @@ public:
     static bool inicializar(); //Establece la comunicacion con el Semaforo
     static bool desinicializar(); //Detiene la comunicacoin con el Semaforo
 private:
-    static void onDatosRecibidos(const uint8_t *mac_addr, const uint8_t *data, int data_len); //Callback que convierte los datos a la estructura
+    static void onDatosRecibidos(const esp_now_recv_info_t *recv_info, const uint8_t *data, int data_len); //Callback que convierte los datos a la estructura
 
 };
 
-#endif
+#endif

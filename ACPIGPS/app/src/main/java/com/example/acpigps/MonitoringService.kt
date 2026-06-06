@@ -12,7 +12,6 @@ import android.content.SharedPreferences
 import android.location.Location
 import android.os.Binder
 import android.os.Build
-import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
@@ -21,10 +20,7 @@ import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.google.android.gms.location.*
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
-import java.util.Date
+import org.json.JSONObject
 import java.util.UUID
 import kotlin.math.roundToInt
 
@@ -48,31 +44,29 @@ class MonitoringService : Service(), ConnectionCallback {
     val compassData: LiveData<CompassData> = _compassData
     private val _logMessages = MutableLiveData<List<String>>(emptyList())
     val logMessages: LiveData<List<String>> = _logMessages
+    private val _pulseraData = MutableLiveData<PulseraData?>(null)
+    val pulseraData: LiveData<PulseraData?> = _pulseraData
 
     // --- Managers y Clientes ---
     private lateinit var bleManager: BLEManager
     private lateinit var directionDetector: WalkDirectionDetector
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
-    private lateinit var telegramManager: TelegramManager
+    private lateinit var notificationManager: LocalNotificationManager
+    private lateinit var grafanaReporter: GrafanaReporter
+    private lateinit var sessionLogger: SessionLogger
     private lateinit var sharedPreferences: SharedPreferences
-
-    // --- Variables de Firebase ---
-    private lateinit var db: FirebaseFirestore
-    private var tripId: String? = null
 
     // --- Variables de Estado ---
     private var isServiceRunning = false
     private var stepCount = 0
     private var homeLocation: Location? = null
     private val safeRadius = 50.0
-    private val locationUpdateHandler = Handler(Looper.getMainLooper())
-    private lateinit var locationSenderRunnable: Runnable
-    private val locationUpdateInterval = 15 * 60 * 1000L // 15 minutos
 
     override fun onCreate() {
         super.onCreate()
-        // Inicializar todos los componentes
+        
+        // Inicializar componentes locales y de telemetría
         bleManager = BLEManager(this)
         bleManager.connectionCallback = this
         directionDetector = WalkDirectionDetector(this) { angle, direction ->
@@ -80,14 +74,13 @@ class MonitoringService : Service(), ConnectionCallback {
             _compassData.postValue(CompassData(angle, direction, stepCount))
         }
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-        telegramManager = TelegramManager(this)
+        
+        notificationManager = LocalNotificationManager(this)
+        grafanaReporter = GrafanaReporter(this)
+        sessionLogger = SessionLogger(this, grafanaReporter)
         sharedPreferences = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
-        // Inicializar Firebase
-        db = Firebase.firestore
-
         setupLocationCallback()
-        setupLocationSender()
         loadHomeLocation()
     }
 
@@ -106,9 +99,9 @@ class MonitoringService : Service(), ConnectionCallback {
         if (isServiceRunning) return
         addLog("Servicio de monitoreo iniciado.")
 
-        // Crear un ID único para este viaje/sesión
-        tripId = UUID.randomUUID().toString()
-        addLog("Nuevo ID de viaje: $tripId")
+        // Iniciar sesión de telemetría
+        sessionLogger.startSession(stepCount)
+        _pulseraData.postValue(null)
 
         stepCount = 0
         directionDetector.startDetection()
@@ -122,20 +115,29 @@ class MonitoringService : Service(), ConnectionCallback {
             Looper.getMainLooper()
         )
         isServiceRunning = true
-        locationUpdateHandler.post(locationSenderRunnable)
     }
 
     private fun stopMonitoring() {
         if (!isServiceRunning) return
         addLog("Servicio de monitoreo detenido.")
-        locationUpdateHandler.removeCallbacks(locationSenderRunnable)
+        
+        // Detener sensores y BLE
         directionDetector.stopDetection()
-        bleManager.sendCommandToEsp32("VIBRATE_STOP")
         bleManager.disconnect()
         fusedLocationClient.removeLocationUpdates(locationCallback)
-        isServiceRunning = false
-        stopForeground(true)
-        stopSelf()
+
+        // Registrar ubicación final y subir telemetría
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            sessionLogger.endSession(stepCount, location)
+            isServiceRunning = false
+            stopForeground(true)
+            stopSelf()
+        }.addOnFailureListener {
+            sessionLogger.endSession(stepCount, null)
+            isServiceRunning = false
+            stopForeground(true)
+            stopSelf()
+        }
     }
 
     override fun onDestroy() {
@@ -145,7 +147,7 @@ class MonitoringService : Service(), ConnectionCallback {
 
     override fun onBind(intent: Intent): IBinder = binder
 
-    // --- Lógica de Telegram y Geofence ---
+    // --- Lógica de Geofence ---
 
     private fun loadHomeLocation() {
         val lat = sharedPreferences.getString("home_lat", null)?.toDouble()
@@ -165,31 +167,8 @@ class MonitoringService : Service(), ConnectionCallback {
         homeLocation?.let { home ->
             val distance = currentLocation.distanceTo(home)
             if (distance > safeRadius) {
-                val message = "¡Alerta! El usuario ha salido de la zona segura. Distancia: ${distance.roundToInt()} metros."
-                telegramManager.sendMessage(message) { log ->
-                    addLog("Enviando alerta de geofence: $log")
-                }
-                // Guardar el evento de geocerca en Firebase
-                saveLocationToFirebase(currentLocation, "GEOFENCE_EXIT")
-            }
-        }
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun setupLocationSender() {
-        locationSenderRunnable = object : Runnable {
-            override fun run() {
-                if (isServiceRunning) {
-                    fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                        if (location != null) {
-                            telegramManager.sendLocation(location.latitude, location.longitude) { log ->
-                                addLog("Envío periódico de ubicación: $log")
-                            }
-                        }
-                    }
-                    // Volver a programar el envío
-                    locationUpdateHandler.postDelayed(this, locationUpdateInterval)
-                }
+                addLog("⚠️ ALERTA: Fuera de zona segura! Distancia: ${distance.roundToInt()}m")
+                notificationManager.alertGeofenceViolation(distance.roundToInt())
             }
         }
     }
@@ -223,60 +202,31 @@ class MonitoringService : Service(), ConnectionCallback {
             override fun onLocationResult(locationResult: LocationResult) {
                 locationResult.lastLocation?.let { location ->
                     checkGeofence(location)
-                    // Guardar cada punto del trazado en Firebase
-                    saveLocationToFirebase(location, "TRACK")
                 }
             }
         }
     }
 
-    // --- NUEVA FUNCIÓN PARA GUARDAR EN FIREBASE ---
-    private fun saveLocationToFirebase(location: Location, eventType: String) {
-        if (tripId == null) return // No guardar si no hay un viaje activo
+    // --- Callbacks de Conectividad y Datos BLE ---
 
-        val locationData = hashMapOf(
-            "latitude" to location.latitude,
-            "longitude" to location.longitude,
-            "timestamp" to Date(), // Guarda la fecha y hora actual
-            "event" to eventType // "TRACK" o "GEOFENCE_EXIT"
-        )
+    override fun onPulseraDataReceived(data: PulseraData) {
+        val stPrevio = _pulseraData.value?.st
+        val btPrevio = _pulseraData.value?.bt
+        _pulseraData.postValue(data)
 
-        db.collection("trips").document(tripId!!)
-            .collection("points").add(locationData)
-            .addOnSuccessListener {
-                Log.d("Firestore", "Punto de ubicación guardado con éxito.")
-            }
-            .addOnFailureListener { e ->
-                Log.w("Firestore", "Error al guardar el punto de ubicación.", e)
-                addLog("Error de Firestore: ${e.message}")
-            }
-    }
-
-    // --- Callbacks y Métodos Existentes ---
-
-    override fun onTrafficLightAlert(estado: Int, angulo: Int) {
-        addLog("Alerta de semáforo recibida. Estado para coches: $estado, Angulo: $angulo")
-        val userQuadrant = directionDetector.getCurrentQuadrant()
-
-        if (estado == 1 && isCrossingPathAligned(angulo, userQuadrant)) {
-            addLog("ACCIÓN: ¡SEGURO PARA CRUZAR! Iniciando vibración.")
-            bleManager.sendCommandToEsp32("VIBRATE_START")
-        } else {
-            addLog("INFO: Condición no segura. Deteniendo vibración.")
-            bleManager.sendCommandToEsp32("VIBRATE_STOP")
+        // 1. Notificación local si cambia a st=1 (Cruce permitido)
+        if (data.st == 1 && stPrevio != 1) {
+            notificationManager.alertSafeToCross()
         }
 
-        bleManager.sendQuadrantToEsp32(userQuadrant)
-    }
-
-    private fun isCrossingPathAligned(trafficLightAngle: Int, userQuadrant: Int): Boolean {
-        val trafficLightQuadrant = when (trafficLightAngle) {
-            in 45..134 -> 1; in 135..224 -> 2; in 225..314 -> 3; else -> 4
+        // 2. Notificación local si la batería baja de 15%
+        if (data.bt in 1..15 && data.bt != btPrevio) {
+            notificationManager.alertLowBattery(data.bt)
         }
-        return when (trafficLightQuadrant) {
-            1, 3 -> userQuadrant == 2 || userQuadrant == 4
-            2, 4 -> userQuadrant == 1 || userQuadrant == 3
-            else -> false
+
+        // Loguear datos en el buffer de la sesión
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            sessionLogger.logData(data, location, stepCount)
         }
     }
 
@@ -315,15 +265,14 @@ class MonitoringService : Service(), ConnectionCallback {
         (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).notify(NOTIFICATION_ID, notification)
     }
 
+    fun sendTestToEsp32() {
+        bleManager.sendCommandToEsp32("TEST_ALERT")
+        addLog("Enviando comando de prueba 'TEST_ALERT' al dispositivo BLE.")
+    }
+
     private fun addLog(message: String) {
         val currentLogs = _logMessages.value?.toMutableList() ?: mutableListOf()
         currentLogs.add(0, message)
         _logMessages.postValue(currentLogs)
-    }
-
-    fun sendTestToEsp32() {
-        val quadrant = directionDetector.getCurrentQuadrant()
-        bleManager.sendQuadrantToEsp32(quadrant)
-        addLog("Enviando cuadrante de prueba manual: $quadrant")
     }
 }

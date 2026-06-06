@@ -1,5 +1,5 @@
 # Justfile - Automatización Profesional para ACPI (PlatformIO & C++)
-.PHONY: compile-all clean-all lint-all flash-pulsera flash-semaforo
+.PHONY: compile-all clean-all lint-all flash-pulsera flash-semaforo compile-pulsera compile-semaforo monitor-pulsera monitor-semaforo
 
 # Compila el firmware de la pulsera y del semáforo simultáneamente
 compile-all:
@@ -7,6 +7,24 @@ compile-all:
     pio run -d firmware/pulsera
     @echo "📦 Compilando firmware del Semáforo..."
     pio run -d firmware/semaforo
+
+# Compila individualmente la Pulsera
+compile-pulsera:
+    @echo "📦 Compilando firmware de la Pulsera..."
+    pio run -d firmware/pulsera
+
+# Compila individualmente el Semáforo
+compile-semaforo:
+    @echo "📦 Compilando firmware del Semáforo..."
+    pio run -d firmware/semaforo
+
+# Abre el monitor serie de la Pulsera
+monitor-pulsera:
+    pio device monitor -d firmware/pulsera
+
+# Abre el monitor serie del Semáforo
+monitor-semaforo:
+    pio device monitor -d firmware/semaforo
 
 # Limpia los archivos temporales de compilación de PlatformIO
 clean-all:
