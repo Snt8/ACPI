@@ -10,7 +10,8 @@ const uint8_t ComunicadorSemaforo::BROADCAST_MAC[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0
 estado_semaforo ComunicadorSemaforo::ultimoEstado = {};
 
 //Desarrollamos el metodo para pasar la callback con la información
-void ComunicadorSemaforo::onDatosRecibidos(const esp_now_recv_info_t *recv_info, const uint8_t *data, int data_len) {
+void ComunicadorSemaforo::onDatosRecibidos(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
+    (void)mac_addr; // La MAC remota se recibe aquí; no es necesaria en este manejador actualmente
     if (data_len >= (int)sizeof(estado_semaforo)) {
         memcpy(&ultimoEstado, data, sizeof(estado_semaforo));
         MaquinaEstados::registrarPaqueteRecibido();

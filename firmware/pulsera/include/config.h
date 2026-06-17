@@ -1,17 +1,16 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-//Definimos los valores de configuracion
-
-//Direccion y semaforo
-#define UMBRAL_SEMAFORO 45.0
-//Establecer frecuencias
+// ── Serial ────────────────────────────────────────────────────────────────────
 #define BAUD_RATE 115200
-//Establecer duracion entre vibraciones
-#define INTERVALOS_MILISEGUNDOS 500
-#define INTERVALOS_ERROR 200
 
-// Botón de pánico (Botón BOOT en ESP32-C3 Super Mini)
-#define PIN_BOTON_PANICO 9
+// ── Lógica de comparación diferencial ────────────────────────────────────────
+// Condición de cruce seguro: |Δθ - 180°| < UMBRAL_CRUCE_GRADOS
+// donde Δθ = min(|Hp - Hs|, 360 - |Hp - Hs|)
+// Los nodos se ENFRENTAN cuando el usuario está correctamente orientado para cruzar.
+#define UMBRAL_CRUCE_GRADOS     30.0f
 
-#endif
+// ── Timing de vibración de error (indicar_error.cpp) ─────────────────────────
+#define INTERVALOS_ERROR        200
+
+#endif // CONFIG_H

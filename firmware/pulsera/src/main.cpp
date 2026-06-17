@@ -26,9 +26,9 @@ void setup() {
         Serial.println("[BOOT] Motores listos.");
     }
 
-    // 2. Inicializar I2C y Sensores (MPU6050 + QMC5883L)
+    // 2. Inicializar I2C y Sensores (MPU6050 + QMC6308) — SDA=GPIO8, SCL=GPIO9
     Serial.println("[BOOT] Inicializando I2C...");
-    Wire.begin();
+    Wire.begin(8, 9);
     
     Serial.println("[BOOT] Inicializando brujula...");
     if (!ControladorBrujula::inicializar()) {

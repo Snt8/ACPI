@@ -1,73 +1,47 @@
-# 🧭 lib/brujula
-El módulo **lib/brujula** contiene la lógica de dirección que
-permite a la pulsera determinar si el usuario está correctamente
-ubicado para permitirle cruzar la calle.
+# Módulo: Controlador Lógico de Brújula (Pulsera)
+
+## Descripción General
+Este módulo es una capa de abstracción de alto nivel (`ControladorBrujula`) que se encarga de orquestar la lectura concurrente de los controladores físicos de bajo nivel (acelerómetro y magnetómetro), realizar la fusión sensorial (*Sensor Fusion*) para la compensación de inclinación (*Tilt Compensation*) y ejecutar los filtros de seguridad direccional.
 
 ---
 
-## 📂 Contenido
-El módulo está compuesto por los archivos:
-- **brujula.h**: Define la estructura de la clase
-  ***ControladorBrujula***.
-- **brujula.cpp**: Se encarga del desarrollo de la clase ***ControladorBrujula***.
+## Contenido
+- `brujula.h` -> Definiciones de la interfaz y estados estáticos de seguridad.
+- `brujula.cpp` -> Implementación de algoritmos de fusión y la lógica de validación de cruce.
 
 ---
 
-## ⚙️ Explicación
-- **Clase *ControladorBrujula***: Esta clase es un orquestador
-  de los sensores y su responsabilidad principal es encargarse
-  de la dirección y permitir a la pulsera determinar si el cruce
-  puede efectuarse con base en dónde esté orientado el usuario.
-  Esta clase es estática, por ende no requiere ser instanciada.
-- **Atributos de la clase**: La clase ***ControladorBrujula*** contiene el
-  atributo *headingActual*, este atributo público es un decimal que representa
-  la orientación del usuario en grados.
-- **Métodos de la clase**: La clase ***ControladorBrujula*** contiene
-  los siguientes métodos estáticos:
-  - **inicializar( )**: Se encarga de llamar a los métodos de inicialización
-    de los sensores.
-  - **obtenerHeading( )**: Se encarga de comunicarse con los sensores,
-    obtener las lecturas y calcular el heading compensado para ser asignado
-    en el atributo *headingActual*.
-  - **revisarSemaforo( )**: Se encarga de comparar *headingActual* de la pulsera
-    con el heading del semáforo para determinar que ambos sean similares,
-    verificando que el usuario está bien orientado para el cruce. Recibe
-    la posición del semáforo como argumento.
-  
----
+## Explicación
+El módulo extrae los datos vectoriales brutos de los sensores I2C y ejecuta dos tareas fundamentales:
 
-## 🔗 Dependencias
-El módulo **lib/brujula** tiene las siguientes dependencias:
-- **../sensores/mpu6050.h**: Este archivo contiene la declaración de
-  la clase ControladorAcelerometro, clase encargada de las lecturas
-  del acelerómetro.
-- **../sensores/qmc5883l.h**: Este archivo contiene las declaraciones de
-  la clase ControladorMagnetómetro, clase encargada de las lecturas
-  del magnetómetro.
-- **../utils/calcular_direccion.h**: Este archivo contiene la declaración de la
-  función calcularDireccion, que se encarga de calcular la diferencia entre
-  el heading de la pulsera y el del semáforo.
+1. **Safety Check (Filtro Antiruido)**: El módulo monitorea constantemente los cambios bruscos de orientación. Si el brazo del usuario oscila repentinamente y el rumbo cambia más de `UMBRAL_DELTA_HEADING` (e.g. 40°) en menos de 500ms, la lectura se marca como **inválida** y se aborta el procesamiento de feedback. Esto evita que el usuario reciba vibraciones falsas por movimientos naturales de la muñeca.
+2. **Evaluación Diferencial de Enfrentamiento**: A diferencia de comparar si los rumbos son iguales, este módulo usa la aritmética modular para determinar si la pulsera y el semáforo están **enfrentados** (mirándose de frente). Calcula el camino más corto en una circunferencia y evalúa la condición de tolerancia: `|Δθ - 180°| < UMBRAL_CRUCE_GRADOS`.
 
 ---
 
-## 💻 Ejemplo de Uso
-Para los ejemplos, analizaremos cómo usar cada uno de los métodos de la clase ***ControladorBrujula***:
-- **inicializar( )**:
-  ```
-  if(!ControladorBrujula::inicializar()){
-    //Logica en caso de que falle la inicializacion
-    //Aprovechamos el retorno booleano para evaluar que todo sea correcto
-  }
-  ```
-- **obtenerHeading( )**:
-  ```
-  ControladorBrujula::obtenerHeading();
-  //Modifica el atributo headingActual que posteriormente podemos leer
-  Serial.println(ControladorBrujula::headingActual);
-  // >> 45.0
-  ```
-  - **revisarSemaforo( )**:
-  ```
-  ControladorBrujula::revisarSemaforo(posicionSemaforo);
-  //Retorna true si la comparacion de los headings permite el cruce
-  ```
+## Dependencias
+- Módulos internos: `lib/sensores` (MPU6050 y QMC6308).
+- Funciones matemáticas estándar (`<math.h>`).
+- Constantes operativas globales (`config.h` y `constantes.h`).
+
+---
+
+## Ejemplo de Uso
+
+En el loop principal de la Máquina de Estados:
+
+```cpp
+// 1. Efectuar el muestreo y ejecutar filtros matemáticos
+ControladorBrujula::obtenerHeading();
+
+// 2. Comprobar si la muñeca está estable (lectura válida)
+if (ControladorBrujula::headingValido()) {
+    
+    // 3. Evaluar si el peatón está alineado correctamente con el semáforo
+    bool estoyAlineado = ControladorBrujula::revisarSemaforo(rumboSemaforoRecibido);
+    
+    if(estoyAlineado) {
+        // Ejecutar rutina de cruce...
+    }
+}
+```

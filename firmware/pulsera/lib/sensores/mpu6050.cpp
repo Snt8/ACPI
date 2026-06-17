@@ -1,57 +1,59 @@
-//Incluimos el archivo de cabecera
 #include "mpu6050.h"
-//Importamos la bibliotecas para controlar el I2C
 #include <Wire.h>
 #include <Arduino.h>
-//Importamos otras bibliotecas necesarias
 #include <math.h>
-//Incluimos constantes y parametros de configuracion
 #include "constantes.h"
 
-float ControladorAcelerometro::x = 0.0;
-float ControladorAcelerometro::y = 0.0;
-float ControladorAcelerometro::z = 0.0;
+// Dirección I2C del MPU6050
+#define MPU6050_ADDR   0x68
+// Registro de control de energía (escribir 0x00 para despertar el chip)
+#define REG_PWR_MGMT_1 0x6B
+// Registro de inicio de datos de acelerómetro
+#define REG_ACCEL_XOUT 0x3B
+
+// Variables estáticas: normalizadas en unidades g
+float ControladorAcelerometro::x = 0.0f;
+float ControladorAcelerometro::y = 0.0f;
+float ControladorAcelerometro::z = 0.0f;
 
 bool ControladorAcelerometro::inicializar() {
-    //Iniciamos el bus I2C
-    Wire.begin();
-    //Establecemos la direccion para la comunicacion
-    Wire.beginTransmission(0x68);
-    //Definimos que registros vamos a escribir y que valor escribimos
-    Wire.write(0x6B);
+    // Despertar el MPU6050 escribiendo 0x00 en PWR_MGMT_1
+    Wire.beginTransmission(MPU6050_ADDR);
+    Wire.write(REG_PWR_MGMT_1);
     Wire.write(0x00);
-    //Comprobamos si la informacion fue enviada exitosamente
     if (Wire.endTransmission() != 0) {
+        Serial.println(F("[MPU6050] ERROR: No responde en 0x68"));
         return false;
     }
+    Serial.println(F("[MPU6050] Inicializado correctamente en 0x68"));
     return true;
 }
 
-void ControladorAcelerometro::leerDatos() {
-    //Establecemos la direccion para leer el registro de los ejes
-    Wire.beginTransmission(0x68);
-    //Definimos el registro
-    Wire.write(0x3B);
-    //Comprobamos si la informacion fue obtenida exitosamente
-    if (Wire.endTransmission() != 0) {
-        return;
+bool ControladorAcelerometro::leerDatos() {
+    Wire.beginTransmission(MPU6050_ADDR);
+    Wire.write(REG_ACCEL_XOUT);
+    if (Wire.endTransmission(false) != 0) {
+        return false;
     }
-    //Pedimos los bytes
-    Wire.requestFrom(0x68, 6);
-    //Leemos los datos que obtenemos
-    int16_t lecturas[3];
-    for (int indice = 0; indice < 3; indice++) {
-        lecturas[indice] = (Wire.read() << 8) | Wire.read();
+
+    Wire.requestFrom((uint8_t)MPU6050_ADDR, (uint8_t)6);
+    if (Wire.available() < 6) {
+        return false;
     }
-    //Asignamos a los atributos el valor de la lectura
-    x = lecturas[0] / FACTOR_ESCALA;
-    y = lecturas[1] / FACTOR_ESCALA;
-    z = lecturas[2] / FACTOR_ESCALA;
+
+    int16_t raw_x = (int16_t)((Wire.read() << 8) | Wire.read());
+    int16_t raw_y = (int16_t)((Wire.read() << 8) | Wire.read());
+    int16_t raw_z = (int16_t)((Wire.read() << 8) | Wire.read());
+
+    x = (float)raw_x / FACTOR_ESCALA_ACCEL;
+    y = (float)raw_y / FACTOR_ESCALA_ACCEL;
+    z = (float)raw_z / FACTOR_ESCALA_ACCEL;
+    return true;
 }
 
 void ControladorAcelerometro::obtenerPitchRoll(float &pitch, float &roll) {
-    //Calculamso la inclinacion hacia adelante y atras
-    pitch = atan2(-x, sqrt((y*y) + (z*z))) * RAD_A_GRADOS;
-    //Calculamos la inclinacion lateral
-    roll = atan2(y, z) * RAD_A_GRADOS;
+    // Pitch: inclinación adelante/atrás
+    pitch = atan2f(-x, sqrtf((y * y) + (z * z))) * RAD_A_GRADOS;
+    // Roll: inclinación lateral
+    roll  = atan2f(y, z) * RAD_A_GRADOS;
 }

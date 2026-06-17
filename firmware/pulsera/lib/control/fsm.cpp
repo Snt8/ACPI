@@ -8,45 +8,63 @@
 #include "../../include/config.h"
 #include "../../include/constantes.h"
 #include <Arduino.h>
-#include <esp_sleep.h>
-#include <driver/gpio.h>
 
-// Definición de variables estáticas
-EstadoPulsera MaquinaEstados::estadoActual = EstadoPulsera::BOOTING;
-unsigned long MaquinaEstados::ultimoTiempoPaqueteSemaforo = 0;
-volatile bool MaquinaEstados::panicoDetectado = false;
-unsigned long MaquinaEstados::ultimoTiempoVibracionPanico = 0;
-bool MaquinaEstados::motorPanicoEncendido = false;
-unsigned long MaquinaEstados::ultimoTiempoEnvioBLE = 0;
+// ── Definición de variables estáticas ────────────────────────────────────────
+EstadoPulsera  MaquinaEstados::estadoActual                = EstadoPulsera::BOOTING;
+unsigned long  MaquinaEstados::ultimoTiempoPaqueteSemaforo = 0;
+unsigned long  MaquinaEstados::ultimoTiempoEnvioBLE        = 0;
 
-// Variables locales para control de vibración en cruce
-static unsigned long ultimo_tiempo_derecho = 0;
-static bool motor_derecho_encendido = false;
-static unsigned long ultimo_tiempo_izquierdo = 0;
-static bool motor_izquierdo_encendido = false;
+// ── Variables locales del estado SENSING_CROSSING ────────────────────────────
+static unsigned long ultimo_muestreo_ms = 0;
 
-void IRAM_ATTR MaquinaEstados::manejarInterrupcionPanico() {
-    // Al presionar el botón de BOOT (activo LOW), alternamos el estado de pánico
-    panicoDetectado = !panicoDetectado;
+// Patron de vibracion activo y motor asignado al patron direccional
+enum class PatronActivo { NINGUNO, CONFIRMATORIO, VERDE, DIRECCIONAL };
+static PatronActivo            patron_activo    = PatronActivo::NINGUNO;
+static ControladorMotores::Motor motor_dir_activo = ControladorMotores::DERECHO;
+
+// ── Helper: cambiar patron y limpiar estado anterior ─────────────────────────
+static void activarPatron(PatronActivo nuevo,
+                          ControladorMotores::Motor motor = ControladorMotores::AMBOS) {
+    bool mismo_patron = (patron_activo == nuevo);
+    bool mismo_motor  = (motor_dir_activo == motor);
+
+    if (mismo_patron && (nuevo != PatronActivo::DIRECCIONAL || mismo_motor)) {
+        return;  // Sin cambio — no reiniciar
+    }
+
+    reiniciarPatrones();  // Apaga motores y resetea estado interno
+    patron_activo     = nuevo;
+    motor_dir_activo  = motor;
 }
 
+// ── Helper: ejecutar el patron activo en cada iteracion del loop ──────────────
+static void ejecutarPatron() {
+    switch (patron_activo) {
+        case PatronActivo::CONFIRMATORIO:
+            vibracionConfirmatoria(ControladorMotores::AMBOS);
+            break;
+        case PatronActivo::VERDE:
+            vibracionVerde(ControladorMotores::AMBOS);
+            break;
+        case PatronActivo::DIRECCIONAL:
+            vibracionDireccional(motor_dir_activo);
+            break;
+        case PatronActivo::NINGUNO:
+        default:
+            break;
+    }
+}
+
+// ── Inicialización ────────────────────────────────────────────────────────────
 void MaquinaEstados::inicializar() {
-    // Configurar el botón de pánico
-    pinMode(PIN_BOTON_PANICO, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(PIN_BOTON_PANICO), manejarInterrupcionPanico, FALLING);
-    
     ultimoTiempoPaqueteSemaforo = millis();
-    ultimoTiempoEnvioBLE = millis();
-    
-    // Configurar wakeup por GPIO para Light Sleep
-    #if defined(ESP_CHIP_ESP32C3) || defined(ARDUINO_ARCH_ESP32)
-    esp_sleep_enable_gpio_wakeup();
-    gpio_wakeup_enable((gpio_num_t)PIN_BOTON_PANICO, GPIO_INTR_LOW_LEVEL);
-    #endif
-    
+    ultimoTiempoEnvioBLE        = millis();
+    ultimo_muestreo_ms          = millis();
+
     setEstado(EstadoPulsera::BOOTING);
 }
 
+// ── Registro de paquete ESP-NOW recibido ──────────────────────────────────────
 void MaquinaEstados::registrarPaqueteRecibido() {
     ultimoTiempoPaqueteSemaforo = millis();
     if (estadoActual == EstadoPulsera::STANDBY_LOW_POWER) {
@@ -54,138 +72,139 @@ void MaquinaEstados::registrarPaqueteRecibido() {
     }
 }
 
+// ── Getter de estado actual ───────────────────────────────────────────────────
 EstadoPulsera MaquinaEstados::obtenerEstadoActual() {
     return estadoActual;
 }
 
+// ── Transición de estado ──────────────────────────────────────────────────────
 void MaquinaEstados::setEstado(EstadoPulsera nuevoEstado) {
     if (estadoActual == nuevoEstado) return;
-    
+
     Serial.printf("[FSM] Transicion: %d -> %d\n", (int)estadoActual, (int)nuevoEstado);
-    
-    // Acciones al salir del estado anterior
-    if (estadoActual == EstadoPulsera::ALERT_PANIC) {
-        ControladorMotores::detenerMotor(ControladorMotores::AMBOS);
+
+    if (estadoActual == EstadoPulsera::SENSING_CROSSING) {
+        patron_activo = PatronActivo::NINGUNO;
+        reiniciarPatrones();
     }
-    
+
     estadoActual = nuevoEstado;
-    
-    // Acciones al entrar al nuevo estado
+
     if (estadoActual == EstadoPulsera::STANDBY_LOW_POWER) {
-        ControladorMotores::detenerMotor(ControladorMotores::AMBOS);
-        Serial.println("[FSM] Entrando a modo STANDBY (Bajo Consumo)...");
+        Serial.println(F("[FSM] Entrando a modo STANDBY (Bajo Consumo)..."));
     }
 }
 
-void MaquinaEstados::entrarLightSleep() {
-    Serial.println("[FSM] Suspendiendo en Light Sleep...");
-    Serial.flush();
-    
-    // Detener motores
-    ControladorMotores::detenerMotor(ControladorMotores::AMBOS);
-    
-    // Entrar en Light Sleep
-    esp_light_sleep_start();
-    
-    // Al despertar del sleep
-    Serial.println("[FSM] Despierto de Light Sleep!");
-    ultimoTiempoPaqueteSemaforo = millis(); // Resetear timer
-}
-
+// ── Loop principal ────────────────────────────────────────────────────────────
 void MaquinaEstados::actualizar() {
     unsigned long ahora = millis();
 
-    // Transicionar a PÁNICO desde cualquier estado si la bandera de interrupción está activa
-    if (panicoDetectado && estadoActual != EstadoPulsera::ALERT_PANIC) {
-        setEstado(EstadoPulsera::ALERT_PANIC);
-    } else if (!panicoDetectado && estadoActual == EstadoPulsera::ALERT_PANIC) {
-        setEstado(EstadoPulsera::STANDBY_LOW_POWER);
-    }
-
     switch (estadoActual) {
+
+        // ── BOOTING ───────────────────────────────────────────────────────────
         case EstadoPulsera::BOOTING:
             setEstado(EstadoPulsera::STANDBY_LOW_POWER);
             break;
-            
+
+        // ── STANDBY_LOW_POWER ─────────────────────────────────────────────────
         case EstadoPulsera::STANDBY_LOW_POWER:
-            // Si no estamos conectados por BLE y no hemos recibido paquetes en 30 segundos, suspendemos
-            if (!ComunicadorMovil::estaConectado() && (ahora - ultimoTiempoPaqueteSemaforo >= 30000UL)) {
-                entrarLightSleep();
-            }
             break;
-            
+
+        // ── SENSING_CROSSING ──────────────────────────────────────────────────
         case EstadoPulsera::SENSING_CROSSING: {
-            // Si no hay paquetes de semáforo en 30s, regresamos a standby
+
+            // Timeout: sin paquetes de semaforo en 30s → volver a standby
             if (ahora - ultimoTiempoPaqueteSemaforo >= 30000UL) {
                 setEstado(EstadoPulsera::STANDBY_LOW_POWER);
                 break;
             }
-            
-            // 1. Calcular heading actual
+
+            // Ejecutar patron activo en CADA iteracion del loop (no solo cada 500ms).
+            // Los tiempos internos de los patrones dependen de llamadas continuas.
+            ejecutarPatron();
+
+            // ── Muestreo a 2Hz (cada 500ms) ───────────────────────────────────
+            if (ahora - ultimo_muestreo_ms < INTERVALO_MUESTREO_MS) {
+                break;
+            }
+            ultimo_muestreo_ms = ahora;
+
+            // 1. Leer sensores y calcular heading
             ControladorBrujula::obtenerHeading();
-            
-            // 2. Validar alineación
-            bool orientacionOk = ControladorBrujula::revisarSemaforo(ComunicadorSemaforo::ultimoEstado.grados);
-            
-            // 3. Activar motores según estado y alineación
+
+            // 2. Validar que la lectura no fue rechazada por el safety check
+            if (!ControladorBrujula::headingValido()) {
+                activarPatron(PatronActivo::NINGUNO);
+                Serial.println(F("[HDG] Lectura invalida — motores apagados"));
+                break;
+            }
+
+            // 3. Calcular delta para prints de debug
+            float hp          = ControladorBrujula::headingActual;
+            float hs          = (float)ComunicadorSemaforo::ultimoEstado.grados;
+            float delta       = fabsf(hp - hs);
+            if (delta > 180.0f) delta = 360.0f - delta;
+            float angulo_frente = fabsf(delta - 180.0f);
+
+            Serial.printf("[HDG] Pulsera=%.1f  Semaforo=%d  Delta=%.1f  FrenteA=%.1f  "
+                          "Cruce=%s\n",
+                          hp, (int)hs, delta, angulo_frente,
+                          ComunicadorSemaforo::ultimoEstado.permitidoCruce ? "SI" : "NO");
+
+            // 4. Evaluar orientacion: |delta - 180°| < UMBRAL_CRUCE_GRADOS
+            bool orientacionOk = ControladorBrujula::revisarSemaforo(
+                                     ComunicadorSemaforo::ultimoEstado.grados);
+
+            // 5. Activar patron segun orientacion y estado del semaforo
             if (orientacionOk) {
                 if (ComunicadorSemaforo::ultimoEstado.permitidoCruce) {
-                    // Alineado y permitido: vibración continua en ambos
-                    ControladorMotores::vibrarMotor(ControladorMotores::AMBOS, INTENSIDAD_MOTOR);
+                    // permitidoCruce=1: semaforo ROJO para autos → peatón PUEDE cruzar
+                    activarPatron(PatronActivo::CONFIRMATORIO);
+                    Serial.println(F("[PAT] CONFIRMATORIO — cruce PERMITIDO (verde peaton)"));
                 } else {
-                    // Alineado pero prohibido: vibración intermitente/espera
-                    controlarVibracion(INTERVALOS_MILISEGUNDOS, ultimo_tiempo_derecho, motor_derecho_encendido, ControladorMotores::DERECHO, INTENSIDAD_MOTOR);
-                    controlarVibracion(INTERVALOS_MILISEGUNDOS, ultimo_tiempo_izquierdo, motor_izquierdo_encendido, ControladorMotores::IZQUIERDO, INTENSIDAD_MOTOR);
+                    // permitidoCruce=0: semaforo VERDE para autos → peatón DEBE esperar
+                    activarPatron(PatronActivo::VERDE);
+                    Serial.println(F("[PAT] VERDE — cruce PROHIBIDO (rojo peaton)"));
                 }
             } else {
-                // Desalineado: detener motores y vibrar según corrección requerida
-                ControladorMotores::detenerMotor(ControladorMotores::AMBOS);
-                float direccion = calcularDireccion(ComunicadorSemaforo::ultimoEstado.grados, ControladorBrujula::headingActual);
-                
-                if (direccion < 0) {
-                    controlarVibracion(INTERVALOS_MILISEGUNDOS, ultimo_tiempo_izquierdo, motor_izquierdo_encendido, ControladorMotores::IZQUIERDO, INTENSIDAD_MOTOR);
-                } else if (direccion > 0) {
-                    controlarVibracion(INTERVALOS_MILISEGUNDOS, ultimo_tiempo_derecho, motor_derecho_encendido, ControladorMotores::DERECHO, INTENSIDAD_MOTOR);
-                }
+                // Usuario mal orientado → indicar hacia donde debe girar
+                float objetivo    = fmod(hs + 180.0f, 360.0f);
+                float direccion  = calcularDireccion(objetivo, hp);
+                ControladorMotores::Motor motor_destino =
+                    (direccion > 0.0f) ? ControladorMotores::DERECHO
+                                       : ControladorMotores::IZQUIERDO;
+
+                activarPatron(PatronActivo::DIRECCIONAL, motor_destino);
+
+                Serial.printf("[PAT] DIRECCIONAL %s  (angulo_frente=%.1f > umbral)\n",
+                              (motor_destino == ControladorMotores::DERECHO)
+                                  ? "DERECHO" : "IZQUIERDO",
+                              angulo_frente);
             }
-            
-            // 4. Reportar telemetría BLE al móvil cada 500ms
+
+            // 6. Reportar telemetria BLE al movil
             if (ahora - ultimoTiempoEnvioBLE >= 500UL) {
                 ultimoTiempoEnvioBLE = ahora;
-                
-                uint8_t st = 0;
-                if (orientacionOk) {
-                    st = (ComunicadorSemaforo::ultimoEstado.permitidoCruce) ? 1 : 0;
+
+                uint8_t st;
+                if (!orientacionOk) {
+                    st = 2;  // Orientacion incorrecta
+                } else if (ComunicadorSemaforo::ultimoEstado.permitidoCruce) {
+                    st = 1;  // Cruce permitido: orientado, semaforo rojo para autos (verde peaton)
                 } else {
-                    st = 2; // orientación incorrecta
+                    st = 0;  // Cruce prohibido: orientado pero semaforo verde para autos (rojo peaton)
                 }
-                
+
                 ComunicadorMovil::enviarDatos(
                     (uint16_t)ControladorBrujula::headingActual,
                     st,
                     orientacionOk,
                     ComunicadorSemaforo::ultimoEstado.tiempo,
-                    -1 // Batería no disponible
+                    -1  // Bateria no disponible
                 );
             }
             break;
         }
-        
-        case EstadoPulsera::ALERT_PANIC:
-            // Patrón de pánico: vibración intermitente ultra rápida
-            controlarVibracion(100, ultimoTiempoVibracionPanico, motorPanicoEncendido, ControladorMotores::AMBOS, INTENSIDAD_MOTOR);
-            
-            // Enviar estado de pánico (st = 3) al celular cada 500ms
-            if (ahora - ultimoTiempoEnvioBLE >= 500UL) {
-                ultimoTiempoEnvioBLE = ahora;
-                ComunicadorMovil::enviarDatos(
-                    (uint16_t)ControladorBrujula::headingActual,
-                    3, // Pánico
-                    false,
-                    0,
-                    -1
-                );
-            }
-            break;
+
     }
 }
