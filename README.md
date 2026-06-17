@@ -1,61 +1,70 @@
 # 🚦 ACPI: Asistente de Cruce Peatonal para Invidentes v2.0 👨‍🦯➡️
 
+## Descripción General
 **ACPI** es un sistema **IoT de asistencia a la movilidad** diseñado para brindar **autonomía y seguridad** a personas con discapacidad visual al cruzar calles en intersecciones semaforizadas.
 
-El sistema combina **hardware en el borde (Edge Computing)** con sensores locales en la pulsera y el semáforo, comunicación local ultrarrápida y una **aplicación móvil de telemetría** integrada con **Grafana Cloud** para el monitoreo pasivo de la seguridad de la sesión.
+El sistema combina **hardware en el borde (Edge Computing)** con sensores magnéticos e inerciales locales en una pulsera (wearable) y en un semáforo (infraestructura). Utiliza comunicación local ultrarrápida (ESP-NOW) entre nodos y telemetría por Bluetooth Low Energy (BLE) hacia una aplicación móvil integrada con **Grafana Cloud** para monitorear la seguridad de la sesión.
 
 ---
 
-## 🏗️ Arquitectura de ACPI v2.0
+## Contenido
+El repositorio principal se divide en los siguientes componentes fundamentales:
+- `/firmware/pulsera/` -> Código fuente (PlatformIO/C++) para el wearable (ESP32-C3 Super Mini).
+- `/firmware/semaforo/` -> Código fuente (PlatformIO/C++) para la baliza de infraestructura (ESP32 DevKit V1).
+- `/ACPIGPS/` -> Aplicación móvil Android nativa en Kotlin (Jetpack Compose).
+- `/docs/` -> Documentación adicional y guías de configuración de la nube.
+- `Justfile` -> Orquestador de tareas para compilación y *linting* automatizado.
 
-El flujo de información y procesamiento se realiza de la siguiente manera:
+---
 
-```
+## Explicación
+### Arquitectura y Flujo de Procesamiento
+
+El flujo de información se ejecuta de la siguiente forma:
+
+```text
 [Semáforo ESP32]  ──ESP-NOW──►  [Pulsera ESP32-C3]  ──BLE──►  [App Android]  ──HTTPS──►  [Grafana Cloud]
- QMC5883L                        QMC5883L + MPU6050              GPS + Pasos
+ QMC6308                         QMC6308 + MPU6050              GPS + Pasos
  2 LEDs simulan                  Brújula + Decisión              Registro sesiones
  semáforo                        Feedback háptico                Telemetría
- (sin WiFi/Internet)
+ (sin WiFi/Internet)             FSM de 2Hz
 ```
 
-1. **Semáforo (ESP32 DevKit V1)**: Detecta su orientación (grados) y simula el estado físico del semáforo alternando dos LEDs (Verde/Rojo) de forma automatizada mediante una FSM temporizada. Transmite su orientación y estado mediante ESP-NOW.
-2. **Pulsera (ESP32-C3 Super Mini)**: Hub central de decisiones. Lee su orientación tilt-compensada (MPU6050 + QMC5883L), determina si el usuario está alineado correctamente con la vía, y da retroalimentación háptica (vibración) acorde. Reporta datos de la sesión cada 500ms al móvil por BLE.
-3. **App Android**: Recibe datos de estado de la pulsera, los muestra en UI, rastrea los pasos y geocercas locales (alertando por notificaciones nativas Android), y reporta la telemetría agregada de la sesión al finalizar el cruce.
-4. **Grafana Cloud**: Ingesta la telemetría aplanada enviada de forma asíncrona y resiliente por la App para graficar mapas de cruces, estadísticas de pánico y tiempos de espera.
+1. **Semáforo (Infraestructura)**: Un ESP32 DevKit V1 equipado con un magnetómetro lee su orientación magnética estática y simula un ciclo de semáforo verde/rojo. Transmite su orientación (heading) y estado por ESP-NOW a 2Hz (cada 500ms).
+2. **Pulsera (Wearable)**: Actúa como el centro de cómputo en el borde. Lee su orientación tilt-compensada (acelerómetro + magnetómetro), y calcula la diferencia angular frente a la infraestructura. Si detecta que el usuario está correctamente enfrentado (`|Δθ - 180°| < 30°`), provee feedback háptico diferenciado mediante dos micromotores de vibración.
+3. **App Android**: Recibe mediante BLE los paquetes de telemetría de la pulsera, controla geocercas y envía métricas asíncronas.
+4. **Grafana Cloud**: Ingesta los datos del usuario asíncronamente para generar mapas y analíticas en tiempo real.
 
 ---
 
-## ✨ Novedades de la Versión 2.0
-- **Lógica en el Borde (Edge Computing)**: El cálculo de orientación y control de motores se realiza localmente en la pulsera, eliminando latencias y dependencias de procesamiento en el móvil.
-- **FSM en Pulsera**: Máquina de estados formal (`BOOTING`, `STANDBY_LOW_POWER`, `SENSING_CROSSING`, `ALERT_PANIC`) con soporte de **suspensión Light Sleep** en standby para maximizar la autonomía de la batería.
-- **Botón de Pánico por Hardware**: Trigger inmediato y prioritario mediante interrupciones físicas (ISR) usando el botón BOOT integrado.
-- **Sin Dependencias Firebase ni Telegram**: Reemplazados por notificaciones locales nativas de Android y envío directo a Grafana Cloud, reduciendo el consumo de batería y datos móviles.
-- **Resiliencia en Telemetría**: Ring-buffer en memoria en la app Android para encolar métricas y reintentar el envío cuando regrese la conexión.
+## Dependencias
+- **Hardware**: 
+  - ESP32-C3 Super Mini, ESP32 DevKit V1.
+  - MPU6050 (Acelerómetro/Giroscopio) y QMC6308 (Magnetómetro I2C).
+  - Micro-motores de vibración 3V tipo moneda.
+- **Software**: 
+  - [PlatformIO](https://platformio.org/) para el desarrollo y flasheo C++ del firmware.
+  - [Just](https://github.com/casey/just) como *command runner* (opcional pero recomendado).
+  - Android Studio para compilar la App.
 
 ---
 
-## ⚙️ Requisitos de Hardware
-- 1 × **ESP32 DevKit V1** (Semáforo)
-- 1 × **ESP32-C3 Super Mini** (Pulsera)
-- 1 × **Magnetómetro QMC5883L** (Semáforo)
-- 1 × **Giroscopio/Acelerómetro MPU6050** (Pulsera)
-- 1 × **Magnetómetro QMC5883L** (Pulsera)
-- 2 × **Motores de vibración** (Pulsera)
-- 2 × **LEDs de simulación** (Rojo/Verde para el Semáforo)
-- **Smartphone Android** con Bluetooth LE, GPS y sensor de pasos.
+## Ejemplo de Uso
 
----
+Para compilar e inyectar el código en los microcontroladores usando PlatformIO, primero asegúrate de tener instaladas las dependencias.
 
-## 📂 Estructura del Código
+Con **Just** (Recomendado):
+```bash
+# Compilar todo el ecosistema firmware
+just compile-all
 
-- [/firmware/pulsera/](file:///c:/Users/sntav/programacion/ACPI/firmware/pulsera/) -> Firmware para el ESP32-C3 Super Mini de la pulsera.
-- [/firmware/semaforo/](file:///c:/Users/sntav/programacion/ACPI/firmware/semaforo/) -> Firmware para el ESP32 DevKit V1 del semáforo.
-- [/ACPIGPS/](file:///c:/Users/sntav/programacion/ACPI/ACPIGPS/) -> Aplicación móvil nativa en Kotlin/Jetpack Compose.
-- [/docs/](file:///c:/Users/sntav/programacion/ACPI/docs/) -> Guías de configuración de Grafana Cloud y especificación del protocolo BLE.
+# Flashear el semáforo y la pulsera (asegúrate de conectarlos vía USB)
+just flash-semaforo
+just flash-pulsera
+```
 
----
-
-## 🧑‍💻 Autores
-Proyecto desarrollado por:  
-**Dilan Osorio, Andrea Cárdenas y Nicolás Rodríguez**  
-📚 Asesoría: *Johanna Carolina Sánchez Ramírez*
+Sin **Just** (Usando PlatformIO CLI directo):
+```bash
+pio run -d firmware/pulsera --target upload
+pio run -d firmware/semaforo --target upload
+```
