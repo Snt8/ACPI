@@ -40,6 +40,13 @@ class MainActivity : AppCompatActivity(), CompassFragment.CompassListener, BLEDe
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString("grafana_url", BuildConfig.GRAFANA_URL)
+            .putString("grafana_token", BuildConfig.GRAFANA_TOKEN)
+            .putString("grafana_user", BuildConfig.GRAFANA_USER)
+            .apply()
+
         val viewPager: androidx.viewpager2.widget.ViewPager2 = findViewById(R.id.view_pager)
         viewPager.adapter = ViewPagerAdapter(this)
 

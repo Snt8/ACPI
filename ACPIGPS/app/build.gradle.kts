@@ -1,8 +1,18 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
+
+// ── Leer local.properties AQUÍ, en el scope raíz del script ──────────────
+val localProps = Properties()
+val localFile = rootProject.file("local.properties")
+if (localFile.exists()) {
+    localProps.load(localFile.inputStream())
+}
+// ─────────────────────────────────────────────────────────────────────────
 
 android {
     namespace = "com.example.acpigps"
@@ -16,6 +26,23 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Inyección de credenciales Grafana
+        buildConfigField(
+            "String",
+            "GRAFANA_URL",
+            "\"${localProps.getProperty("GRAFANA_URL", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "GRAFANA_TOKEN",
+            "\"${localProps.getProperty("GRAFANA_TOKEN", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "GRAFANA_USER",
+            "\"${localProps.getProperty("GRAFANA_USER", "")}\""
+        )
     }
 
     buildTypes {
@@ -36,11 +63,11 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

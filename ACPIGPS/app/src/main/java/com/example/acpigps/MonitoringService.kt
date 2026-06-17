@@ -23,6 +23,7 @@ import com.google.android.gms.location.*
 import org.json.JSONObject
 import java.util.UUID
 import kotlin.math.roundToInt
+import android.os.Handler
 
 class MonitoringService : Service(), ConnectionCallback {
 
@@ -59,6 +60,8 @@ class MonitoringService : Service(), ConnectionCallback {
 
     // --- Variables de Estado ---
     private var isServiceRunning = false
+    private val reconnectHandler = Handler(Looper.getMainLooper())
+    private val RECONNECT_DELAY_MS = 10_000L
     private var stepCount = 0
     private var homeLocation: Location? = null
     private val safeRadius = 50.0
@@ -105,7 +108,7 @@ class MonitoringService : Service(), ConnectionCallback {
 
         stepCount = 0
         directionDetector.startDetection()
-        bleManager.startScan()
+        bleManager.startScan(retry = true)
         fusedLocationClient.requestLocationUpdates(
             LocationRequest.create().apply {
                 priority = LocationRequest.PRIORITY_HIGH_ACCURACY
@@ -119,8 +122,10 @@ class MonitoringService : Service(), ConnectionCallback {
 
     private fun stopMonitoring() {
         if (!isServiceRunning) return
+        isServiceRunning = false
+        reconnectHandler.removeCallbacksAndMessages(null)
         addLog("Servicio de monitoreo detenido.")
-        
+
         // Detener sensores y BLE
         directionDetector.stopDetection()
         bleManager.disconnect()
@@ -129,12 +134,10 @@ class MonitoringService : Service(), ConnectionCallback {
         // Registrar ubicación final y subir telemetría
         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
             sessionLogger.endSession(stepCount, location)
-            isServiceRunning = false
             stopForeground(true)
             stopSelf()
         }.addOnFailureListener {
             sessionLogger.endSession(stepCount, null)
-            isServiceRunning = false
             stopForeground(true)
             stopSelf()
         }
@@ -233,7 +236,16 @@ class MonitoringService : Service(), ConnectionCallback {
     override fun onConnectionStateChanged(isConnected: Boolean, deviceName: String?) {
         val currentState = _bleConnectionState.value ?: BleConnectionState()
         _bleConnectionState.postValue(currentState.copy(isConnected = isConnected, deviceName = deviceName, isScanning = false))
-        updateNotification(if (isConnected) "Conectado a ${deviceName ?: "dispositivo"}" else "Buscando dispositivo...")
+        if (isConnected) {
+            reconnectHandler.removeCallbacksAndMessages(null)
+            updateNotification("Conectado a ${deviceName ?: "dispositivo"}")
+        } else {
+            updateNotification("Buscando dispositivo...")
+            if (isServiceRunning) {
+                addLog("Conexión perdida. Reintentando en ${RECONNECT_DELAY_MS / 1000}s...")
+                reconnectHandler.postDelayed({ bleManager.startScan(retry = true) }, RECONNECT_DELAY_MS)
+            }
+        }
     }
 
     override fun onScanningStateChanged(isScanning: Boolean) {

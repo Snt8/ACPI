@@ -16,6 +16,7 @@ class SessionLogger(private val context: Context, private val reporter: GrafanaR
     private var panicCount = 0
     private var stepsAtStart = 0
     private var allowedCruce = false
+    private var wasDisaligned = false
 
     fun startSession(currentSteps: Int) {
         sessionId = UUID.randomUUID().toString()
@@ -37,9 +38,14 @@ class SessionLogger(private val context: Context, private val reporter: GrafanaR
             panicCount++
         }
 
-        // Verificar si se alcanzó estado de cruce exitoso
+        // st=1: cruce permitido (orientado + semáforo rojo para autos = verde peatón)
         if (data.st == 1) {
             allowedCruce = true
+        }
+
+        // st=2: orientación incorrecta
+        if (data.st == 2) {
+            wasDisaligned = true
         }
 
         // Lógica de cronómetro para tiempo de espera
@@ -81,7 +87,12 @@ class SessionLogger(private val context: Context, private val reporter: GrafanaR
         reporter.sendSessionTelemetry(
             deviceId = "ACPI_Pulsera",
             sessionId = sessionId!!,
-            status = if (panicCount > 0) 3 else (if (allowedCruce) 1 else 0),
+            status = when {
+                panicCount > 0  -> 3
+                wasDisaligned   -> 2
+                allowedCruce    -> 1
+                else            -> 0
+            },
             metrics = metrics
         )
 

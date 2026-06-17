@@ -44,18 +44,21 @@ class BLEManager(private val context: Context) {
 
     companion object {
         private const val SCAN_PERIOD: Long = 15000 // 15 segundos de escaneo
+        private const val SCAN_RETRY_DELAY: Long = 10000 // 10s antes de reintentar
         private const val DEVICE_NAME = "ACPI_Pulsera" // Nombre del dispositivo BLE
     }
+
+    private var autoRetry = false
 
     @SuppressLint("MissingPermission")
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             val device = result.device
-            if (device.name == DEVICE_NAME) {
-                connectionCallback?.logMessage("Dispositivo '$DEVICE_NAME' encontrado.")
-                stopScan()
-                device.connectGatt(context, false, gattCallback)
-            }
+            val name = device.name ?: return // ignorar dispositivos sin nombre
+            if (name != DEVICE_NAME) return
+            connectionCallback?.logMessage("Dispositivo '$name' encontrado.")
+            stopScan()
+            device.connectGatt(context, false, gattCallback)
         }
 
         override fun onScanFailed(errorCode: Int) {
@@ -72,9 +75,9 @@ class BLEManager(private val context: Context) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     bluetoothGatt = gatt
-                    connectionCallback?.logMessage("Conectado a $deviceName. Descubriendo servicios...")
+                    connectionCallback?.logMessage("Conectado a $deviceName. Negociando MTU...")
                     connectionCallback?.onConnectionStateChanged(true, deviceName)
-                    gatt.discoverServices()
+                    gatt.requestMtu(512)
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     connectionCallback?.logMessage("Desconectado de $deviceName.")
                     connectionCallback?.onConnectionStateChanged(false, null)
@@ -85,6 +88,12 @@ class BLEManager(private val context: Context) {
                 connectionCallback?.onConnectionStateChanged(false, null)
                 disconnect()
             }
+        }
+
+        @SuppressLint("MissingPermission")
+        override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
+            connectionCallback?.logMessage("MTU negociado: $mtu bytes. Descubriendo servicios...")
+            gatt.discoverServices()
         }
 
         @SuppressLint("MissingPermission")
@@ -118,26 +127,40 @@ class BLEManager(private val context: Context) {
             }
         }
 
-        @Deprecated("Deprecated in Java")
+        // Android 13+ llama solo el nuevo método; versiones anteriores llaman solo el deprecated.
+        // Implementar ambos para cubrir todo el rango de versiones (minSdk=24).
+        override fun onCharacteristicChanged(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            value: ByteArray
+        ) {
+            if (characteristic.uuid == BLEConstants.TX_CHAR_UUID) {
+                parsearYNotificar(value)
+            }
+        }
+
+        @Deprecated("Usado en Android < 13")
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
             if (characteristic.uuid == BLEConstants.TX_CHAR_UUID) {
-                val value = characteristic.value ?: return
-                val message = String(value, Charsets.UTF_8)
-                connectionCallback?.logMessage("Notificación recibida: \"$message\"")
+                parsearYNotificar(characteristic.value ?: return)
+            }
+        }
 
-                try {
-                    val json = JSONObject(message)
-                    val data = PulseraData(
-                        hd = json.getInt("hd"),
-                        st = json.getInt("st"),
-                        ok = json.getBoolean("ok"),
-                        tr = json.getInt("tr"),
-                        bt = json.getInt("bt")
-                    )
-                    connectionCallback?.onPulseraDataReceived(data)
-                } catch (e: Exception) {
-                    connectionCallback?.logMessage("Error al parsear el mensaje JSON del ESP32: ${e.message}")
-                }
+        private fun parsearYNotificar(value: ByteArray) {
+            val message = String(value, Charsets.UTF_8)
+            connectionCallback?.logMessage("Notificación recibida: \"$message\"")
+            try {
+                val json = JSONObject(message)
+                val data = PulseraData(
+                    hd = json.getInt("hd"),
+                    st = json.getInt("st"),
+                    ok = json.getBoolean("ok"),
+                    tr = json.getInt("tr"),
+                    bt = json.getInt("bt")
+                )
+                connectionCallback?.onPulseraDataReceived(data)
+            } catch (e: Exception) {
+                connectionCallback?.logMessage("Error al parsear JSON del ESP32: ${e.message}")
             }
         }
 
@@ -154,25 +177,31 @@ class BLEManager(private val context: Context) {
     }
 
     @SuppressLint("MissingPermission")
-    fun startScan() {
+    fun startScan(retry: Boolean = false) {
+        autoRetry = retry
         if (isScanning) return
         if (!bluetoothAdapter.isEnabled) {
             connectionCallback?.logMessage("Error: Bluetooth no está activado.")
             return
         }
 
-        val scanFilter = ScanFilter.Builder().setDeviceName(DEVICE_NAME).build()
+        // Sin filtro por UUID: NimBLE pone el SERVICE_UUID en el scan response, no en el
+        // advertising packet, y el filtro de Android solo lee el advertising packet.
+        // Filtramos por nombre en onScanResult en su lugar.
         val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
 
         handler.postDelayed({
             if (isScanning) {
-                connectionCallback?.logMessage("Tiempo de escaneo agotado. Dispositivo no encontrado.")
+                connectionCallback?.logMessage("Tiempo de escaneo agotado. Reintentando en ${SCAN_RETRY_DELAY / 1000}s...")
                 stopScan()
+                if (autoRetry) {
+                    handler.postDelayed({ startScan() }, SCAN_RETRY_DELAY)
+                }
             }
         }, SCAN_PERIOD)
 
         isScanning = true
-        scanner.startScan(listOf(scanFilter), settings, scanCallback)
+        scanner.startScan(null, settings, scanCallback)
         connectionCallback?.onScanningStateChanged(true)
         connectionCallback?.logMessage("Escaneando para '$DEVICE_NAME'...")
     }
