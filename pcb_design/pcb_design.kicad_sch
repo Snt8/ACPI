@@ -7746,7 +7746,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "Conn_01x02_Pin"
+		(property "Value" "JST_PH_S2B-PH-K"
 			(at 257.81 118.7449 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7757,7 +7757,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
+		(property "Footprint" "Connector_JST:JST_PH_S2B-PH-K_1x02_P2.00mm_Horizontal"
 			(at 254 118.11 0)
 			(hide yes)
 			(show_name no)
@@ -8488,7 +8488,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "Conn_01x02_Pin"
+		(property "Value" "JST_PH_S2B-PH-K"
 			(at 257.81 90.8049 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8499,7 +8499,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
+		(property "Footprint" "Connector_JST:JST_PH_S2B-PH-K_1x02_P2.00mm_Horizontal"
 			(at 254 90.17 0)
 			(hide yes)
 			(show_name no)
@@ -9485,7 +9485,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "Conn_01x02_Pin"
+		(property "Value" "JST_PH_S2B-PH-K"
 			(at 39.37 23.4949 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9496,7 +9496,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Connector_JST:JST_PH_S2B-PH-K_1x02_P2.00mm_Horizontal"
 			(at 38.1 21.59 0)
 			(hide yes)
 			(show_name no)
