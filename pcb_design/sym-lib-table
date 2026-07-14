@@ -1,0 +1,4 @@
+(sym_lib_table
+	(version 7)
+	(lib (name "ACPI_QMC6308") (type "KiCad") (uri "${KIPRJMOD}/libs/ACPI_QMC6308.kicad_sym") (options "") (descr ""))
+)
