@@ -1,4 +1,4 @@
-# 🚦 ACPI: Asistente de Cruce Peatonal para Invidentes v2.0 👨‍🦯➡️
+# 🚦 ACPI: Asistente de Cruce Peatonal para Invidentes v3.0 👨‍🦯➡️
 
 ## Descripción General
 **ACPI** es un sistema **IoT de asistencia a la movilidad** diseñado para brindar **autonomía y seguridad** a personas con discapacidad visual al cruzar calles en intersecciones semaforizadas.
