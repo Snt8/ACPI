@@ -131,7 +131,7 @@
 						(type none)
 					)
 				)
-				(pin unspecified line
+				(pin power_in line
 					(at -8.89 1.27 0)
 					(length 2.54)
 					(name "VSS"
@@ -149,7 +149,7 @@
 						)
 					)
 				)
-				(pin unspecified line
+				(pin bidirectional line
 					(at -8.89 -1.27 0)
 					(length 2.54)
 					(name "SCL"
@@ -167,7 +167,7 @@
 						)
 					)
 				)
-				(pin unspecified line
+				(pin power_in line
 					(at 8.89 -1.27 180)
 					(length 2.54)
 					(name "VDD"
@@ -185,7 +185,7 @@
 						)
 					)
 				)
-				(pin unspecified line
+				(pin bidirectional line
 					(at 8.89 1.27 180)
 					(length 2.54)
 					(name "SDA"
@@ -6604,6 +6604,17 @@
 				)
 			)
 		)
+		(property "LCSC Part" "C24112"
+			(at 130.81 102.87 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "4"
 			(uuid "04cac2a4-a654-4f49-86d9-59aba198176a")
 		)
@@ -7315,6 +7326,17 @@
 				)
 			)
 		)
+		(property "LCSC Part" "C2934560"
+			(at 189.23 126.365 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "17"
 			(uuid "bc85062d-6d53-4121-9c50-114b18cee6a9")
 		)
@@ -7404,7 +7426,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "1N4148"
+		(property "Value" "1N4148W"
 			(at 245.11 80.0099 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7415,7 +7437,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal"
+		(property "Footprint" "Diode_SMD:D_SOD-123"
 			(at 242.57 78.74 0)
 			(hide yes)
 			(show_name no)
@@ -7437,7 +7459,18 @@
 				)
 			)
 		)
-		(property "Description" "100V 0.15A standard switching diode, DO-35"
+		(property "Description" "100V 0.15A standard switching diode, SOD-123 SMD"
+			(at 242.57 78.74 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C81598"
 			(at 242.57 78.74 0)
 			(hide yes)
 			(show_name no)
@@ -7790,6 +7823,17 @@
 				)
 			)
 		)
+		(property "LCSC Part" "C265016"
+			(at 254 118.11 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "95022088-30d2-4bc8-8cce-11db0cfe1c16")
 		)
@@ -7860,6 +7904,17 @@
 			)
 		)
 		(property "Description" "600mA low dropout linear regulator, with enable pin, 3.8V-6V input voltage range, 3.3V fixed positive output, SOT-23-5"
+			(at 125.73 29.21 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C51118"
 			(at 125.73 29.21 0)
 			(hide yes)
 			(show_name no)
@@ -8187,6 +8242,17 @@
 			)
 		)
 		(property "Description" "Single cell, Li-Ion/Li-Po charge management controller, 4.20V, Tri-State Status Output, in SOT23-5 package"
+			(at 27.94 106.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C424093"
 			(at 27.94 106.68 0)
 			(hide yes)
 			(show_name no)
@@ -8532,6 +8598,17 @@
 				)
 			)
 		)
+		(property "LCSC Part" "C265016"
+			(at 254 90.17 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "69994e33-af84-48a8-a9f5-f418d4f2d9a2")
 		)
@@ -8604,6 +8681,17 @@
 			)
 		)
 		(property "Description" "2-Bit Bidirectional Voltage-Level Shifter for Open-Drain and Push-Pull Application, VSSOP-8"
+			(at 72.39 163.83 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C53434"
 			(at 72.39 163.83 0)
 			(hide yes)
 			(show_name no)
@@ -9191,6 +9279,17 @@
 				)
 			)
 		)
+		(property "LCSC Part" "C176944"
+			(at 73.66 123.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "4"
 			(uuid "da179f21-d130-400c-81f9-978f1f984174")
 		)
@@ -9270,6 +9369,17 @@
 			)
 		)
 		(property "Description" "Switch, single pole double throw"
+			(at 138.43 57.15 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C431540"
 			(at 138.43 57.15 0)
 			(hide yes)
 			(show_name no)
@@ -9519,6 +9629,17 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x02, script generated"
+			(at 38.1 21.59 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C265016"
 			(at 38.1 21.59 0)
 			(hide yes)
 			(show_name no)
@@ -9844,7 +9965,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "1N4148"
+		(property "Value" "1N4148W"
 			(at 245.11 106.6799 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9855,7 +9976,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal"
+		(property "Footprint" "Diode_SMD:D_SOD-123"
 			(at 242.57 105.41 0)
 			(hide yes)
 			(show_name no)
@@ -9877,7 +9998,18 @@
 				)
 			)
 		)
-		(property "Description" "100V 0.15A standard switching diode, DO-35"
+		(property "Description" "100V 0.15A standard switching diode, SOD-123 SMD"
+			(at 242.57 105.41 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C81598"
 			(at 242.57 105.41 0)
 			(hide yes)
 			(show_name no)
@@ -10476,6 +10608,17 @@
 				)
 			)
 		)
+		(property "LCSC Part" "C20526"
+			(at 224.79 83.82 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(property "Sim.Device" "NPN"
 			(at 224.79 83.82 0)
 			(hide yes)
@@ -10679,6 +10822,17 @@
 				)
 			)
 		)
+		(property "LCSC Part" "C20526"
+			(at 224.79 106.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(property "Sim.Device" "NPN"
 			(at 224.79 106.68 0)
 			(hide yes)
@@ -10787,6 +10941,17 @@
 			)
 		)
 		(property "Description" "USB 2.0-only 16P Type-C Receptacle connector"
+			(at 58.42 86.36 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C165948"
 			(at 58.42 86.36 0)
 			(hide yes)
 			(show_name no)
