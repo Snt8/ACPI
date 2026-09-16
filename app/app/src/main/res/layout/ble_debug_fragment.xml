@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#111827"
+    android:orientation="vertical"
+    android:padding="24dp"
+    tools:context=".BLEDebugFragment">
+
+    <!-- Título y Status -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Consola de Depuración"
+            android:textColor="@android:color/white"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <View
+            android:id="@+id/status_indicator_debug"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/status_indicator_disconnected" />
+
+        <TextView
+            android:id="@+id/ble_status_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#9CA3AF"
+            android:textSize="16sp"
+            tools:text="Desconectado" />
+    </LinearLayout>
+
+    <!-- Botones de Acción -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btn_send_test"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/background_card"
+            android:text="Enviar Test"
+            android:textAllCaps="false"
+            android:textColor="#9CA3AF" />
+
+        <Button
+            android:id="@+id/btn_disconnect"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/background_card"
+            android:text="Desconectar"
+            android:textAllCaps="false"
+            android:textColor="#9CA3AF" />
+    </LinearLayout>
+
+    <!-- Consola de Logs -->
+    <TextView
+        android:id="@+id/ble_log_text"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:layout_weight="1"
+        android:background="@drawable/background_card"
+        android:fontFamily="monospace"
+        android:padding="12dp"
+        android:scrollbars="vertical"
+        android:textColor="#A5B4FC"
+        android:textSize="12sp"
+        tools:text="12:30:01 > Servicio iniciado..." />
+
+</LinearLayout>
