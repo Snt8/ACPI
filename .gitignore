@@ -38,3 +38,9 @@ Thumbs.db
 *.log
 *.tmp
 *.bak
+# KiCad: historial local automatico, bloqueos y respaldos
+.history/
+~*.lck
+*-backups/
+_autosave-*
+fp-info-cache
