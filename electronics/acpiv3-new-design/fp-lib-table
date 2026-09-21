@@ -1,0 +1,4 @@
+(fp_lib_table
+	(version 7)
+	(lib (name "acpi-modulos")(type "KiCad")(uri "${KIPRJMOD}/components/acpi-modulos.pretty")(options "")(descr "Huellas de los modulos comerciales del proyecto ACPI v3"))
+)

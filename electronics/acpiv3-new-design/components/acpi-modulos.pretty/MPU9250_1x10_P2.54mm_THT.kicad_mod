@@ -1,0 +1,216 @@
+(footprint "MPU9250_1x10_P2.54mm_THT"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "Modulo IMU MPU-9250 / GY-9250, cabecera 1x10 paso 2.54 mm. Orden de pines tomado del simbolo del proyecto. Contorno 25 x 15 mm segun especificacion publicada del GY-9250. La distancia de la fila de pines al borde (2.54 mm) sigue siendo estimada: verificar contra la placa fisica.")
+	(tags "MPU9250 GY-9250 IMU modulo THT 2.54")
+	(attr through_hole)
+	(property "Reference" "REF**"
+		(at 0 -4.5 0)
+		(layer "F.SilkS")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "MPU9250_1x10_P2.54mm_THT"
+		(at 0 14.3 0)
+		(layer "F.Fab")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(fp_line
+		(start -12.50 -2.54)
+		(end 12.50 -2.54)
+		(stroke
+			(width 0.12)
+			(type default)
+		)
+		(layer "F.SilkS")
+	)
+	(fp_line
+		(start 12.50 -2.54)
+		(end 12.50 12.46)
+		(stroke
+			(width 0.12)
+			(type default)
+		)
+		(layer "F.SilkS")
+	)
+	(fp_line
+		(start 12.50 12.46)
+		(end -12.50 12.46)
+		(stroke
+			(width 0.12)
+			(type default)
+		)
+		(layer "F.SilkS")
+	)
+	(fp_line
+		(start -12.50 12.46)
+		(end -12.50 -2.54)
+		(stroke
+			(width 0.12)
+			(type default)
+		)
+		(layer "F.SilkS")
+	)
+	(fp_line
+		(start -12.50 -2.54)
+		(end 12.50 -2.54)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(layer "F.Fab")
+	)
+	(fp_line
+		(start 12.50 -2.54)
+		(end 12.50 12.46)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(layer "F.Fab")
+	)
+	(fp_line
+		(start 12.50 12.46)
+		(end -12.50 12.46)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(layer "F.Fab")
+	)
+	(fp_line
+		(start -12.50 12.46)
+		(end -12.50 -2.54)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(layer "F.Fab")
+	)
+	(fp_line
+		(start -12.75 -2.79)
+		(end 12.75 -2.79)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(layer "F.CrtYd")
+	)
+	(fp_line
+		(start 12.75 -2.79)
+		(end 12.75 12.71)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(layer "F.CrtYd")
+	)
+	(fp_line
+		(start 12.75 12.71)
+		(end -12.75 12.71)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(layer "F.CrtYd")
+	)
+	(fp_line
+		(start -12.75 12.71)
+		(end -12.75 -2.79)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(layer "F.CrtYd")
+	)
+	(fp_line
+		(start -12.50 -2.54)
+		(end -11.43 -2.54)
+		(stroke
+			(width 0.12)
+			(type default)
+		)
+		(layer "F.SilkS")
+	)
+	(pad "1" thru_hole rect
+		(at -11.43 0)
+		(size 1.7 1.7)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+	)
+	(pad "2" thru_hole circle
+		(at -8.89 0)
+		(size 1.7 1.7)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+	)
+	(pad "3" thru_hole circle
+		(at -6.35 0)
+		(size 1.7 1.7)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+	)
+	(pad "4" thru_hole circle
+		(at -3.81 0)
+		(size 1.7 1.7)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+	)
+	(pad "5" thru_hole circle
+		(at -1.27 0)
+		(size 1.7 1.7)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+	)
+	(pad "6" thru_hole circle
+		(at 1.27 0)
+		(size 1.7 1.7)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+	)
+	(pad "7" thru_hole circle
+		(at 3.81 0)
+		(size 1.7 1.7)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+	)
+	(pad "8" thru_hole circle
+		(at 6.35 0)
+		(size 1.7 1.7)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+	)
+	(pad "9" thru_hole circle
+		(at 8.89 0)
+		(size 1.7 1.7)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+	)
+	(pad "10" thru_hole circle
+		(at 11.43 0)
+		(size 1.7 1.7)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+	)
+)

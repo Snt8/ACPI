@@ -1,0 +1,4 @@
+(sym_lib_table
+	(version 7)
+	(lib (name "acpi-modulos")(type "KiCad")(uri "${KIPRJMOD}/components/acpi-modulos.kicad_sym")(options "")(descr "Modulos comerciales del proyecto ACPI v3"))
+)

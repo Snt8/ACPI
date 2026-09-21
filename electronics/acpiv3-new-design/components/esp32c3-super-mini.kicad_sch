@@ -1,0 +1,1068 @@
+(kicad_sch
+	(version 20260306)
+	(generator "eeschema")
+	(generator_version "10.0")
+	(uuid "e2f11091-9b0b-45f4-8138-753c02b1f7c4")
+	(paper "User" 292.1 205.1558)
+	(title_block
+		(date "2026-09-20")
+	)
+	(lib_symbols
+		(symbol "esp32c3-super-mini-altium-import:root_0_ESP32C3-SuperMini_"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_fp_filters" "*COMM-SMD_16P-L22.5-W18.0-P2.54-TL*"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "root_0_ESP32C3-SuperMini__1_0"
+				(rectangle
+					(start -11.43 11.43)
+					(end 11.43 -11.43)
+					(stroke
+						(width 0)
+						(type solid)
+						(color 160 0 0 1)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(circle
+					(center 10.16 10.16)
+					(radius 0.381)
+					(stroke
+						(width 0)
+						(type solid)
+						(color 160 0 0 1)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(pin passive line
+					(at 8.89 13.97 270)
+					(length 2.54)
+					(name "GPIO5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 6.35 13.97 270)
+					(length 2.54)
+					(name "GPIO6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 3.81 13.97 270)
+					(length 2.54)
+					(name "GPIO7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 1.27 13.97 270)
+					(length 2.54)
+					(name "GPIO8"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -1.27 13.97 270)
+					(length 2.54)
+					(name "GPIO9"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -3.81 13.97 270)
+					(length 2.54)
+					(name "GPIO10"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -6.35 13.97 270)
+					(length 2.54)
+					(name "GPIO20"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -8.89 13.97 270)
+					(length 2.54)
+					(name "GPIO21"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "8"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -8.89 -13.97 90)
+					(length 2.54)
+					(name "GPIO0"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "9"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -6.35 -13.97 90)
+					(length 2.54)
+					(name "GPIO1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "10"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -3.81 -13.97 90)
+					(length 2.54)
+					(name "GPIO2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "11"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -1.27 -13.97 90)
+					(length 2.54)
+					(name "GPIO3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "12"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 1.27 -13.97 90)
+					(length 2.54)
+					(name "GPIO4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "13"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 3.81 -13.97 90)
+					(length 2.54)
+					(name "3V3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "14"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 6.35 -13.97 90)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "15"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 8.89 -13.97 90)
+					(length 2.54)
+					(name "5V"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "16"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+	)
+	(text "Sheet_3"
+		(exclude_from_sim no)
+		(at 192.557 188.6708 0)
+		(effects
+			(font
+				(size 1.778 1.778)
+			)
+			(justify left bottom)
+		)
+		(uuid "18fad0c3-9d46-4aeb-9b89-1e70b4b0db88")
+	)
+	(text "REV:"
+		(exclude_from_sim no)
+		(at 270.535 188.8238 0)
+		(effects
+			(font
+				(size 1.397 1.397)
+			)
+			(justify left bottom)
+		)
+		(uuid "4093ee9b-60dc-46fc-9307-27a9c714b095")
+	)
+	(text "Drawn By:"
+		(exclude_from_sim no)
+		(at 239.801 201.2698 0)
+		(effects
+			(font
+				(size 1.397 1.397)
+			)
+			(justify left bottom)
+		)
+		(uuid "471a9df3-e8ed-4970-b987-fdcb4993abf3")
+	)
+	(text "Your Company"
+		(exclude_from_sim no)
+		(at 221.412 195.7328 0)
+		(effects
+			(font
+				(size 1.651 1.651)
+			)
+			(justify left bottom)
+		)
+		(uuid "5dbdba08-ba4b-4673-b2f6-c57a479d0981")
+	)
+	(text "Company:"
+		(exclude_from_sim no)
+		(at 204.495 195.6818 0)
+		(effects
+			(font
+				(size 1.397 1.397)
+			)
+			(justify left bottom)
+		)
+		(uuid "60600b7b-5b83-4bc5-8c5e-c2ca01aae148")
+	)
+	(text "Date:"
+		(exclude_from_sim no)
+		(at 204.495 201.2188 0)
+		(effects
+			(font
+				(size 1.397 1.397)
+			)
+			(justify left bottom)
+		)
+		(uuid "73a5b6c9-5e97-441b-86e0-c87d20f8379a")
+	)
+	(text "Sheet:"
+		(exclude_from_sim no)
+		(at 270.281 196.1388 0)
+		(effects
+			(font
+				(size 1.397 1.397)
+			)
+			(justify left bottom)
+		)
+		(uuid "7a6d2199-9d4b-4e0c-a304-e337d4441ea3")
+	)
+	(text "2026-09-20"
+		(exclude_from_sim no)
+		(at 216.433 201.3458 0)
+		(effects
+			(font
+				(size 1.651 1.651)
+			)
+			(justify left bottom)
+		)
+		(uuid "8a3ee14d-16df-4a36-a8b6-cc07aa0f343e")
+	)
+	(text "1.0"
+		(exclude_from_sim no)
+		(at 280.187 188.8238 0)
+		(effects
+			(font
+				(size 1.651 1.651)
+			)
+			(justify left bottom)
+		)
+		(uuid "91155034-4076-4160-8b5d-0f6240628765")
+	)
+	(text "TITLE:"
+		(exclude_from_sim no)
+		(at 177.927 185.4708 0)
+		(effects
+			(font
+				(size 1.397 1.397)
+			)
+			(justify left bottom)
+		)
+		(uuid "bb2be488-0c32-4f9d-b7ac-b7986548d155")
+	)
+	(text "sant85082"
+		(exclude_from_sim no)
+		(at 256.311 201.2698 0)
+		(effects
+			(font
+				(size 1.651 1.651)
+			)
+			(justify left bottom)
+		)
+		(uuid "e3fd12c4-6ff6-4b64-b861-fb913217e293")
+	)
+	(text "1/1"
+		(exclude_from_sim no)
+		(at 281.711 196.2658 0)
+		(effects
+			(font
+				(size 1.651 1.651)
+			)
+			(justify left bottom)
+		)
+		(uuid "f923fc46-6f8b-494a-9b42-de5e858a3291")
+	)
+	(polyline
+		(pts
+			(xy 203.225 192.1258) (xy 203.225 202.2858)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "035d922b-eb6b-4b23-8a7b-3725c0b75402")
+	)
+	(polyline
+		(pts
+			(xy 201.803 2.8448) (xy 201.803 0.3048)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "0dfba52e-73e9-477d-84e6-7bfff6c4254c")
+	)
+	(polyline
+		(pts
+			(xy 176.682 192.1258) (xy 289.331 192.1258)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "15a729af-a322-4687-a9e3-b98ceef36476")
+	)
+	(polyline
+		(pts
+			(xy 289.433 152.1968) (xy 291.973 152.1968)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "56f14c28-58ed-48be-9382-aadd6edc4479")
+	)
+	(polyline
+		(pts
+			(xy 289.433 52.6288) (xy 291.973 52.6288)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "5a24f64b-5bbb-4c9b-a2e9-c60d22f1cc52")
+	)
+	(polyline
+		(pts
+			(xy 102.235 2.8448) (xy 102.235 0.3048)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "6634757b-96d4-438d-b487-317257473813")
+	)
+	(polyline
+		(pts
+			(xy 102.235 202.4888) (xy 102.235 205.0288)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "720a4f82-e6db-43d1-a39b-8662334027e4")
+	)
+	(polyline
+		(pts
+			(xy 269.265 182.1938) (xy 269.265 192.1258)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "7d07bc82-4c77-494b-8cbf-8b5e682602ee")
+	)
+	(polyline
+		(pts
+			(xy 289.433 102.4128) (xy 291.973 102.4128)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "8f9674a0-f683-475a-a0b4-d41ce395082c")
+	)
+	(polyline
+		(pts
+			(xy 269.265 192.1258) (xy 269.265 197.2058)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "90f89f37-2e73-464f-90be-82f9139660d9")
+	)
+	(polyline
+		(pts
+			(xy 52.451 2.8448) (xy 52.451 0.3048)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "92ee50a6-319d-4b81-8741-38582796cfbf")
+	)
+	(polyline
+		(pts
+			(xy 201.803 202.4888) (xy 201.803 205.0288)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "9754e655-54aa-43eb-8b11-b9b776c0f377")
+	)
+	(polyline
+		(pts
+			(xy 52.451 202.4888) (xy 52.451 205.0288)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "bd1d0a58-ce2f-41f0-b145-fa3216b63eee")
+	)
+	(polyline
+		(pts
+			(xy 289.433 201.9808) (xy 291.973 201.9808)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "cb45ae7a-c736-4e6d-bb9c-03836478e567")
+	)
+	(polyline
+		(pts
+			(xy 251.587 202.4888) (xy 251.587 205.0288)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "cbb9ebce-ec60-4490-b7bf-438cb5e8fed9")
+	)
+	(polyline
+		(pts
+			(xy 251.587 2.8448) (xy 251.587 0.3048)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "d87a4025-f9f4-41f4-9068-ebd987dbbc1e")
+	)
+	(polyline
+		(pts
+			(xy 152.019 2.8448) (xy 152.019 0.3048)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "dbba47ef-28d6-427a-bd39-9d45aee69c4d")
+	)
+	(polyline
+		(pts
+			(xy 2.667 102.4128) (xy 0.127 102.4128)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "ddce98f7-46b8-4ede-9205-9cebd6bc0548")
+	)
+	(polyline
+		(pts
+			(xy 2.667 52.6288) (xy 0.127 52.6288)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "e0fb0e64-141d-4a3f-9c3e-90ab6b42350d")
+	)
+	(polyline
+		(pts
+			(xy 2.667 152.1968) (xy 0.127 152.1968)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "ea236920-2817-42f6-82c6-01afd042acad")
+	)
+	(polyline
+		(pts
+			(xy 203.225 197.2058) (xy 289.331 197.2058)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "ee0419ab-fd86-4942-964c-104cd35da2e3")
+	)
+	(polyline
+		(pts
+			(xy 152.019 202.4888) (xy 152.019 205.0288)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "ee5a10b5-d152-4884-9688-25d1b26a5016")
+	)
+	(polyline
+		(pts
+			(xy 2.667 201.9808) (xy 0.127 201.9808)
+		)
+		(stroke
+			(width 0.254)
+			(type solid)
+			(color 160 0 0 1)
+		)
+		(uuid "fcd480ef-23de-4cc2-8399-45de1a2266b1")
+	)
+	(symbol
+		(lib_id "esp32c3-super-mini-altium-import:root_0_ESP32C3-SuperMini_")
+		(at 133.477 79.2988 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "9308a985-7fa6-4deb-9136-d9f0ff09909c")
+		(property "Reference" "U2"
+			(at 123.19 62.713 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right bottom)
+			)
+		)
+		(property "Value" "ESP32C3-SUPERMINI"
+			(at 123.19 65.024 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right bottom)
+			)
+		)
+		(property "Footprint" "COMM-SMD_16P-L22.5-W18.0-P2.54-TL"
+			(at 133.477 79.2988 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 133.477 79.2988 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 133.477 79.2988 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DEVICE" "ESP32C3-SuperMini"
+			(at 133.477 330.7588 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right bottom)
+			)
+		)
+		(property "SUPPLIER" "LCSC"
+			(at 133.477 79.2988 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right bottom)
+			)
+		)
+		(property "SUPPLIER PART" "C9900147397"
+			(at 133.477 79.2988 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right bottom)
+			)
+		)
+		(property "MANUFACTURER" "null"
+			(at 133.477 79.2988 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right bottom)
+			)
+		)
+		(property "MANUFACTURER PART" "ESP32C3-SuperMini"
+			(at 133.477 79.2988 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right bottom)
+			)
+		)
+		(property "JLCPCB PART CLASS" "Extended Part"
+			(at 133.477 79.2988 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right bottom)
+			)
+		)
+		(property "CONVERT TO PCB" "yes"
+			(at 133.477 79.2988 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right bottom)
+			)
+		)
+		(property "ADD INTO BOM" "yes"
+			(at 133.477 79.2988 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right bottom)
+			)
+		)
+		(property "ORIGIN FOOTPRINT" "COMM-SMD_16P-L22.5-W18.0-P2.54-TL"
+			(at 133.477 79.2988 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right bottom)
+			)
+		)
+		(property "UNIQUEID" "gge8a6b3c8baf90dbf5"
+			(at 133.477 79.2988 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right top)
+			)
+		)
+		(property "SYMBOLNAME" "ESP32C3-SUPERMINI"
+			(at 133.477 79.2988 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right top)
+			)
+		)
+		(property "FOOTPRINTNAME" "COMM-SMD_16P-L22.5-W18.0-P2.54-TL"
+			(at 133.477 79.2988 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right top)
+			)
+		)
+		(property "DESCRIPTION" ""
+			(at 133.477 79.2988 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right top)
+			)
+		)
+		(pin "9"
+			(uuid "19a88e59-0d19-4766-8732-8ce9f426bbb6")
+		)
+		(pin "1"
+			(uuid "ce79aa9b-48cd-4797-b916-c88261417365")
+		)
+		(pin "11"
+			(uuid "2be10dfb-9e53-45c8-bf8c-f636ff2db94d")
+		)
+		(pin "15"
+			(uuid "e5ad661b-bf66-4f86-a865-adb09c9bb1a6")
+		)
+		(pin "3"
+			(uuid "f9e03a2a-d558-4e81-a84c-acb3582ccaa7")
+		)
+		(pin "4"
+			(uuid "bb245f14-bb44-4d45-8423-cf52898d8708")
+		)
+		(pin "5"
+			(uuid "81f1b8e6-7cb1-4243-b15c-4ed94f753759")
+		)
+		(pin "2"
+			(uuid "71252f43-f030-4219-8109-e76a54f37ba9")
+		)
+		(pin "6"
+			(uuid "7b96fc4d-eca0-421d-97c6-4e3a7d8c0d15")
+		)
+		(pin "10"
+			(uuid "be727685-e61f-4e2a-b1e5-f48af383a78d")
+		)
+		(pin "13"
+			(uuid "56dea41d-a5e5-4012-bd95-1556c4d3953a")
+		)
+		(pin "14"
+			(uuid "583687fb-1f90-45c1-9359-78814e1eafca")
+		)
+		(pin "8"
+			(uuid "0fbc36f9-56a4-457e-8576-8f8885d05c2b")
+		)
+		(pin "7"
+			(uuid "b26525ae-b9e2-4b4b-bc85-3be7123920a0")
+		)
+		(pin "12"
+			(uuid "d2e1d229-3f40-4089-b7cb-05e77434e1f3")
+		)
+		(pin "16"
+			(uuid "d500edfa-80da-453b-b2c9-ae0db9da5071")
+		)
+		(instances
+			(project "esp32c3-super-mini"
+				(path "/e2f11091-9b0b-45f4-8138-753c02b1f7c4"
+					(reference "U2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "#")
+		)
+	)
+	(embedded_fonts no)
+)
