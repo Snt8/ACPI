@@ -21,6 +21,7 @@ build/
 bin/
 .pio/
 .clangd/
+compile_commands.json
 
 #Carpetas de construccion de editores
 .idea/
