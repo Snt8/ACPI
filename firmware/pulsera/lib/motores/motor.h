@@ -10,7 +10,7 @@ class ControladorMotores {
 private:
     // Pines físicos de los motores
     static const uint8_t  pin_motor_derecho   = 10;
-    static const uint8_t  pin_motor_izquierdo = 2;
+    static const uint8_t  pin_motor_izquierdo = 3;
     // CANALES LEDC (ESP32-C3 requiere canal explícito para ledcSetup/ledcAttachPin)
     // Elegimos canales bajos y fijos; si hay otros usos en el proyecto asegúrese de evitar colisiones
     static const uint8_t  canal_motor_derecho   = 0;
