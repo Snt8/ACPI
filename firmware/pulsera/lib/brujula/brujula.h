@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <Arduino.h>
 
-// ── Controlador de brújula (fusión MPU6050 + QMC6308) ─────────────────────────
+// ── Controlador de brújula (fusión MPU6050 + QMC5883L) ─────────────────────────
 // Encapsula la lectura de ambos sensores, la tilt compensation, la calibración
 // hard-iron y el safety check de cambio rápido de heading.
 class ControladorBrujula {
@@ -18,7 +18,7 @@ public:
     // Heading actual en grados [0, 360)
     static float headingActual;
 
-    // Inicializa MPU6050 y QMC6308
+    // Inicializa MPU6050 y QMC5883L
     static bool inicializar();
 
     // Lee sensores, aplica tilt compensation y actualiza headingActual.

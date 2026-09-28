@@ -18,7 +18,7 @@ El firmware está construido bajo un enfoque altamente modular y orientado a eve
 
 En su estado nominal de `SENSING_CROSSING`, la pulsera ejecuta un ciclo de muestreo estricto a **2 Hz (cada 500ms)** en el que realiza las siguientes operaciones en menos de un milisegundo de CPU, maximizando el tiempo inactivo:
 1. Lee los componentes vectoriales $g_x, g_y, g_z$ del MPU6050.
-2. Extrae las lecturas crudas del QMC6308 y les aplica compensación ambiental _Hard-Iron_ mediante un _Leaky Integrator_.
+2. Extrae las lecturas crudas del QMC5883L y les aplica compensación ambiental _Hard-Iron_ mediante un _Leaky Integrator_.
 3. Compensa tridimensionalmente el compás magnético (_Tilt Compensation_) para obtener el Heading puro.
 4. Aplica una barrera protectora de movimiento brusco (_Safety Check_): Ignora lecturas si el Heading giró $>40^{\circ}$ en medio segundo.
 5. Evalúa matemáticamente la diferencia frente al rumbo transmitido por el Semáforo.

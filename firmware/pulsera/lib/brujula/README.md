@@ -20,7 +20,7 @@ El módulo extrae los datos vectoriales brutos de los sensores I2C y ejecuta dos
 ---
 
 ## Dependencias
-- Módulos internos: `lib/sensores` (MPU6050 y QMC6308).
+- Módulos internos: `lib/sensores` (MPU6050 y QMC5883L).
 - Funciones matemáticas estándar (`<math.h>`).
 - Constantes operativas globales (`config.h` y `constantes.h`).
 

@@ -26,7 +26,7 @@ void setup() {
         Serial.println("[BOOT] Motores listos.");
     }
 
-    // 2. Inicializar I2C y Sensores (MPU6050 + QMC6308) — SDA=GPIO8, SCL=GPIO9
+    // 2. Inicializar I2C y Sensores (MPU6050 + QMC5883L) — SDA=GPIO8, SCL=GPIO9
     Serial.println("[BOOT] Inicializando I2C...");
     Wire.begin(8, 9);
     
