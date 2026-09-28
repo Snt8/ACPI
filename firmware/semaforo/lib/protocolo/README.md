@@ -1,7 +1,7 @@
 # Módulo: Protocolo de Red Compartido (Semáforo)
 
 ## Descripción General
-Archivo de definición del contrato C/C++ (`struct`) de la carga útil (*Payload*) que el semáforo inyecta en el flujo de red ESP-NOW. Es idéntico y copiado estrictamente al que se aloja en la infraestructura del receptor (Pulsera) para evitar desajustes en el *Parsing* de memoria.
+Archivo de definición del contrato C/C++ (`struct`) de la carga útil (*Payload*) que el semáforo inyecta en el flujo de red ESP-NOW. Es idéntico y copiado estrictamente al que se aloja en la infraestructura del receptor (Brazalete) para evitar desajustes en el *Parsing* de memoria.
 
 ---
 
@@ -24,7 +24,7 @@ Esta compactación no sólo reduce drásticamente las latencias de radio, sino q
 
 ## Dependencias
 - `<stdint.h>`.
-- Copia literal en ambos espacios de trabajo (Pulsera/Semáforo).
+- Copia literal en ambos espacios de trabajo (Brazalete/Semáforo).
 
 ---
 

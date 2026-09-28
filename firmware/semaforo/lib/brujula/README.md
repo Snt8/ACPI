@@ -12,7 +12,7 @@ Este submódulo maneja la inicialización, extracción de datos crudos y convers
 ---
 
 ## Explicación
-A diferencia de la pulsera, el magnetómetro del semáforo:
+A diferencia del brazalete, el magnetómetro del semáforo:
 - **Carece de Compensación de Inclinación (Tilt Compensation)**: Al instalarse firmemente apuntando hacia la línea de cebra (andén peatonal), el semáforo no oscilará ni se inclinará, obviando la necesidad costosa de tener un giroscopio acoplado. El rumbo se calcula directamente con $atan2(y, x)$.
 - **Autocalibración Constante**: Debido a las distorsiones metálicas de los postes de iluminación urbanos (*Hard-Iron bias*), se incluye un **Leaky Integrator** (filtro pasa-bajas) que gradualmente detecta, absorbe y resta las desviaciones magnéticas constantes.
 

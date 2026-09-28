@@ -32,7 +32,7 @@ Cada sesión de cruce finalizada envía un payload JSON aplanado con el siguient
 
 ```json
 {
-  "device_id": "ACPI_Pulsera",
+  "device_id": "ACPI_Brazalete",
   "session_id": "8fa538e1-5e93-4a11-8254-cd6ef2802d28",
   "status": 1,
   "timestamp": 1780704000000,
@@ -47,7 +47,7 @@ Cada sesión de cruce finalizada envía un payload JSON aplanado con el siguient
 ```
 
 ### Campos Enviados:
-- **`device_id`**: Identificador único de la pulsera.
+- **`device_id`**: Identificador único del brazalete.
 - **`session_id`**: Identificador único (UUID) de la sesión de cruce del peatón.
 - **`status`**: Estado final de la sesión:
   - `0` = Espera / Seguro

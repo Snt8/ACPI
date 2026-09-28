@@ -3,7 +3,7 @@
 #include "config.h"
 #include "const.h"
 #include "controlador_brujula.h"
-#include "comunicador_pulsera.h"
+#include "comunicador_brazalete.h"
 
 // Estados del semáforo (punto de vista de los autos)
 enum class EstadoSemaforoAutos {
@@ -42,7 +42,7 @@ void setup() {
     }
 
     // Inicializar ESP-NOW
-    if (!ComunicadorPulsera::inicializar()) {
+    if (!ComunicadorBrazalete::inicializar()) {
         Serial.println("[SEMAFORO] [ERROR] No se pudo inicializar ESP-NOW!");
     } else {
         Serial.println("[SEMAFORO] ESP-NOW inicializado correctamente.");
@@ -103,7 +103,7 @@ void loop() {
         payload.tiempo = tiempoRestante;
 
         // Enviar vía ESP-NOW (broadcast)
-        if (ComunicadorPulsera::enviarEstado(payload)) {
+        if (ComunicadorBrazalete::enviarEstado(payload)) {
             // Imprimir detalles de debug cada 2 segundos aproximadamente
             static unsigned long ultimaImpresionDebug = 0;
             if (ahora - ultimaImpresionDebug >= 2000UL) {

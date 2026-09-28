@@ -1,18 +1,18 @@
 # Especificaciones de Protocolos, Telemetría e Integración (ACPI)
 
 ## Descripcion General
-Este directorio contiene la documentación técnica y las especificaciones de arquitectura para la comunicación de red, los protocolos inalámbricos y la integración con el sistema de telemetría y visualización de datos en la nube. Define cómo interactúan la Pulsera Inteligente, el Semáforo, la Aplicación Móvil y el panel de control de Grafana Cloud.
+Este directorio contiene la documentación técnica y las especificaciones de arquitectura para la comunicación de red, los protocolos inalámbricos y la integración con el sistema de telemetría y visualización de datos en la nube. Define cómo interactúan el Brazalete Inteligente, el Semáforo, la Aplicación Móvil y el panel de control de Grafana Cloud.
 
 ## Contenido
 El directorio incluye los siguientes documentos técnicos especializados:
-- **[ble-protocol.md](file:///c:/Users/sntav/programacion/ACPI/docs/ble-protocol.md)**: Especificación técnica detallada del protocolo de comunicación Bluetooth Low Energy (BLE) entre la Pulsera (servidor GATT) y el dispositivo Android (cliente GATT).
+- **[ble-protocol.md](file:///c:/Users/sntav/programacion/ACPI/docs/ble-protocol.md)**: Especificación técnica detallada del protocolo de comunicación Bluetooth Low Energy (BLE) entre el Brazalete (servidor GATT) y el dispositivo Android (cliente GATT).
 - **[grafana-setup.md](file:///c:/Users/sntav/programacion/ACPI/docs/grafana-setup.md)**: Guía paso a paso para la configuración del ingestor de datos en Grafana Cloud, mapeo de variables JSON de telemetría y diseño de paneles recomendados.
 
 ## Explicacion
 ### 1. Topología Inalámbrica Dual
 El sistema ACPI utiliza una separación estricta de protocolos según el dispositivo:
-- **Pulsera (ESP32-C3)**: Utiliza **BLE únicamente** para comunicarse con el celular del peatón. Tiene prohibido levantar la pila Wi-Fi para optimizar la batería.
-- **Semáforo (ESP32 DevKit V1)**: Transmite periódicamente su orientación y estado magnético a la pulsera a través de **ESP-NOW** en modo broadcast (2Hz).
+- **Brazalete (ESP32-C3)**: Utiliza **BLE únicamente** para comunicarse con el celular del peatón. Tiene prohibido levantar la pila Wi-Fi para optimizar la batería.
+- **Semáforo (ESP32 DevKit V1)**: Transmite periódicamente su orientación y estado magnético al brazalete a través de **ESP-NOW** en modo broadcast (2Hz).
 - **Celular (App Android)**: Recibe los datos vía BLE y, cuando finaliza una sesión de cruce, utiliza la red móvil (Wi-Fi o Datos) para enviar las métricas agregadas por HTTP Push (POST) a Grafana Cloud.
 
 ### 2. Formato del Payload de Telemetría
@@ -35,7 +35,7 @@ curl -X POST "https://influx-prod-13-prod-us-east-0.grafana.net/api/v1/push" \
   -H "Authorization: Bearer glc_eyJ..." \
   -H "Content-Type: application/json" \
   -d '{
-    "device_id": "ACPI_Pulsera_Test",
+    "device_id": "ACPI_Brazalete_Test",
     "session_id": "99999999-9999-9999-9999-999999999999",
     "status": 1,
     "timestamp": 1780704000000,

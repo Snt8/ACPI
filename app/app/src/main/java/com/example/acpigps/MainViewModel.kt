@@ -31,8 +31,8 @@ class MainViewModel : ViewModel() {
     private val _isMonitoring = MutableLiveData<Boolean>(false)
     val isMonitoring: LiveData<Boolean> = _isMonitoring
 
-    private val _pulseraData = MutableLiveData<PulseraData?>(null)
-    val pulseraData: LiveData<PulseraData?> = _pulseraData
+    private val _brazaleteData = MutableLiveData<BrazaleteData?>(null)
+    val brazaleteData: LiveData<BrazaleteData?> = _brazaleteData
 
     fun setMonitoringState(isMonitoring: Boolean) {
         _isMonitoring.value = isMonitoring
@@ -52,8 +52,8 @@ class MainViewModel : ViewModel() {
         _logMessages.value = newLogs
     }
 
-    fun updatePulseraData(newData: PulseraData?) {
-        _pulseraData.value = newData
+    fun updateBrazaleteData(newData: BrazaleteData?) {
+        _brazaleteData.value = newData
     }
 }
 

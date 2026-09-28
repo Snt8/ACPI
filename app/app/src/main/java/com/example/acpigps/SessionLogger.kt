@@ -30,7 +30,7 @@ class SessionLogger(private val context: Context, private val reporter: GrafanaR
         Log.d("SessionLogger", "Sesion de cruce iniciada: $sessionId")
     }
 
-    fun logData(data: PulseraData, location: Location?, currentSteps: Int) {
+    fun logData(data: BrazaleteData, location: Location?, currentSteps: Int) {
         if (!isSessionActive) return
 
         // Incrementar el contador de pánicos
@@ -85,7 +85,7 @@ class SessionLogger(private val context: Context, private val reporter: GrafanaR
 
         // Enviar a Grafana Cloud
         reporter.sendSessionTelemetry(
-            deviceId = "ACPI_Pulsera",
+            deviceId = "ACPI_Brazalete",
             sessionId = sessionId!!,
             status = when {
                 panicCount > 0  -> 3

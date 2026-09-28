@@ -78,8 +78,8 @@ class LocalNotificationManager(private val context: Context) {
 
     fun alertLowBattery(batteryLevel: Int) {
         showNotification(
-            "🔋 Batería de Pulsera Baja",
-            "La batería de la pulsera está en $batteryLevel%. Favor de cargarla.",
+            "🔋 Batería del Brazalete Baja",
+            "La batería del brazalete está en $batteryLevel%. Favor de cargarla.",
             NOTIFICATION_BASE_ID + 3
         )
     }

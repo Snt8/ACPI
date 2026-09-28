@@ -24,7 +24,7 @@ object BLEConstants {
 interface ConnectionCallback {
     fun onConnectionStateChanged(isConnected: Boolean, deviceName: String?)
     fun onScanningStateChanged(isScanning: Boolean)
-    fun onPulseraDataReceived(data: PulseraData)
+    fun onBrazaleteDataReceived(data: BrazaleteData)
     fun logMessage(message: String) // Callback para logs centralizados
 }
 
@@ -45,7 +45,7 @@ class BLEManager(private val context: Context) {
     companion object {
         private const val SCAN_PERIOD: Long = 15000 // 15 segundos de escaneo
         private const val SCAN_RETRY_DELAY: Long = 10000 // 10s antes de reintentar
-        private const val DEVICE_NAME = "ACPI_Pulsera" // Nombre del dispositivo BLE
+        private const val DEVICE_NAME = "ACPI_Brazalete" // Nombre del dispositivo BLE
     }
 
     private var autoRetry = false
@@ -151,14 +151,14 @@ class BLEManager(private val context: Context) {
             connectionCallback?.logMessage("Notificación recibida: \"$message\"")
             try {
                 val json = JSONObject(message)
-                val data = PulseraData(
+                val data = BrazaleteData(
                     hd = json.getInt("hd"),
                     st = json.getInt("st"),
                     ok = json.getBoolean("ok"),
                     tr = json.getInt("tr"),
                     bt = json.getInt("bt")
                 )
-                connectionCallback?.onPulseraDataReceived(data)
+                connectionCallback?.onBrazaleteDataReceived(data)
             } catch (e: Exception) {
                 connectionCallback?.logMessage("Error al parsear JSON del ESP32: ${e.message}")
             }

@@ -45,8 +45,8 @@ class MonitoringService : Service(), ConnectionCallback {
     val compassData: LiveData<CompassData> = _compassData
     private val _logMessages = MutableLiveData<List<String>>(emptyList())
     val logMessages: LiveData<List<String>> = _logMessages
-    private val _pulseraData = MutableLiveData<PulseraData?>(null)
-    val pulseraData: LiveData<PulseraData?> = _pulseraData
+    private val _brazaleteData = MutableLiveData<BrazaleteData?>(null)
+    val brazaleteData: LiveData<BrazaleteData?> = _brazaleteData
 
     // --- Managers y Clientes ---
     private lateinit var bleManager: BLEManager
@@ -104,7 +104,7 @@ class MonitoringService : Service(), ConnectionCallback {
 
         // Iniciar sesión de telemetría
         sessionLogger.startSession(stepCount)
-        _pulseraData.postValue(null)
+        _brazaleteData.postValue(null)
 
         stepCount = 0
         directionDetector.startDetection()
@@ -212,10 +212,10 @@ class MonitoringService : Service(), ConnectionCallback {
 
     // --- Callbacks de Conectividad y Datos BLE ---
 
-    override fun onPulseraDataReceived(data: PulseraData) {
-        val stPrevio = _pulseraData.value?.st
-        val btPrevio = _pulseraData.value?.bt
-        _pulseraData.postValue(data)
+    override fun onBrazaleteDataReceived(data: BrazaleteData) {
+        val stPrevio = _brazaleteData.value?.st
+        val btPrevio = _brazaleteData.value?.bt
+        _brazaleteData.postValue(data)
 
         // 1. Notificación local si cambia a st=1 (Cruce permitido)
         if (data.st == 1 && stPrevio != 1) {

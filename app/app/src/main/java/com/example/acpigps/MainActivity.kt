@@ -62,7 +62,7 @@ class MainActivity : AppCompatActivity(), CompassFragment.CompassListener, BLEDe
         monitoringService?.bleConnectionState?.observe(this) { viewModel.onConnectionStateChanged(it) }
         monitoringService?.compassData?.observe(this) { viewModel.updateCompassData(it) }
         monitoringService?.logMessages?.observe(this) { viewModel.updateLogMessages(it) }
-        monitoringService?.pulseraData?.observe(this) { viewModel.updatePulseraData(it) }
+        monitoringService?.brazaleteData?.observe(this) { viewModel.updateBrazaleteData(it) }
     }
 
     private fun startMonitoringService() {

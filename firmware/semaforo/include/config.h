@@ -22,8 +22,8 @@
 #define DURACION_ROJO_MS  30000UL   // 30 s rojo para autos  (peatón puede cruzar)
 
 // ── Comunicación ESP-NOW ─────────────────────────────────────────────────────
-// Intervalo de envío del paquete de estado a la pulsera.
-// Sincronizado con el ciclo de muestreo de la pulsera (2Hz = 500ms).
+// Intervalo de envío del paquete de estado al brazalete.
+// Sincronizado con el ciclo de muestreo del brazalete (2Hz = 500ms).
 #define INTERVALO_ENVIO_MS 500UL    // Cada 500 ms (2 Hz)
 
 // ── Calibración Hard-Iron (Leaky Integrator) ─────────────────────────────────

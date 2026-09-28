@@ -1,21 +1,21 @@
 # ACPI Android Mobile Application (ACPIGPS)
 
 ## Descripcion General
-La aplicación móvil **ACPIGPS** actúa como el puente de comunicaciones central del ecosistema ACPI. Su función principal es conectarse mediante **Bluetooth Low Energy (BLE)** a la Pulsera Inteligente (ESP32-C3), procesar sus notificaciones de estado y orientación magnética en tiempo real, guiar al peatón de manera visual/auditiva y reportar las métricas agregadas de cada sesión de cruce de forma segura y resiliente hacia el backend de **Grafana Cloud** mediante payloads JSON simplificados.
+La aplicación móvil **ACPIGPS** actúa como el puente de comunicaciones central del ecosistema ACPI. Su función principal es conectarse mediante **Bluetooth Low Energy (BLE)** al Brazalete Inteligente (ESP32-C3), procesar sus notificaciones de estado y orientación magnética en tiempo real, guiar al peatón de manera visual/auditiva y reportar las métricas agregadas de cada sesión de cruce de forma segura y resiliente hacia el backend de **Grafana Cloud** mediante payloads JSON simplificados.
 
 ## Contenido
 La aplicación está organizada en torno a los siguientes archivos y submódulos principales en `app/src/main/java/com/example/acpigps/`:
 - **[MainActivity.kt](file:///c:/Users/sntav/programacion/ACPI/ACPIGPS/app/src/main/java/com/example/acpigps/MainActivity.kt)**: Punto de entrada de la UI y gestión de navegación basada en Jetpack Compose.
-- **[BLEManager.kt](file:///c:/Users/sntav/programacion/ACPI/ACPIGPS/app/src/main/java/com/example/acpigps/BLEManager.kt)**: Manejador GATT cliente que gestiona el escaneo, emparejamiento, suscripción a notificaciones y envío de comandos a la pulsera.
+- **[BLEManager.kt](file:///c:/Users/sntav/programacion/ACPI/ACPIGPS/app/src/main/java/com/example/acpigps/BLEManager.kt)**: Manejador GATT cliente que gestiona el escaneo, emparejamiento, suscripción a notificaciones y envío de comandos al brazalete.
 - **[GrafanaReporter.kt](file:///c:/Users/sntav/programacion/ACPI/ACPIGPS/app/src/main/java/com/example/acpigps/GrafanaReporter.kt)**: Módulo encargado del formateo de telemetría y su envío mediante HTTP POST asíncrono con un buffer resiliente ante pérdidas de conectividad.
 - **[MonitoringService.kt](file:///c:/Users/sntav/programacion/ACPI/ACPIGPS/app/src/main/java/com/example/acpigps/MonitoringService.kt)**: Servicio en primer plano (Foreground Service) que garantiza que las conexiones BLE y de red sigan activas incluso si la pantalla se apaga.
 - **[WalkDirectionDetector.kt](file:///c:/Users/sntav/programacion/ACPI/ACPIGPS/app/src/main/java/com/example/acpigps/WalkDirectionDetector.kt)**: Detector lógico de pasos y patrones de desplazamiento.
 - **[SessionLogger.kt](file:///c:/Users/sntav/programacion/ACPI/ACPIGPS/app/src/main/java/com/example/acpigps/SessionLogger.kt)**: Registro local en formato de texto dentro del almacenamiento del dispositivo.
-- **[PulseraData.kt](file:///c:/Users/sntav/programacion/ACPI/ACPIGPS/app/src/main/java/com/example/acpigps/PulseraData.kt)**: Modelo de datos que mapea la telemetría recibida por BLE.
+- **[BrazaleteData.kt](file:///c:/Users/sntav/programacion/ACPI/ACPIGPS/app/src/main/java/com/example/acpigps/BrazaleteData.kt)**: Modelo de datos que mapea la telemetría recibida por BLE.
 
 ## Explicacion
 ### 1. Comunicación BLE (GATT Cliente)
-La app implementa el perfil GATT cliente interactuando con los UUIDs definidos en el firmware de la pulsera:
+La app implementa el perfil GATT cliente interactuando con los UUIDs definidos en el firmware del brazalete:
 - **Servicio Principal**: `12345678-1234-1234-1234-123456789abc`
 - **Característica TX (Notificación)**: `87654321-4321-4321-4321-cba987654321` (Recibe el JSON con rumbo, alineación y estado de cruce cada 500 ms).
 - **Característica RX (Escritura)**: `11111111-2222-3333-4444-555555555555` (Envía comandos de control o cuadrantes de rumbo al ESP32).
@@ -52,7 +52,7 @@ val metrics = JSONObject().apply {
 
 // Envío asíncrono y resiliente
 reporter.sendSessionTelemetry(
-    deviceId = "ACPI_Pulsera",
+    deviceId = "ACPI_Brazalete",
     sessionId = UUID.randomUUID().toString(),
     status = 1, // 1 = Cruce exitoso y alineado
     metrics = metrics
