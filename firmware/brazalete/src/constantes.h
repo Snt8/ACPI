@@ -13,10 +13,13 @@
 
 // ── Motores ───────────────────────────────────────────────────────────────────
 #define APAGAR_MOTOR            0
-// Intensidad reducida para proteger soldaduras (70 % de duty cycle máximo)
-#define INTENSIDAD_MOTOR        180
-// Motor izquierdo (GPIO 3) requiere +15 de duty para igualar la respuesta táctil
-#define INTENSIDAD_MOTOR_IZQUIERDO 195
+// En la PCB v3.5 el motor ve VBAT (3.7–4.2 V): a 180/255 vibraba tan fuerte que
+// amenazaba las soldaduras. Valor inicial; ajustarlo con la prueba 03 (comandos
+// '-' / '+' y el barrido 'b', que muestra desde qué duty arranca cada motor).
+#define INTENSIDAD_MOTOR        120
+// Motor izquierdo (GPIO 3): +15 de duty para igualar la respuesta táctil
+// (valor heredado; reconfirmar cuando esté soldado en la v3.5)
+#define INTENSIDAD_MOTOR_IZQUIERDO 135
 
 // ── Acelerómetro MPU6050 (rango ±2g por defecto) ────────────────────────────
 // Datasheet: 16384 LSB/g en rango ±2g.
