@@ -74,20 +74,38 @@ PRUEBA(desviacion_y_giro_son_coherentes) {
 
 // ── Protocolo ────────────────────────────────────────────────────────────────
 
-PRUEBA(protocolo_tamano_y_firma) {
-    VERIFICAR_IGUAL(sizeof(estado_semaforo), 9);
+namespace {
+estado_semaforo paqueteValido() {
     estado_semaforo p{};
     firmarPaqueteSemaforo(&p);
+    p.id = 1;
+    p.grados = 270;
+    p.permitidoCruce = 1;
+    p.tiempo = 12;
+    sellarPaqueteSemaforo(&p);
+    return p;
+}
+} // namespace
+
+PRUEBA(protocolo_tamano_firma_y_crc) {
+    VERIFICAR_IGUAL(sizeof(estado_semaforo), 10);
+    estado_semaforo p = paqueteValido();
     VERIFICAR(std::memcmp(p.firma, "ACPI", 4) == 0);
     VERIFICAR(esPaqueteSemaforo((const uint8_t*)&p, (int)sizeof(p)));
 }
 
+PRUEBA(protocolo_crc8_valores_conocidos) {
+    // CRC-8/SMBUS (poly 0x07, init 0): "123456789" -> 0xF4 (valor de referencia)
+    const uint8_t texto[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9'};
+    VERIFICAR_IGUAL(crc8Semaforo(texto, 9), 0xF4);
+    VERIFICAR_IGUAL(crc8Semaforo(texto, 0), 0x00);
+}
+
 PRUEBA(protocolo_rechaza_paquetes_ajenos) {
-    estado_semaforo p{};
-    firmarPaqueteSemaforo(&p);
+    estado_semaforo p = paqueteValido();
     const uint8_t* bytes = (const uint8_t*)&p;
     VERIFICAR(!esPaqueteSemaforo(nullptr, (int)sizeof(p)));
-    VERIFICAR(!esPaqueteSemaforo(bytes, (int)sizeof(p) - 1));  // formato viejo / truncado
+    VERIFICAR(!esPaqueteSemaforo(bytes, (int)sizeof(p) - 1));  // truncado / formato de 9 bytes
     VERIFICAR(!esPaqueteSemaforo(bytes, (int)sizeof(p) + 1));
     VERIFICAR(!esPaqueteSemaforo(bytes, 0));
     p.firma[3] = 'X';
@@ -95,6 +113,58 @@ PRUEBA(protocolo_rechaza_paquetes_ajenos) {
     // El paquete viejo de 5 bytes (sin firma) no se acepta
     uint8_t viejo[5] = {1, 90, 0, 1, 10};
     VERIFICAR(!esPaqueteSemaforo(viejo, 5));
+}
+
+PRUEBA(protocolo_rechaza_cualquier_byte_alterado) {
+    // Interferencia: cambiar un solo bit de cualquier byte invalida el paquete
+    estado_semaforo original = paqueteValido();
+    for (int byte = 0; byte < (int)sizeof(original); ++byte) {
+        for (int bit = 0; bit < 8; ++bit) {
+            estado_semaforo p = original;
+            ((uint8_t*)&p)[byte] ^= (uint8_t)(1u << bit);
+            VERIFICAR(!esPaqueteSemaforo((const uint8_t*)&p, (int)sizeof(p)));
+        }
+    }
+}
+
+PRUEBA(protocolo_rechaza_campos_fuera_de_rango) {
+    // Aunque el CRC sea correcto, grados >= 360 o permitidoCruce > 1 no son válidos
+    estado_semaforo p = paqueteValido();
+    p.grados = 360;
+    sellarPaqueteSemaforo(&p);
+    VERIFICAR(!esPaqueteSemaforo((const uint8_t*)&p, (int)sizeof(p)));
+    p = paqueteValido();
+    p.permitidoCruce = 2;
+    sellarPaqueteSemaforo(&p);
+    VERIFICAR(!esPaqueteSemaforo((const uint8_t*)&p, (int)sizeof(p)));
+    p = paqueteValido();
+    p.grados = 359;
+    p.permitidoCruce = 0;
+    sellarPaqueteSemaforo(&p);
+    VERIFICAR(esPaqueteSemaforo((const uint8_t*)&p, (int)sizeof(p)));
+}
+
+PRUEBA(protocolo_rafaga_de_ruido_no_pasa) {
+    // Diez mil paquetes de bytes al azar con la firma correcta: ninguno debe
+    // pasar con un campo fuera de rango, y casi todos deben fallar el CRC
+    uint32_t estado = 2024;
+    int aceptados = 0;
+    for (int i = 0; i < 10000; ++i) {
+        uint8_t ruido[sizeof(estado_semaforo)];
+        for (size_t k = 0; k < sizeof(ruido); ++k) {
+            estado = estado * 1664525u + 1013904223u;
+            ruido[k] = (uint8_t)(estado >> 24);
+        }
+        std::memcpy(ruido, "ACPI", 4);
+        if (esPaqueteSemaforo(ruido, (int)sizeof(ruido))) {
+            ++aceptados;
+            estado_semaforo p;
+            std::memcpy(&p, ruido, sizeof(p));
+            VERIFICAR(p.grados < 360 && p.permitidoCruce <= 1);
+        }
+    }
+    // Con CRC-8 pasa ~1 de cada 256, y de esos casi ninguno tiene campos en rango
+    VERIFICAR(aceptados < 5);
 }
 
 PRUEBA(protocolo_campos_en_su_posicion) {
@@ -105,10 +175,12 @@ PRUEBA(protocolo_campos_en_su_posicion) {
     p.grados = 0x0102;
     p.permitidoCruce = 1;
     p.tiempo = 25;
+    sellarPaqueteSemaforo(&p);
     const uint8_t* b = (const uint8_t*)&p;
     VERIFICAR_IGUAL(b[4], 7);
     VERIFICAR_IGUAL(b[5], 0x02);  // little-endian, como el ESP32
     VERIFICAR_IGUAL(b[6], 0x01);
     VERIFICAR_IGUAL(b[7], 1);
     VERIFICAR_IGUAL(b[8], 25);
+    VERIFICAR_IGUAL(b[9], crc8Semaforo(b, 9));
 }

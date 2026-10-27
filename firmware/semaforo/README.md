@@ -55,6 +55,6 @@ idf.py build flash monitor
 ```
 `main/main.cpp` sólo incluye `semaforo.ino`, así que ambos entornos compilan exactamente el mismo código.
 
-> El paquete ESP-NOW lleva la firma `"ACPI"` (9 bytes). Semáforo y brazalete tienen que
-> flashearse con versiones del mismo protocolo: el brazalete descarta los paquetes viejos
-> de 5 bytes.
+> El paquete ESP-NOW lleva la firma `"ACPI"` y un CRC-8 (10 bytes). Semáforo y brazalete
+> tienen que flashearse con versiones del mismo protocolo: el brazalete descarta cualquier
+> paquete con otro tamaño, otra firma o el CRC equivocado.

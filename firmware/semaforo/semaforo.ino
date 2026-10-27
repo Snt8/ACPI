@@ -105,6 +105,7 @@ void loop() {
         payload.grados = (uint16_t)ControladorBrujulaSemaforo::headingActual;
         payload.permitidoCruce = (estadoActualAutos == EstadoSemaforoAutos::ROJO) ? 1 : 0;
         payload.tiempo = tiempoRestante;
+        sellarPaqueteSemaforo(&payload); // CRC-8: siempre después de llenar los campos
 
         // Enviar vía ESP-NOW (broadcast)
         if (ComunicadorBrazalete::enviarEstado(payload)) {

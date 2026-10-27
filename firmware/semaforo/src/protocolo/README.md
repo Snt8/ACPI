@@ -6,7 +6,7 @@ Archivo de definición del contrato C/C++ (`struct`) de la carga útil (*Payload
 ---
 
 ## Contenido
-- `protocolo_esp.h` -> Estructura plana de 9 Bytes sin _Padding_.
+- `protocolo_esp.h` -> Estructura plana de 10 Bytes sin _Padding_.
 
 ---
 
@@ -18,6 +18,7 @@ Se define un marco de memoria continuo empaquetado con `#pragma pack(push, 1)` (
 2. `grados` (`uint16_t`): Almacenamiento trunco desde el float real del magnetómetro. Abarca del $0$ al $359$ con un peso de dos bytes.
 3. `permitidoCruce` (`uint8_t`): Señal de bandera booleana (`1` o `0`).
 4. `tiempo` (`uint8_t`): Valor en segundos restantes para cambio de estado en la FSM del Semáforo.
+5. `verificacion` (`uint8_t`): CRC-8 de los bytes anteriores. Se calcula con `sellarPaqueteSemaforo()` justo antes de enviar; el brazalete descarta el paquete si no coincide.
 
 Esta compactación no sólo reduce drásticamente las latencias de radio, sino que también mejora sustancialmente el consumo de corriente al despertar por menos milisegundos la antena TX del dispositivo.
 

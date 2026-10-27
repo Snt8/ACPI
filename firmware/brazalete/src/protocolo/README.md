@@ -21,7 +21,11 @@ Estructura de la trama `estado_semaforo`:
 - `permitidoCruce` (1 byte): Estado semafórico real (1=Rojo Vehículos/Paso Peatonal, 0=Verde).
 - `tiempo` (1 byte): Temporizador restante.
 
-**Total de Payload:** 9 Bytes (un `static_assert` lo verifica al compilar).
+- `verificacion` (1 byte): CRC-8 (polinomio 0x07) de los 9 bytes anteriores, calculado con `sellarPaqueteSemaforo()` después de llenar los campos.
+
+El brazalete sólo acepta un paquete si tiene el tamaño exacto, la firma, el CRC correcto y los campos en rango (`grados` < 360, `permitidoCruce` 0 o 1). Con interferencia en 2.4 GHz (celulares, computadores, audífonos) lo normal es que los paquetes se pierdan; el CRC descarta además los que lleguen alterados.
+
+**Total de Payload:** 10 Bytes (un `static_assert` lo verifica al compilar).
 
 ---
 
@@ -39,6 +43,7 @@ estado_semaforo payload;
 firmarPaqueteSemaforo(&payload);   // escribe "ACPI"
 payload.grados = 180;
 payload.permitidoCruce = 1;
+sellarPaqueteSemaforo(&payload);   // CRC-8, siempre al final
 esp_now_send(BROADCAST_MAC, (uint8_t *) &payload, sizeof(payload));
 ```
 

@@ -20,10 +20,13 @@ void ComunicadorSemaforo::onDatosRecibidos(const esp_now_recv_info_t *info, cons
 void ComunicadorSemaforo::onDatosRecibidos(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
     (void)mac_addr; // La MAC remota se recibe aquí; no es necesaria en este manejador actualmente
 #endif
-    // Sólo se aceptan paquetes del semáforo ACPI (tamaño exacto y firma "ACPI");
-    // cualquier otro broadcast ESP-NOW del canal se ignora
+    // Sólo se aceptan paquetes del semáforo ACPI (tamaño, firma, CRC y rangos);
+    // cualquier otro broadcast ESP-NOW del canal se ignora. La validación se hace
+    // fuera de la sección crítica: con mucho tráfico ajeno (interferencia) el
+    // callback descarta rápido y nunca bloquea a loop() más de una copia de 10 bytes.
+    bool valido = esPaqueteSemaforo(data, data_len);
     portENTER_CRITICAL(&mux_paquete);
-    if (esPaqueteSemaforo(data, data_len)) {
+    if (valido) {
         memcpy(&paquete_pendiente, data, sizeof(estado_semaforo));
         hay_pendiente = true;
     } else {
