@@ -1,9 +1,12 @@
+// Firmware del semáforo ACPI (ESP32 DevKit V1).
+// Arduino IDE: abrir este archivo; el resto del código está en src/ y se compila solo.
+// ESP-IDF: main/main.cpp incluye este archivo (ver README.md).
 #include <Arduino.h>
 #include <Wire.h>
-#include "config.h"
-#include "const.h"
-#include "controlador_brujula.h"
-#include "comunicador_brazalete.h"
+#include "src/config.h"
+#include "src/const.h"
+#include "src/brujula/controlador_brujula.h"
+#include "src/comunicacion/comunicador_brazalete.h"
 
 // Estados del semáforo (punto de vista de los autos)
 enum class EstadoSemaforoAutos {

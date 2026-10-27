@@ -1,0 +1,10 @@
+# Configuración base para compilar con ESP-IDF + Arduino-ESP32 como componente
+CONFIG_IDF_TARGET="esp32"
+CONFIG_AUTOSTART_ARDUINO=y
+CONFIG_FREERTOS_HZ=1000
+
+# El semáforo sólo usa WiFi (ESP-NOW); el Bluetooth no hace falta
+CONFIG_BT_ENABLED=n
+
+# Con el core 3.x el firmware ocupa ~920 KB: margen sobre la partición de 1 MB por defecto
+CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y

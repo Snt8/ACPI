@@ -21,7 +21,7 @@ Este submódulo configura el microcontrolador del semáforo como un enrutador em
 ## Dependencias
 - Librería del protocolo TCP/IP de Espressif: `<WiFi.h>`.
 - Librería de bajo nivel para enlaces de red sin conexión de Espressif: `<esp_now.h>`.
-- Archivo compartido de definición de trama: `lib/protocolo/protocolo_esp.h`.
+- Archivo compartido de definición de trama: `src/protocolo/protocolo_esp.h`.
 
 ---
 

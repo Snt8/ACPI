@@ -10,7 +10,7 @@ El sistema combina **hardware en el borde (Edge Computing)** con sensores magné
 ## Contenido
 El repositorio principal se divide en los siguientes componentes fundamentales:
 - `/firmware/brazalete/` -> Código fuente (Arduino IDE o ESP-IDF) para el wearable (ESP32-C3 Super Mini). Ver su README.
-- `/firmware/semaforo/` -> Código fuente (PlatformIO/C++) para la baliza de infraestructura (ESP32 DevKit V1).
+- `/firmware/semaforo/` -> Código fuente (Arduino IDE o ESP-IDF) para la baliza de infraestructura (ESP32 DevKit V1). Ver su README.
 - `/ACPIGPS/` -> Aplicación móvil Android nativa en Kotlin (Jetpack Compose).
 - `/docs/` -> Documentación adicional y guías de configuración de la nube.
 - `Justfile` -> Orquestador de tareas para compilación y *linting* automatizado.
@@ -43,7 +43,7 @@ El flujo de información se ejecuta de la siguiente forma:
   - MPU6050 (Acelerómetro/Giroscopio) y QMC6308 (Magnetómetro I2C).
   - Micro-motores de vibración 3V tipo moneda.
 - **Software**: 
-  - [PlatformIO](https://platformio.org/) para el desarrollo y flasheo C++ del firmware.
+  - [Arduino IDE](https://www.arduino.cc/en/software) con el paquete *esp32 by Espressif Systems* 3.x (o ESP-IDF 5.5) para compilar y flashear el firmware.
   - [Just](https://github.com/casey/just) como *command runner* (opcional pero recomendado).
   - Android Studio para compilar la App.
 
@@ -51,19 +51,21 @@ El flujo de información se ejecuta de la siguiente forma:
 
 ## Ejemplo de Uso
 
-Para compilar e inyectar el código en los microcontroladores usando PlatformIO, primero asegúrate de tener instaladas las dependencias.
+Los dos firmwares son sketches de Arduino IDE (también compilan con ESP-IDF). Abrir en
+Arduino IDE `firmware/brazalete/brazalete.ino` o `firmware/semaforo/semaforo.ino` y
+cargarlos con la configuración de placa que indica el README de cada uno.
 
-Con **Just** (Recomendado):
+Desde la terminal con `arduino-cli`:
 ```bash
-# Compilar todo el ecosistema firmware
-just compile-all
+# Brazalete (ESP32-C3 Super Mini, Serial por el USB nativo)
+arduino-cli compile --fqbn esp32:esp32:esp32c3:CDCOnBoot=cdc firmware/brazalete
 
-# Flashear el semáforo y el brazalete (asegúrate de conectarlos vía USB)
-just flash-semaforo
-just flash-brazalete
+# Semáforo (ESP32 DevKit V1)
+arduino-cli compile --fqbn esp32:esp32:esp32 firmware/semaforo
 ```
 
-Sin **Just** (Usando PlatformIO CLI directo):
+Las pruebas de la lógica del brazalete corren en la PC, sin placa (ver
+`firmware/brazalete/test/README.md`):
 ```bash
-pio run -d firmware/semaforo --target upload
+sh firmware/brazalete/test/ejecutar_pruebas.sh
 ```

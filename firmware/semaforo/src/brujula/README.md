@@ -26,7 +26,7 @@ Secuencia de inicialización en hardware real:
 ## Dependencias
 - Biblioteca nativa `<Wire.h>`.
 - `<math.h>` para `atan2f()`.
-- Constantes métricas de calibración `LEAKY_ALPHA` y `LEAKY_BETA` almacenadas en la carpeta de configuraciones `include/`.
+- Constantes métricas de calibración `LEAKY_ALPHA` y `LEAKY_BETA` almacenadas en `src/config.h`.
 
 ---
 

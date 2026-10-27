@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <WiFi.h>
 #include <esp_now.h>
-#include "protocolo_esp.h" // Estructura de comunicación compartida
+#include "../protocolo/protocolo_esp.h" // Estructura de comunicación compartida
 
 class ComunicadorBrazalete {
 private:

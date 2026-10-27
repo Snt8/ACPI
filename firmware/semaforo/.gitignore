@@ -1,0 +1,10 @@
+# Arduino IDE / arduino-cli
+build/
+
+# ESP-IDF
+managed_components/
+sdkconfig
+sdkconfig.old
+
+# PlatformIO (ya no se usa; carpeta vieja local)
+.pio/

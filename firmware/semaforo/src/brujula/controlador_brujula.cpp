@@ -2,8 +2,8 @@
 #include <Wire.h>
 #include <Arduino.h>
 #include <math.h>
-#include "const.h"
-#include "config.h"   // LEAKY_ALPHA, LEAKY_BETA
+#include "../const.h"
+#include "../config.h"   // LEAKY_ALPHA, LEAKY_BETA
 
 // ── Mapa de registros QMC6308 ─────────────────────────────────────────────────
 #define QMC6308_ADDR       0x2C   // Dirección I2C por defecto
@@ -42,7 +42,8 @@ static void escanearI2C_semaforo() {
 
 // ── Inicialización ────────────────────────────────────────────────────────────
 bool ControladorBrujulaSemaforo::inicializar() {
-    Wire.begin();
+    // El bus I2C ya lo inició setup() con los pines de config.h; un Wire.begin()
+    // sin pines aquí lo volvería a configurar con los pines por defecto
 
     // Paso 0: escanear bus I2C para confirmar dirección física real del QMC6308
     escanearI2C_semaforo();

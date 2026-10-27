@@ -1,7 +1,7 @@
 #ifndef PROTOCOLO_ESP_H
 #define PROTOCOLO_ESP_H
 // Contrato del paquete ESP-NOW que el semáforo envía al brazalete.
-// Este archivo es una COPIA IDÉNTICA en firmware/semaforo/lib/protocolo/ y
+// Este archivo es una COPIA IDÉNTICA en firmware/semaforo/src/protocolo/ y
 // firmware/brazalete/src/protocolo/: si se cambia uno, hay que cambiar el otro.
 //Importamos stdint para usar ints de menor tamaño
 #include <stdint.h>

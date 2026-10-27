@@ -30,4 +30,5 @@ Esta compactación no sólo reduce drásticamente las latencias de radio, sino q
 ---
 
 ## Ejemplo de Uso
-(Ver la implementación general de `lib/comunicacion` en ambos proyectos).
+(Ver la implementación general de `src/comunicacion` en ambos proyectos).
+

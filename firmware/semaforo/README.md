@@ -5,13 +5,17 @@ Este es el código fuente principal del **Nodo Esclavo (Semáforo)** del proyect
 
 Su misión principal es leer el campo magnético direccional permanente hacia donde cruza la calle (su propia orientación), simular visualmente mediante LEDs el estado de permiso de vía (Verde/Rojo para vehículos), y disparar de forma constante la información (telemetría) a los brazaletes cercanos usando difusión de radio (Broadcast).
 
+Se compila con **Arduino IDE** o con **ESP-IDF**, con la misma estructura que el firmware del brazalete; ya no necesita PlatformIO.
+
 ---
 
 ## Contenido
-- `platformio.ini` -> Archivo de configuración de construcción de PlatformIO (Framework `espressif32@6.9.0`).
-- `include/` -> Constantes globales (Ej: Tiempos de duración de la luz verde o roja) y configuración (`config.h`, `const.h`).
-- `src/main.cpp` -> Punto de entrada y Máquina de Estados Finita (FSM) basada en tiempo del semáforo.
-- `lib/` -> Submódulos de hardware y red (`brujula`, `comunicacion`, `protocolo`).
+- `semaforo.ino` -> Punto de entrada y Máquina de Estados Finita (FSM) basada en tiempo del semáforo. Es el archivo que se abre en Arduino IDE.
+- `src/` -> Todo el resto del código; Arduino IDE lo compila solo.
+  - `config.h` -> Pines, tiempos de cada luz (25 s), intervalo de envío ESP-NOW y constantes de calibración.
+  - `const.h` -> Constantes matemáticas.
+  - `brujula/`, `comunicacion/`, `protocolo/` -> Submódulos de hardware y red.
+- `main/`, `CMakeLists.txt`, `sdkconfig.defaults` -> Archivos de ESP-IDF (Arduino como componente). Arduino IDE los ignora.
 
 ---
 
@@ -31,20 +35,26 @@ A diferencia del brazalete que es impulsado por eventos, el semáforo está impu
 
 ---
 
-## Ejemplo de Uso
+## Compilar con Arduino IDE
+1. **Herramientas → Placa → Gestor de placas**: instalar *esp32 by Espressif Systems* (3.x).
+2. Abrir `firmware/semaforo/semaforo.ino`.
+3. En **Herramientas → Placa** elegir **ESP32 Dev Module** (el DevKit V1).
+4. Subir y abrir el monitor serie a **115200** baudios.
 
-Para compilar y cargar localmente:
-
+Lo mismo desde la terminal con `arduino-cli`:
 ```bash
-# Cambiar al directorio raíz
-cd ../../
-
-# Ejecutar linters de calidad
-pio check -d firmware/semaforo
-
-# Compilar para la placa DevKit
-pio run -d firmware/semaforo
-
-# Flashear al hardware conectado por USB
-pio run -d firmware/semaforo --target upload
+arduino-cli compile --fqbn esp32:esp32:esp32 firmware/semaforo
 ```
+
+## Compilar con ESP-IDF
+Requiere **ESP-IDF v5.5** (la versión sobre la que está construido Arduino-ESP32 3.3). El componente `espressif/arduino-esp32` se descarga solo la primera vez (`main/idf_component.yml`).
+```bash
+cd firmware/semaforo
+idf.py set-target esp32
+idf.py build flash monitor
+```
+`main/main.cpp` sólo incluye `semaforo.ino`, así que ambos entornos compilan exactamente el mismo código.
+
+> El paquete ESP-NOW lleva la firma `"ACPI"` (9 bytes). Semáforo y brazalete tienen que
+> flashearse con versiones del mismo protocolo: el brazalete descarta los paquetes viejos
+> de 5 bytes.
