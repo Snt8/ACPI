@@ -15,10 +15,16 @@
 #define CHARACTERISTIC_UUID_TX "87654321-4321-4321-4321-cba987654321" // Notify
 #define CHARACTERISTIC_UUID_RX "11111111-2222-3333-4444-555555555555" // Write
 
+// Cuánto se espera a que el móvil confirme la desconexión antes de apagar el stack
+#define ESPERA_DESCONEXION_MS 500
+
 static BLEServer* pServer = nullptr;
+static BLEService* pService = nullptr;
 static BLECharacteristic* pTxCharacteristic = nullptr;
 static BLECharacteristic* pRxCharacteristic = nullptr;
-static bool clienteConectado = false;
+// Se escriben desde la tarea de NimBLE y se leen desde loop()
+static volatile bool clienteConectado = false;
+static volatile bool apagando = false;  // desinicializar() en curso
 
 class MyServerCallbacks : public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) override {
@@ -28,6 +34,9 @@ class MyServerCallbacks : public BLEServerCallbacks {
 
     void onDisconnect(BLEServer* pServer) override {
         clienteConectado = false;
+        if (apagando) {
+            return;  // se está apagando el BLE: no volver a anunciarse
+        }
         Serial.println("[BLE] Cliente desconectado. Reiniciando publicidad...");
         BLEDevice::startAdvertising();
     }
@@ -63,7 +72,7 @@ bool ComunicadorMovil::inicializar() {
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(&callbacksServidor);
 
-    BLEService* pService = pServer->createService(SERVICE_UUID);
+    pService = pServer->createService(SERVICE_UUID);
 
     pTxCharacteristic = pService->createCharacteristic(
         CHARACTERISTIC_UUID_TX,
@@ -109,15 +118,41 @@ void ComunicadorMovil::enviarDatos(uint16_t heading, uint8_t estado, bool orient
 }
 
 void ComunicadorMovil::desinicializar() {
-    if (pServer != nullptr) {
-        // deinit(false): apaga el stack y la radio BT pero conserva la memoria
-        // del controlador, para poder volver a encenderlo al salir de standby
-        // (con true, BLEDevice::init() fallaría para siempre)
-        BLEDevice::deinit(false);
-        pServer = nullptr;
-        pTxCharacteristic = nullptr;
-        pRxCharacteristic = nullptr;
-        clienteConectado = false;
-        Serial.println("[BLE] Servidor BLE desinicializado.");
+    if (pServer == nullptr) {
+        return;
     }
+    apagando = true;
+    BLEDevice::stopAdvertising();
+
+    // Con el móvil conectado hay que cortar la conexión ANTES de apagar el
+    // stack: BLEDevice::deinit() borra el servidor y recién después detiene
+    // NimBLE, cuyo evento de desconexión llegaría entonces a un servidor ya
+    // liberado (y onDisconnect volvería a anunciarse en pleno apagado)
+    if (clienteConectado) {
+        pServer->disconnect(pServer->getConnId());
+        unsigned long inicio = millis();
+        while (clienteConectado && millis() - inicio < ESPERA_DESCONEXION_MS) {
+            delay(10);
+        }
+    }
+
+    // deinit(false): apaga el stack y la radio BT pero conserva la memoria
+    // del controlador, para poder volver a encenderlo al salir de standby
+    // (con true, BLEDevice::init() fallaría para siempre)
+    BLEDevice::deinit(false);
+
+    // deinit() borra el servidor, pero no el servicio ni sus características.
+    // Las características se liberan aquí; el servicio no se puede (la
+    // biblioteca declara privado su destructor), así que cada ciclo de standby
+    // pierde unos cientos de bytes. El heartbeat muestra el heap libre para
+    // vigilarlo en la placa.
+    delete pTxCharacteristic;
+    delete pRxCharacteristic;
+    pServer = nullptr;
+    pService = nullptr;
+    pTxCharacteristic = nullptr;
+    pRxCharacteristic = nullptr;
+    clienteConectado = false;
+    apagando = false;
+    Serial.println("[BLE] Servidor BLE desinicializado.");
 }
