@@ -1,7 +1,13 @@
-#PlatformIO
-.pio/
-.pioenvs/
-.piolibdeps/
+# Arduino IDE / arduino-cli
+build/
 
-#CLion
+# ESP-IDF
+managed_components/
+sdkconfig
+sdkconfig.old
+
+# CLion
 .cmake-build-*
+
+# PlatformIO (ya no se usa; carpeta vieja local)
+.pio/

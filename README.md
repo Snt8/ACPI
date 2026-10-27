@@ -9,7 +9,7 @@ El sistema combina **hardware en el borde (Edge Computing)** con sensores magné
 
 ## Contenido
 El repositorio principal se divide en los siguientes componentes fundamentales:
-- `/firmware/brazalete/` -> Código fuente (PlatformIO/C++) para el wearable (ESP32-C3 Super Mini).
+- `/firmware/brazalete/` -> Código fuente (Arduino IDE o ESP-IDF) para el wearable (ESP32-C3 Super Mini). Ver su README.
 - `/firmware/semaforo/` -> Código fuente (PlatformIO/C++) para la baliza de infraestructura (ESP32 DevKit V1).
 - `/ACPIGPS/` -> Aplicación móvil Android nativa en Kotlin (Jetpack Compose).
 - `/docs/` -> Documentación adicional y guías de configuración de la nube.
@@ -65,6 +65,5 @@ just flash-brazalete
 
 Sin **Just** (Usando PlatformIO CLI directo):
 ```bash
-pio run -d firmware/brazalete --target upload
 pio run -d firmware/semaforo --target upload
 ```
