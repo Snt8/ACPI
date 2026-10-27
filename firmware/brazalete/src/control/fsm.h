@@ -18,7 +18,6 @@ private:
 
 public:
     static void inicializar();
-    static void registrarPaqueteRecibido();
     static void actualizar();
     static EstadoBrazalete obtenerEstadoActual();
     static void setEstado(EstadoBrazalete nuevoEstado);

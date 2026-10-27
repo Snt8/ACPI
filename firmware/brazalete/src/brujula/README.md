@@ -7,20 +7,27 @@ Este módulo es una capa de abstracción de alto nivel (`ControladorBrujula`) qu
 
 ## Contenido
 - `brujula.h` -> Definiciones de la interfaz y estados estáticos de seguridad.
-- `brujula.cpp` -> Implementación de algoritmos de fusión y la lógica de validación de cruce.
+- `brujula.cpp` -> Implementación de la fusión sensorial y del safety check.
 
 ---
 
 ## Explicación
 El módulo extrae los datos vectoriales brutos de los sensores I2C y ejecuta dos tareas fundamentales:
 
-1. **Safety Check (Filtro Antiruido)**: El módulo monitorea constantemente los cambios bruscos de orientación. Si el brazo del usuario oscila repentinamente y el rumbo cambia más de `UMBRAL_DELTA_HEADING` (e.g. 40°) en menos de 500ms, la lectura se marca como **inválida** y se aborta el procesamiento de feedback. Esto evita que el usuario reciba vibraciones falsas por movimientos naturales de la muñeca.
-2. **Evaluación Diferencial de Enfrentamiento**: A diferencia de comparar si los rumbos son iguales, este módulo usa la aritmética modular para determinar si el brazalete y el semáforo están **enfrentados** (mirándose de frente). Calcula el camino más corto en una circunferencia y evalúa la condición de tolerancia: `|Δθ - 180°| < UMBRAL_CRUCE_GRADOS`.
+1. **Heading con Tilt Compensation**: combina acelerómetro y magnetómetro para obtener el rumbo aunque la muñeca esté inclinada.
+2. **Safety Check (Filtro Antiruido)**: El módulo monitorea constantemente los cambios bruscos de orientación. Si el brazo del usuario oscila repentinamente y el rumbo cambia más de `UMBRAL_DELTA_HEADING` (e.g. 40°) en menos de 500ms, la lectura se marca como **inválida**. Con una lectura inválida el `EvaluadorSemaforo` no indica giros y corta el pulso de orientación que estuviera sonando.
+
+Saber si la persona está **enfrentada** al semáforo ya no es tarea de este módulo: la
+desviación se calcula con `desviacionEnfrentamiento()` (`src/utils/calcular_direccion.h`)
+y la decisión, con histéresis, la toma `EvaluadorSemaforo` (`src/control/`).
+
+La FSM no lee la brújula mientras vibra un motor: los imanes de los motores alteran el
+magnetómetro.
 
 ---
 
 ## Dependencias
-- Módulos internos: `src/sensores` (MPU6050 y QMC5883L).
+- Módulos internos: `src/sensores` (MPU6500, manejado por el driver `mpu6050`, y QMC5883L).
 - Funciones matemáticas estándar (`<math.h>`).
 - Constantes operativas globales (`config.h` y `constantes.h`).
 
@@ -36,12 +43,8 @@ ControladorBrujula::obtenerHeading();
 
 // 2. Comprobar si la muñeca está estable (lectura válida)
 if (ControladorBrujula::headingValido()) {
-    
-    // 3. Evaluar si el peatón está alineado correctamente con el semáforo
-    bool estoyAlineado = ControladorBrujula::revisarSemaforo(rumboSemaforoRecibido);
-    
-    if(estoyAlineado) {
-        // Ejecutar rutina de cruce...
-    }
+    // 3. ¿Cuánto falta para quedar de frente al semáforo?
+    float desviacion = desviacionEnfrentamiento(ControladorBrujula::headingActual,
+                                                rumboSemaforoRecibido);
 }
 ```

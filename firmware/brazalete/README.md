@@ -12,9 +12,11 @@ Se compila con **Arduino IDE** o con **ESP-IDF**; ya no necesita PlatformIO.
 - `src/` -> Todo el resto del código; Arduino IDE lo compila solo.
   - `config.h` -> **Pines y direcciones I2C** del hardware (lo primero que hay que revisar).
   - `constantes.h` -> Constantes matemáticas, intensidades y tiempos de vibración.
-  - `brujula/`, `sensores/`, `motores/`, `control/`, `comunicacion/`, `protocolo/`, `utils/` -> Módulos.
+  - `brujula/`, `sensores/`, `motores/`, `vibracion/`, `control/`, `comunicacion/`, `protocolo/`, `utils/` -> Módulos.
+- `patrones.md` -> **Especificación de los patrones de vibración** y de cuándo suena cada uno.
 - `main/`, `CMakeLists.txt`, `sdkconfig.defaults` -> Archivos de ESP-IDF (Arduino como componente). Arduino IDE los ignora.
 - `pruebas/` -> Sketches independientes para validar el hardware (ver abajo).
+- `test/` -> Pruebas unitarias y de escenario que corren en la PC, sin placa (ver `test/README.md`).
 
 ---
 
@@ -42,7 +44,16 @@ En su estado nominal de `SENSING_CROSSING`, el brazalete ejecuta un ciclo de mue
 3. Compensa el compás magnético por inclinación (_Tilt Compensation_) para obtener el Heading.
 4. Aplica una barrera de movimiento brusco (_Safety Check_): ignora lecturas si el Heading giró $>40^{\circ}$ en medio segundo.
 5. Evalúa la diferencia frente al rumbo transmitido por el Semáforo.
-6. Enciende los micro-motores usando rutinas no bloqueantes.
+
+La vibración la decide el **`EvaluadorSemaforo`** (`src/control/`): compara cada paquete
+del semáforo con el anterior y, junto con la orientación, pide un patrón al
+**`ControladorPatrones`** (`src/vibracion/`) sólo cuando hay un evento. Cada evento vibra
+una vez y entre dos patrones pasan al menos 3 s, para cuidar las soldaduras de los
+motores. Los patrones y sus reglas están en [`patrones.md`](patrones.md). Mientras vibra
+un motor no se lee la brújula, porque sus imanes alteran el magnetómetro.
+
+Los paquetes del semáforo llevan la firma `"ACPI"`; cualquier otro paquete ESP-NOW se
+descarta (ver `src/protocolo/README.md`).
 
 ---
 

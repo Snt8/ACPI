@@ -42,23 +42,47 @@
 // ── Frecuencia de muestreo (2 Hz) ────────────────────────────────────────────
 #define INTERVALO_MUESTREO_MS   500UL
 
-// ── Patrones de vibración ─────────────────────────────────────────────────────
-// ROJO (cruce autorizado): 3 pulsos largos y espaciados → silencio → repite.
-// Sensación: lenta y deliberada ("cruza ahora, con calma").
-// Ciclo total ≈ 3 800 ms.
-#define DURACION_PULSO_ROJO_MS      300UL   // pulso largo
-#define PAUSA_ROJO_MS               700UL   // espacio entre pulsos
-#define SILENCIO_ROJO_MS           1000UL   // pausa antes de repetir
+// ── Standby ──────────────────────────────────────────────────────────────────
+// Sin paquetes del semáforo durante este tiempo, el brazalete pasa a standby.
+// El semáforo envía un paquete cada 500 ms y cambia de luz cada 25 s.
+#define TIEMPO_SIN_PAQUETES_STANDBY_MS 30000UL
 
-// VERDE (esperar): 3 pulsos rápidos → 3 s de silencio → repite.
-// Sensación: ritmo rápido ("todavía no, todavía no").
-// Ciclo total ≈ 4 100 ms.
-#define DURACION_PULSO_VERDE_MS     100UL   // pulso corto
-#define PAUSA_VERDE_MS              500UL   // espacio entre pulsos
-#define SILENCIO_VERDE_MS          3000UL   // silencio largo entre grupos
+// ── Patrones de vibración (ver patrones.md) ──────────────────────────────────
+// Cada patrón suena UNA vez por evento y nunca se repite solo. "Pulso" = motor
+// encendido a su INTENSIDAD_*; "pausa" = motor apagado entre dos pulsos.
 
-// Direccional (usuario mal orientado): un pulso corto cada ~900 ms.
-#define DURACION_PULSO_DIR_MS       200UL
-#define PAUSA_DIR_MS                700UL
+// Regla de protección de las soldaduras: entre el inicio de un patrón y el
+// del siguiente pasan al menos estos ms, y dos patrones nunca se solapan.
+// La garantiza ControladorPatrones; ningún patrón puede saltársela.
+#define SEPARACION_MINIMA_EVENTOS_MS   3000UL
+
+// 1. Semáforo detectado: 3 pulsos cortos de ambos motores (1.6 s en total)
+#define DETECTADO_PULSOS               3
+#define DETECTADO_PULSO_MS             200UL
+#define DETECTADO_PAUSA_MS             500UL
+
+// 2. Orientación: 1 pulso del motor del lado hacia el que hay que girar.
+//    Se repite cada INTERVALO_GIRO_MS mientras la persona siga mal orientada.
+#define GIRO_PULSO_MS                  300UL
+#define INTERVALO_GIRO_MS              3000UL
+
+// 3. Cruce permitido (semáforo peatonal en verde): 2 pulsos sostenidos (4.5 s)
+#define PERMITIDO_PULSOS               2
+#define PERMITIDO_PULSO_MS             2000UL
+#define PERMITIDO_PAUSA_MS             500UL
+
+// 4. Cruce prohibido (semáforo peatonal en rojo): 1 pulso sostenido (2 s)
+#define PROHIBIDO_PULSOS               1
+#define PROHIBIDO_PULSO_MS             2000UL
+
+static_assert(INTERVALO_GIRO_MS >= SEPARACION_MINIMA_EVENTOS_MS,
+              "El pulso de orientacion no puede repetirse antes de la separacion minima");
+
+// ── Orientación frente al cruce ──────────────────────────────────────────────
+// La persona queda "de frente" cuando |Δθ − 180°| < UMBRAL_CRUCE_GRADOS (config.h)
+// y sólo vuelve a "mal orientada" cuando supera UMBRAL + HISTERESIS. Sin esta
+// banda, una lectura que oscila alrededor de 30° alternaría los dos estados y
+// cada vuelta a "de frente" repetiría el patrón del semáforo sin un evento real.
+#define HISTERESIS_ORIENTACION_GRADOS  10.0f
 
 #endif // CONSTANTES_H

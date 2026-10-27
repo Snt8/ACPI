@@ -1,10 +1,11 @@
 #include "fsm.h"
+#include "evaluador_semaforo.h"
+#include "../vibracion/controlador_patrones.h"
 #include "../motores/motor.h"
 #include "../brujula/brujula.h"
 #include "../comunicacion/semaforo/semaforo.h"
 #include "../comunicacion/movil/movil.h"
 #include "../utils/calcular_direccion.h"
-#include "../utils/patrones_vibracion.h"
 #include "../config.h"
 #include "../constantes.h"
 #include <Arduino.h>
@@ -14,45 +15,97 @@ EstadoBrazalete  MaquinaEstados::estadoActual                = EstadoBrazalete::
 unsigned long  MaquinaEstados::ultimoTiempoPaqueteSemaforo = 0;
 unsigned long  MaquinaEstados::ultimoTiempoEnvioBLE        = 0;
 
+// ── Vibración ────────────────────────────────────────────────────────────────
+// El controlador reproduce los patrones y el evaluador decide cuáles, a partir
+// de las diferencias entre paquetes y de la orientación. La FSM es la única
+// que escribe en los motores, con lo que devuelve el controlador.
+static ControladorPatrones patrones;
+static EvaluadorSemaforo   evaluador(patrones);
+
 // ── Variables locales del estado SENSING_CROSSING ────────────────────────────
 static unsigned long ultimo_muestreo_ms = 0;
 
-// Patron de vibracion activo y motor asignado al patron direccional
-enum class PatronActivo { NINGUNO, CONFIRMATORIO, VERDE, DIRECCIONAL };
-static PatronActivo            patron_activo    = PatronActivo::NINGUNO;
-static ControladorMotores::Motor motor_dir_activo = ControladorMotores::DERECHO;
-
-// ── Helper: cambiar patron y limpiar estado anterior ─────────────────────────
-static void activarPatron(PatronActivo nuevo,
-                          ControladorMotores::Motor motor = ControladorMotores::AMBOS) {
-    bool mismo_patron = (patron_activo == nuevo);
-    bool mismo_motor  = (motor_dir_activo == motor);
-
-    if (mismo_patron && (nuevo != PatronActivo::DIRECCIONAL || mismo_motor)) {
-        return;  // Sin cambio — no reiniciar
+static const char* nombrePatron(Patron p) {
+    switch (p) {
+        case Patron::SEMAFORO_DETECTADO: return "SEMAFORO DETECTADO";
+        case Patron::GIRAR_DERECHA:      return "GIRAR A LA DERECHA";
+        case Patron::GIRAR_IZQUIERDA:    return "GIRAR A LA IZQUIERDA";
+        case Patron::CRUCE_PERMITIDO:    return "CRUCE PERMITIDO (verde peatonal)";
+        case Patron::CRUCE_PROHIBIDO:    return "CRUCE PROHIBIDO (rojo peatonal)";
+        default:                         return "NINGUNO";
     }
-
-    reiniciarPatrones();  // Apaga motores y resetea estado interno
-    patron_activo     = nuevo;
-    motor_dir_activo  = motor;
 }
 
-// ── Helper: ejecutar el patron activo en cada iteracion del loop ──────────────
-static void ejecutarPatron() {
-    switch (patron_activo) {
-        case PatronActivo::CONFIRMATORIO:
-            vibracionConfirmatoria(ControladorMotores::AMBOS);
+// ── Paquetes del semáforo ────────────────────────────────────────────────────
+// Recoge el paquete que dejó el callback de ESP-NOW y se lo pasa al evaluador.
+// Sólo los paquetes del semáforo que se está siguiendo mantienen vivo el
+// temporizador de standby.
+static void procesarPaquetes(unsigned long ahora, unsigned long& ultimoPaquete) {
+    estado_semaforo paquete;
+    if (!ComunicadorSemaforo::tomarPaquete(paquete)) return;
+
+    CambioPaquete cambio = evaluador.registrarPaquete(paquete);
+    if (cambio == CambioPaquete::IGNORADO) return;
+    ultimoPaquete = ahora;
+
+    switch (cambio) {
+        case CambioPaquete::SEMAFORO_NUEVO:
+            Serial.printf("[EVAL] Semaforo %u detectado (grados=%u, cruce=%s)\n",
+                          paquete.id, paquete.grados, paquete.permitidoCruce ? "SI" : "NO");
             break;
-        case PatronActivo::VERDE:
-            vibracionVerde(ControladorMotores::AMBOS);
+        case CambioPaquete::CAMBIO_A_PERMITIDO:
+            Serial.println(F("[EVAL] Cambio de luz: cruce PERMITIDO"));
             break;
-        case PatronActivo::DIRECCIONAL:
-            vibracionDireccional(motor_dir_activo);
+        case CambioPaquete::CAMBIO_A_PROHIBIDO:
+            Serial.println(F("[EVAL] Cambio de luz: cruce PROHIBIDO"));
             break;
-        case PatronActivo::NINGUNO:
         default:
             break;
     }
+}
+
+// ── Orientación ──────────────────────────────────────────────────────────────
+// Lee la brújula y le pasa al evaluador qué tan lejos está la persona de
+// quedar de frente al cruce y hacia qué lado tiene que girar.
+static void muestrearOrientacion() {
+    ControladorBrujula::obtenerHeading();
+
+    Orientacion o;
+    o.valida = ControladorBrujula::headingValido();
+    float hp = ControladorBrujula::headingActual;
+    float hs = (float)evaluador.ultimoPaquete().grados;
+    o.desviacion = desviacionEnfrentamiento(hp, hs);
+    // De frente al semáforo = mirando hacia hs + 180°
+    o.giro = calcularDireccion(fmodf(hs + 180.0f, GRADOS_CIRCUNFERENCIA), hp);
+    evaluador.registrarOrientacion(o);
+
+    Serial.printf("[HDG] Brazalete=%.1f  Semaforo=%d  Desviacion=%.1f  Giro=%.1f  %s%s\n",
+                  hp, (int)hs, o.desviacion, o.giro,
+                  evaluador.orientado() ? "DE FRENTE" : "MAL ORIENTADO",
+                  o.valida ? "" : "  (lectura invalida)");
+}
+
+// ── Telemetría BLE ───────────────────────────────────────────────────────────
+static void enviarTelemetria() {
+    const estado_semaforo& s = evaluador.ultimoPaquete();
+    bool orientado = evaluador.orientado();
+
+    uint8_t st;
+    if (!orientado) {
+        st = 2;  // Orientacion incorrecta
+    } else if (s.permitidoCruce) {
+        st = 1;  // Cruce permitido: orientado, semaforo rojo para autos (verde peaton)
+    } else {
+        st = 0;  // Cruce prohibido: orientado pero semaforo verde para autos (rojo peaton)
+    }
+
+    ComunicadorMovil::enviarDatos(
+        (uint16_t)ControladorBrujula::headingActual,
+        st,
+        orientado,
+        s.tiempo,
+        -1  // Bateria no disponible
+    );
 }
 
 // ── Inicialización ────────────────────────────────────────────────────────────
@@ -62,14 +115,6 @@ void MaquinaEstados::inicializar() {
     ultimo_muestreo_ms          = millis();
 
     setEstado(EstadoBrazalete::BOOTING);
-}
-
-// ── Registro de paquete ESP-NOW recibido ──────────────────────────────────────
-void MaquinaEstados::registrarPaqueteRecibido() {
-    ultimoTiempoPaqueteSemaforo = millis();
-    if (estadoActual == EstadoBrazalete::STANDBY_LOW_POWER) {
-        setEstado(EstadoBrazalete::SENSING_CROSSING);
-    }
 }
 
 // ── Getter de estado actual ───────────────────────────────────────────────────
@@ -84,13 +129,18 @@ void MaquinaEstados::setEstado(EstadoBrazalete nuevoEstado) {
     Serial.printf("[FSM] Transicion: %d -> %d\n", (int)estadoActual, (int)nuevoEstado);
 
     if (estadoActual == EstadoBrazalete::SENSING_CROSSING) {
-        patron_activo = PatronActivo::NINGUNO;
-        reiniciarPatrones();
+        // Se corta cualquier patrón y se olvida el semáforo. El controlador
+        // conserva la hora del último patrón: la separación mínima se respeta
+        // aunque el brazalete vuelva a encontrar el semáforo enseguida.
+        patrones.cancelar();
+        ControladorMotores::detenerMotor(ControladorMotores::AMBOS);
+        evaluador.reiniciar();
     }
 
     estadoActual = nuevoEstado;
 
     if (estadoActual == EstadoBrazalete::STANDBY_LOW_POWER) {
+        ComunicadorSemaforo::descartarPendiente();
         Serial.println(F("[FSM] Entrando a modo STANDBY (Bajo Consumo)..."));
     }
 }
@@ -107,101 +157,47 @@ void MaquinaEstados::actualizar() {
             break;
 
         // ── STANDBY_LOW_POWER ─────────────────────────────────────────────────
+        // Espera el primer paquete del semáforo; el paquete se deja en el
+        // buffer para que SENSING_CROSSING lo procese como "semáforo nuevo".
         case EstadoBrazalete::STANDBY_LOW_POWER:
+            if (ComunicadorSemaforo::hayPaquete()) {
+                ultimoTiempoPaqueteSemaforo = ahora;
+                setEstado(EstadoBrazalete::SENSING_CROSSING);
+            }
             break;
 
         // ── SENSING_CROSSING ──────────────────────────────────────────────────
         case EstadoBrazalete::SENSING_CROSSING: {
+            procesarPaquetes(ahora, ultimoTiempoPaqueteSemaforo);
 
-            // Timeout: sin paquetes de semaforo en 30s → volver a standby
-            if (ahora - ultimoTiempoPaqueteSemaforo >= 30000UL) {
+            // Timeout: sin paquetes del semáforo → volver a standby
+            if (ahora - ultimoTiempoPaqueteSemaforo >= TIEMPO_SIN_PAQUETES_STANDBY_MS) {
                 setEstado(EstadoBrazalete::STANDBY_LOW_POWER);
                 break;
             }
 
-            // Ejecutar patron activo en CADA iteracion del loop (no solo cada 500ms).
-            // Los tiempos internos de los patrones dependen de llamadas continuas.
-            ejecutarPatron();
-
-            // ── Muestreo a 2Hz (cada 500ms) ───────────────────────────────────
-            if (ahora - ultimo_muestreo_ms < INTERVALO_MUESTREO_MS) {
-                break;
-            }
-            ultimo_muestreo_ms = ahora;
-
-            // 1. Leer sensores y calcular heading
-            ControladorBrujula::obtenerHeading();
-
-            // 2. Validar que la lectura no fue rechazada por el safety check
-            if (!ControladorBrujula::headingValido()) {
-                activarPatron(PatronActivo::NINGUNO);
-                Serial.println(F("[HDG] Lectura invalida — motores apagados"));
-                break;
+            // Muestreo a 2 Hz. Mientras vibra un motor no se lee la brújula:
+            // los imanes de los motores alteran el magnetómetro.
+            if (ahora - ultimo_muestreo_ms >= INTERVALO_MUESTREO_MS && !patrones.sonando()) {
+                ultimo_muestreo_ms = ahora;
+                muestrearOrientacion();
             }
 
-            // 3. Calcular delta para prints de debug
-            float hp          = ControladorBrujula::headingActual;
-            float hs          = (float)ComunicadorSemaforo::ultimoEstado.grados;
-            float delta       = fabsf(hp - hs);
-            if (delta > 180.0f) delta = 360.0f - delta;
-            float angulo_frente = fabsf(delta - 180.0f);
-
-            Serial.printf("[HDG] Brazalete=%.1f  Semaforo=%d  Delta=%.1f  FrenteA=%.1f  "
-                          "Cruce=%s\n",
-                          hp, (int)hs, delta, angulo_frente,
-                          ComunicadorSemaforo::ultimoEstado.permitidoCruce ? "SI" : "NO");
-
-            // 4. Evaluar orientacion: |delta - 180°| < UMBRAL_CRUCE_GRADOS
-            bool orientacionOk = ControladorBrujula::revisarSemaforo(
-                                     ComunicadorSemaforo::ultimoEstado.grados);
-
-            // 5. Activar patron segun orientacion y estado del semaforo
-            if (orientacionOk) {
-                if (ComunicadorSemaforo::ultimoEstado.permitidoCruce) {
-                    // permitidoCruce=1: semaforo ROJO para autos → peatón PUEDE cruzar
-                    activarPatron(PatronActivo::CONFIRMATORIO);
-                    Serial.println(F("[PAT] CONFIRMATORIO — cruce PERMITIDO (verde peaton)"));
-                } else {
-                    // permitidoCruce=0: semaforo VERDE para autos → peatón DEBE esperar
-                    activarPatron(PatronActivo::VERDE);
-                    Serial.println(F("[PAT] VERDE — cruce PROHIBIDO (rojo peaton)"));
-                }
-            } else {
-                // Usuario mal orientado → indicar hacia donde debe girar
-                float objetivo    = fmod(hs + 180.0f, 360.0f);
-                float direccion  = calcularDireccion(objetivo, hp);
-                ControladorMotores::Motor motor_destino =
-                    (direccion > 0.0f) ? ControladorMotores::DERECHO
-                                       : ControladorMotores::IZQUIERDO;
-
-                activarPatron(PatronActivo::DIRECCIONAL, motor_destino);
-
-                Serial.printf("[PAT] DIRECCIONAL %s  (angulo_frente=%.1f > umbral)\n",
-                              (motor_destino == ControladorMotores::DERECHO)
-                                  ? "DERECHO" : "IZQUIERDO",
-                              angulo_frente);
+            // El evaluador inicia un patrón sólo si hay un evento y el
+            // controlador está libre (separación mínima de 3 s)
+            Patron iniciado = evaluador.orquestar((uint32_t)ahora);
+            if (iniciado != Patron::NINGUNO) {
+                Serial.printf("[PAT] %s\n", nombrePatron(iniciado));
             }
 
-            // 6. Reportar telemetria BLE al movil
+            // Los motores siguen exactamente lo que dice el controlador
+            SalidaMotores salida = patrones.actualizar((uint32_t)ahora);
+            ControladorMotores::aplicar(salida.derecho, salida.izquierdo);
+
+            // Telemetría BLE al móvil
             if (ahora - ultimoTiempoEnvioBLE >= 500UL) {
                 ultimoTiempoEnvioBLE = ahora;
-
-                uint8_t st;
-                if (!orientacionOk) {
-                    st = 2;  // Orientacion incorrecta
-                } else if (ComunicadorSemaforo::ultimoEstado.permitidoCruce) {
-                    st = 1;  // Cruce permitido: orientado, semaforo rojo para autos (verde peaton)
-                } else {
-                    st = 0;  // Cruce prohibido: orientado pero semaforo verde para autos (rojo peaton)
-                }
-
-                ComunicadorMovil::enviarDatos(
-                    (uint16_t)ControladorBrujula::headingActual,
-                    st,
-                    orientacionOk,
-                    ComunicadorSemaforo::ultimoEstado.tiempo,
-                    -1  // Bateria no disponible
-                );
+                enviarTelemetria();
             }
             break;
         }

@@ -82,28 +82,3 @@ void ControladorBrujula::obtenerHeading() {
 bool ControladorBrujula::headingValido() {
     return lecturaValida;
 }
-
-// ── Comparación diferencial: condición de cruce seguro ───────────────────────
-// La condición correcta para que el usuario esté orientado para cruzar es que
-// los dos nodos se ENFRENTEN, es decir, su diferencia angular sea ≈180°.
-//
-// Δθ = min(|Hp - Hs|, 360 - |Hp - Hs|)   → diferencia angular mínima [0, 180]
-// Condición de cruce seguro: |Δθ - 180°| < UMBRAL_CRUCE_GRADOS
-//
-// IMPORTANTE: No es Δθ < 30° (que significaría que apuntan en la misma dirección),
-// sino |Δθ - 180°| < 30° (que significa que están enfrentados).
-bool ControladorBrujula::revisarSemaforo(uint16_t posicionSemaforo) {
-    float Hp = headingActual;
-    float Hs = (float)posicionSemaforo;
-
-    // Diferencia angular absoluta
-    float diff = fabsf(Hp - Hs);
-
-    // Normalizar al rango [0, 180]: tomar el arco menor
-    float delta_theta = (diff > 180.0f) ? (GRADOS_CIRCUNFERENCIA - diff) : diff;
-
-    // Condición de enfrentamiento: Δθ ≈ 180°
-    float desviacion = fabsf(delta_theta - 180.0f);
-
-    return (desviacion < UMBRAL_CRUCE_GRADOS);
-}

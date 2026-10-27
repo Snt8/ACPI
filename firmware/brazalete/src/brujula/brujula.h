@@ -30,11 +30,9 @@ public:
     // (no fue rechazada por el safety check).
     static bool headingValido();
 
-    // Evalúa si el usuario está correctamente orientado para cruzar.
-    // Condición: |Δθ - 180°| < UMBRAL_CRUCE_GRADOS
-    // donde Δθ = min(|Hp - Hs|, 360 - |Hp - Hs|)
-    // Los nodos se ENFRENTAN cuando el peatón está listo para cruzar.
-    static bool revisarSemaforo(uint16_t posicionSemaforo);
+    // Para saber si la persona está de frente al cruce se usa
+    // desviacionEnfrentamiento() de utils/calcular_direccion.h, y la decisión
+    // (con histéresis) la toma EvaluadorSemaforo.
 };
 
 #endif // BRUJULA_H

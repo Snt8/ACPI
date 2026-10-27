@@ -1,0 +1,3 @@
+# Los .bat necesitan CRLF para que cmd los lea bien; los .sh, LF para sh
+*.bat text eol=crlf
+*.sh  text eol=lf

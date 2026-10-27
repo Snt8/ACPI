@@ -22,8 +22,17 @@ public:
     enum Motor { DERECHO, IZQUIERDO, AMBOS };
 
     static bool inicializar();
-    static void vibrarMotor(Motor motor, uint8_t intensidad);
+    // Enciende el motor a su intensidad de constantes.h (INTENSIDAD_MOTOR para
+    // el derecho, INTENSIDAD_MOTOR_IZQUIERDO para el izquierdo)
+    static void vibrarMotor(Motor motor);
     static void detenerMotor(Motor motor);
+    // Deja cada motor encendido o apagado; sólo escribe en el PWM cuando el
+    // estado cambia. La FSM lo usa con la salida del ControladorPatrones.
+    static void aplicar(bool derecho, bool izquierdo);
+
+private:
+    static bool encendido_derecho;
+    static bool encendido_izquierdo;
 };
 
 #endif

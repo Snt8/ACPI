@@ -1,38 +1,72 @@
-# Módulo: Máquina de Estados Finita - FSM (Brazalete)
+# Módulo: Control del Brazalete (FSM y Evaluador)
 
 ## Descripción General
-Este submódulo implementa el núcleo lógico de ejecución del Brazalete ACPI mediante una **Máquina de Estados Finita (FSM)**. Es responsable de manejar las transiciones de estado del sistema (Arranque, Suspensión, Muestreo de Cruce y Pánico), orquestando las respuestas de los motores y el envío de telemetría a un ciclo bloqueado de **2 Hz**.
+Núcleo lógico del brazalete ACPI. La **Máquina de Estados Finita (FSM)** decide qué
+partes del sistema están activas, y el **Evaluador de paquetes** decide cuándo y cómo
+vibra el brazalete a partir de lo que envía el semáforo y de la orientación de la
+persona.
 
 ---
 
 ## Contenido
-- `fsm.h` -> Definición de la clase `MaquinaEstados` y la enumeración `EstadoBrazalete`.
-- `fsm.cpp` -> Implementación del ciclo de vida del *loop* principal, manejo de *Wake-ups* y rutinas ISR de botones.
+- `fsm.h` / `fsm.cpp` -> Clase `MaquinaEstados` y enumeración `EstadoBrazalete`. Corre en cada `loop()`.
+- `evaluador_semaforo.h` / `.cpp` -> Clase `EvaluadorSemaforo`: compara cada paquete del semáforo con el anterior, sigue la orientación y orquesta al `ControladorPatrones` (`src/vibracion/`).
 
 ---
 
 ## Explicación
-El dispositivo Wearable tiene fuertes restricciones de consumo energético. La FSM controla estrictamente qué partes del código se ejecutan dependiendo del contexto:
 
-- **`BOOTING`**: Estado transitorio al arrancar. Inicia periféricos y salta inmediatamente a Standby.
-- **`STANDBY_LOW_POWER`**: Estado por defecto. Si no hay conexión Bluetooth activa ni se han detectado semáforos por ESP-NOW en 30 segundos, ordena al ESP32-C3 entrar en `esp_light_sleep_start()`, apagando los radios y la CPU hasta que ocurra un evento externo (interrupción de GPIO).
-- **`SENSING_CROSSING`**: Estado activo al estar cerca de un semáforo. Restringe todos los cálculos matemáticos (brújula y motores) a una comprobación temporal estricta de **2 Hz (cada 500 ms)** para no agotar la CPU. Define qué patrón de vibración aplicar (Confirmatorio o Direccional) consultando el módulo de Brújula.
-- **`ALERT_PANIC`**: Activado mediante una Interrupción de Hardware (ISR) al presionar el Botón BOOT (GPIO 9). Sobrescribe cualquier estado, activa un patrón de vibración intermitente ultrarrápido y alerta al Smartphone de forma inmediata.
+### Estados de la FSM
+- **`BOOTING`**: estado transitorio al arrancar; pasa enseguida a standby.
+- **`STANDBY_LOW_POWER`**: sin semáforo cerca. No se leen sensores ni vibran los
+  motores; se espera el primer paquete del semáforo.
+- **`SENSING_CROSSING`**: hay un semáforo a la vista. En cada vuelta del `loop()`:
+  1. Recoge el paquete que dejó el callback de ESP-NOW y se lo pasa al evaluador.
+  2. Si pasan `TIEMPO_SIN_PAQUETES_STANDBY_MS` (30 s) sin paquetes del semáforo que se
+     está siguiendo, vuelve a standby.
+  3. A 2 Hz, y **sólo si no está vibrando** (los imanes de los motores alteran el
+     magnetómetro), lee la brújula y le pasa al evaluador la desviación respecto al
+     cruce y hacia qué lado girar.
+  4. `evaluador.orquestar()`: si hay un evento pendiente y el controlador está libre,
+     inicia el patrón que corresponde.
+  5. Aplica a los motores la salida de `ControladorPatrones::actualizar()`.
+  6. Envía la telemetría BLE al móvil cada 500 ms.
+
+### Evaluador de paquetes (`EvaluadorSemaforo`)
+Compara cada paquete con el anterior y lo clasifica:
+
+| Resultado | Cuándo |
+|---|---|
+| `SEMAFORO_NUEVO` | Primer paquete desde que se reinició (al salir de standby). |
+| `CAMBIO_A_PERMITIDO` / `CAMBIO_A_PROHIBIDO` | Cambió `permitidoCruce` respecto al paquete anterior. |
+| `SIN_CAMBIOS` | Misma luz; sólo cambian los grados o el tiempo restante (no es un evento). |
+| `IGNORADO` | Paquete de otro `id`: se sigue al primer semáforo hasta volver a standby. |
+
+Con esos eventos y la orientación decide el patrón (ver `patrones.md`):
+1. `SEMAFORO_DETECTADO` una vez por semáforo nuevo.
+2. Mal orientada: `GIRAR_DERECHA` / `GIRAR_IZQUIERDA` cada `INTERVALO_GIRO_MS` (3 s).
+3. De frente y con la luz sin avisar: `CRUCE_PERMITIDO` o `CRUCE_PROHIBIDO`, una vez.
+4. Cualquier otro caso: nada.
+
+"De frente" usa histéresis: se entra con desviación < 30° y se sale con > 40°. Sólo
+pide patrones cuando el controlador está libre, así que la separación mínima de 3 s
+entre patrones se cumple siempre.
+
+El evaluador y el controlador no usan Arduino: sus pruebas están en `test/`.
 
 ---
 
 ## Dependencias
-- Módulos internos acoplados: `src/motores`, `src/brujula`, `src/comunicacion`, `src/utils`.
-- Framework ESP-IDF: `<esp_sleep.h>` y `<driver/gpio.h>` para manejo de bajo consumo.
+- `src/vibracion` (`ControladorPatrones`), `src/motores`, `src/brujula`, `src/comunicacion`, `src/utils`.
+- `src/protocolo/protocolo_esp.h` (paquete `estado_semaforo`).
 
 ---
 
 ## Ejemplo de Uso
-
-La FSM se aloja puramente en `brazalete.ino` liberando al desarrollador de crear sub-bucles infinitos.
+La FSM se usa desde `brazalete.ino`, sin bucles ni `delay()` propios:
 
 ```cpp
-#include "control/fsm.h"
+#include "src/control/fsm.h"
 
 void setup() {
     // Tras iniciar los buses I2C y periféricos...
@@ -40,8 +74,6 @@ void setup() {
 }
 
 void loop() {
-    // La FSM evalúa millis() y resuelve lógicas internamente
-    // sin el uso de bloqueos delay()
     MaquinaEstados::actualizar();
 }
 ```

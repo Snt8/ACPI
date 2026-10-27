@@ -12,7 +12,7 @@ void indicarError() {
     //Repetiriamos el pulso 3 veces para indicar el error
     for (int i = 0; i < 3; i++) {
         //Ejecutamos los 3 pulsos en intervalos
-        ControladorMotores::vibrarMotor(ControladorMotores::AMBOS, INTENSIDAD_MOTOR);
+        ControladorMotores::vibrarMotor(ControladorMotores::AMBOS);
         delay(INTERVALOS_ERROR);
         ControladorMotores::detenerMotor(ControladorMotores::AMBOS);
         delay(INTERVALOS_ERROR);

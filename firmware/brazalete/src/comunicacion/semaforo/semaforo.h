@@ -8,13 +8,24 @@
 #include <esp_now.h>
 #include "../../protocolo/protocolo_esp.h" //Incluimos el protocolo de ESP-Now para usar la estructura de la comunicacion
 
+// Receptor ESP-NOW de los paquetes del semáforo.
+// El callback de ESP-NOW corre en la tarea de WiFi, no en loop(): por eso sólo
+// valida el paquete (tamaño y firma "ACPI") y lo deja en un buffer protegido.
+// La FSM lo recoge desde loop() con tomarPaquete(), así toda la lógica corre
+// en un único hilo y no hay carreras con el evaluador.
 class ComunicadorSemaforo {
 private:
     static const uint8_t BROADCAST_MAC[6]; //Direccion MAC
 public:
-    static estado_semaforo ultimoEstado; //Ultimo paquete de datos recibido
-    static bool inicializar(); //Establece la comunicacion con el Semaforo
-    static bool desinicializar(); //Detiene la comunicacoin con el Semaforo
+    static estado_semaforo ultimoEstado; //Ultimo paquete tomado con tomarPaquete() (para depuración)
+    static bool inicializar(); //Enciende el WiFi en modo estación y empieza a escuchar ESP-NOW
+    static bool desinicializar(); //Deja de escuchar y apaga el WiFi por completo
+    // Copia en 'paquete' el último paquete válido recibido y lo marca como
+    // leído. Devuelve false si no llegó ninguno desde la última llamada.
+    static bool tomarPaquete(estado_semaforo& paquete);
+    static bool hayPaquete(); //true si hay un paquete sin tomar
+    static void descartarPendiente(); //Olvida el paquete sin tomar, si lo hay
+    static uint32_t paquetesDescartados(); //Paquetes ESP-NOW rechazados por tamaño o firma
 private:
     // La firma del callback cambió en ESP-IDF 5 (core Arduino-ESP32 v3.x): ahora recibe
     // esp_now_recv_info_t en vez de la MAC remota. Se compila la que corresponda.

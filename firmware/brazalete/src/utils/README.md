@@ -1,49 +1,48 @@
 # Módulo: Utilidades Globales (Utils)
 
 ## Descripción General
-Este submódulo centraliza funciones y abstracciones matemáticas complejas, calculadoras angulares de circunferencia y gestores de temporización avanzada asíncrona para descargar de lógica *spaghetti* a la FSM principal del brazalete.
+Este submódulo centraliza funciones matemáticas de circunferencia y rutinas auxiliares
+para descargar a la FSM principal del brazalete.
 
 ---
 
 ## Contenido
-- `calcular_direccion.*` -> Matemáticas de arco y geometría de círculo.
-- `patrones_vibracion.*` -> Manejadores de temporizadores (`millis`) asíncronos para generar feedback háptico rítmico.
-- `indicar_error.*` -> Rutinas críticas de bloqueo (Watchdog manuales).
+- `calcular_direccion.*` -> Matemáticas de arco y geometría de círculo. Sólo usa `<math.h>`, así que también compila en las pruebas de la PC (`test/`).
+- `indicar_error.*` -> Rutina de bloqueo con vibración para errores fatales de inicialización.
+
+Los patrones de vibración ya no están aquí: viven en `src/vibracion/` (reproducción) y
+`src/control/evaluador_semaforo.*` (decisión).
 
 ---
 
 ## Explicación
 
-### 1. Cálculos de Dirección Diferencial
-Debido a que el campo magnético trabaja en forma circular $[0, 360)$, la aritmética tradicional falla (ej: la diferencia geométrica entre $350^{\circ}$ y $10^{\circ}$ no es 340, sino 20 grados). La función `calcularDireccion` utiliza `fmod()` para encontrar la desviación angular usando aritmética modular y retornar el vector más corto (positivo = hacia la derecha, negativo = hacia la izquierda).
+### 1. Giro hacia el cruce: `calcularDireccion`
+Debido a que el campo magnético trabaja en forma circular $[0, 360)$, la aritmética tradicional falla (ej: la diferencia geométrica entre $350^{\circ}$ y $10^{\circ}$ no es 340, sino 20 grados). La función `calcularDireccion` utiliza `fmodf()` para encontrar la desviación angular usando aritmética modular y retornar el giro más corto en $(-180, 180]$ (positivo = hacia la derecha, negativo = hacia la izquierda).
 
-### 2. Patrones de Vibración (FSM Internas No-Bloqueantes)
-Usar `delay()` en el microcontrolador causaría la pérdida de paquetes ESP-NOW y BLE al bloquear el núcleo. 
-El archivo `patrones_vibracion` implementa un generador asíncrono de perfiles de vibración:
-- **Confirmatorio**: Ejecuta una coreografía (Pulso -> Pausa -> Pulso) midiendo diferencias de tiempo transcurrido, preservando los ciclos del loop principal del brazalete.
-- **Direccional**: Pulso constante supervisado (Watchdog por tiempo límite).
+### 2. Distancia a quedar de frente: `desviacionEnfrentamiento`
+El brazalete y el semáforo están bien orientados cuando se **enfrentan**, es decir,
+cuando la diferencia entre sus headings es de unos $180^{\circ}$:
+
+$$\Delta\theta = \min(|H_p - H_s|,\ 360 - |H_p - H_s|) \qquad \text{desviación} = |\Delta\theta - 180^{\circ}|$$
+
+Devuelve 0 cuando están de frente y 180 cuando miran hacia el mismo lado. El
+`EvaluadorSemaforo` la compara con `UMBRAL_CRUCE_GRADOS` (con histéresis).
 
 ---
 
 ## Dependencias
-- Módulo `src/motores` (Para invocar llamadas físicas reales).
-- Archivo de configuraciones generales (`constantes.h` para usar el valor de PI o Grados de Círculo).
+- `constantes.h` (`GRADOS_CIRCUNFERENCIA`).
+- `indicar_error` usa `src/motores`.
 
 ---
 
 ## Ejemplo de Uso
-
-**Generación asíncrona (A usar dentro del loop/FSM)**:
 ```cpp
-#include "utils/patrones_vibracion.h"
+#include "utils/calcular_direccion.h"
 
-void loop() {
-    // Retorna true si la animación está en curso, sin bloquear la ejecución actual.
-    // Llama a los motores internamente.
-    bool ocupado = vibracionConfirmatoria(ControladorMotores::AMBOS);
-    
-    if(!ocupado) {
-        // Ejecutar otras labores.
-    }
-}
+float hp = 300.0f;   // heading del brazalete
+float hs = 90.0f;    // heading del semáforo
+float desviacion = desviacionEnfrentamiento(hp, hs);         // 30°
+float giro = calcularDireccion(fmodf(hs + 180.0f, 360.0f), hp); // -30°: girar a la izquierda
 ```
