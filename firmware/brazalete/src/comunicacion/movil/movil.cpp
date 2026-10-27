@@ -47,11 +47,21 @@ class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
     }
 };
 
+// Los callbacks son estáticos: el BLE se enciende y apaga en cada ciclo de
+// standby, y crearlos con new en cada encendido iría perdiendo memoria
+static MyServerCallbacks         callbacksServidor;
+static MyCharacteristicCallbacks callbacksRx;
+
 bool ComunicadorMovil::inicializar() {
-    BLEDevice::init("ACPI_Brazalete");
+    if (pServer != nullptr) {
+        return true;  // ya estaba encendido
+    }
+    if (!BLEDevice::init("ACPI_Brazalete")) {
+        return false;
+    }
 
     pServer = BLEDevice::createServer();
-    pServer->setCallbacks(new MyServerCallbacks());
+    pServer->setCallbacks(&callbacksServidor);
 
     BLEService* pService = pServer->createService(SERVICE_UUID);
 
@@ -67,7 +77,7 @@ bool ComunicadorMovil::inicializar() {
         CHARACTERISTIC_UUID_RX,
         BLECharacteristic::PROPERTY_WRITE
     );
-    pRxCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
+    pRxCharacteristic->setCallbacks(&callbacksRx);
 
     pService->start();
 
@@ -100,7 +110,10 @@ void ComunicadorMovil::enviarDatos(uint16_t heading, uint8_t estado, bool orient
 
 void ComunicadorMovil::desinicializar() {
     if (pServer != nullptr) {
-        BLEDevice::deinit(true);
+        // deinit(false): apaga el stack y la radio BT pero conserva la memoria
+        // del controlador, para poder volver a encenderlo al salir de standby
+        // (con true, BLEDevice::init() fallaría para siempre)
+        BLEDevice::deinit(false);
         pServer = nullptr;
         pTxCharacteristic = nullptr;
         pRxCharacteristic = nullptr;

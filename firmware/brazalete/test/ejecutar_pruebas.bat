@@ -28,8 +28,10 @@ cl /nologo /std:c++17 /EHsc /W4 /WX /utf-8 /Fo"%SALIDA%\\" /Fe"%SALIDA%\pruebas.
     "%AQUI%test_evaluador_semaforo.cpp" ^
     "%AQUI%test_escenarios.cpp" ^
     "%AQUI%test_utilidades.cpp" ^
+    "%AQUI%test_ciclo_escucha.cpp" ^
     "%AQUI%..\src\vibracion\controlador_patrones.cpp" ^
     "%AQUI%..\src\control\evaluador_semaforo.cpp" ^
+    "%AQUI%..\src\control\ciclo_escucha.cpp" ^
     "%AQUI%..\src\utils\calcular_direccion.cpp" || exit /b 1
 
 "%SALIDA%\pruebas.exe"

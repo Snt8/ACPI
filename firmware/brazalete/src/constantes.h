@@ -47,6 +47,18 @@
 // El semáforo envía un paquete cada 500 ms y cambia de luz cada 25 s.
 #define TIEMPO_SIN_PAQUETES_STANDBY_MS 30000UL
 
+// En standby la radio sólo escucha una ventana corta cada INTERVALO (inicio a
+// inicio); el resto del tiempo el WiFi está apagado. La ventana abarca más de
+// dos envíos del semáforo para no perderlo aunque el WiFi tarde en arrancar.
+#define INTERVALO_ESCUCHA_STANDBY_MS   5000UL
+#define VENTANA_ESCUCHA_STANDBY_MS     1200UL
+#define INTERVALO_ENVIO_SEMAFORO_MS    500UL   // INTERVALO_ENVIO_MS en firmware/semaforo
+
+static_assert(VENTANA_ESCUCHA_STANDBY_MS > 2 * INTERVALO_ENVIO_SEMAFORO_MS,
+              "La ventana de escucha debe abarcar al menos dos envios del semaforo");
+static_assert(VENTANA_ESCUCHA_STANDBY_MS < INTERVALO_ESCUCHA_STANDBY_MS,
+              "La ventana de escucha debe ser mas corta que el intervalo");
+
 // ── Patrones de vibración (ver patrones.md) ──────────────────────────────────
 // Cada patrón suena UNA vez por evento y nunca se repite solo. "Pulso" = motor
 // encendido a su INTENSIDAD_*; "pausa" = motor apagado entre dos pulsos.

@@ -55,6 +55,12 @@ un motor no se lee la brújula, porque sus imanes alteran el magnetómetro.
 Los paquetes del semáforo llevan la firma `"ACPI"`; cualquier otro paquete ESP-NOW se
 descarta (ver `src/protocolo/README.md`).
 
+**Standby:** el brazalete arranca en standby y vuelve a él tras 30 s sin paquetes del
+semáforo. En standby no lee sensores, no vibra, y tiene el BLE y el WiFi apagados; sólo
+enciende la radio 1.2 s cada 5 s para buscar el paquete del semáforo, y entre escuchas
+la CPU duerme en *light sleep* (salvo con cable USB conectado, para no cortar el monitor
+serie). Detalle en `src/control/README.md`.
+
 ---
 
 ## Dependencias

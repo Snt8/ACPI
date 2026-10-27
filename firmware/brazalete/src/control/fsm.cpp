@@ -1,5 +1,6 @@
 #include "fsm.h"
 #include "evaluador_semaforo.h"
+#include "modo_standby.h"
 #include "../vibracion/controlador_patrones.h"
 #include "../motores/motor.h"
 #include "../brujula/brujula.h"
@@ -128,7 +129,9 @@ void MaquinaEstados::setEstado(EstadoBrazalete nuevoEstado) {
 
     Serial.printf("[FSM] Transicion: %d -> %d\n", (int)estadoActual, (int)nuevoEstado);
 
-    if (estadoActual == EstadoBrazalete::SENSING_CROSSING) {
+    EstadoBrazalete anterior = estadoActual;
+
+    if (anterior == EstadoBrazalete::SENSING_CROSSING) {
         // Se corta cualquier patrón y se olvida el semáforo. El controlador
         // conserva la hora del último patrón: la separación mínima se respeta
         // aunque el brazalete vuelva a encontrar el semáforo enseguida.
@@ -140,8 +143,24 @@ void MaquinaEstados::setEstado(EstadoBrazalete nuevoEstado) {
     estadoActual = nuevoEstado;
 
     if (estadoActual == EstadoBrazalete::STANDBY_LOW_POWER) {
-        ComunicadorSemaforo::descartarPendiente();
+        // Standby: sin BLE, sin WiFi (salvo las ventanas de escucha), sin
+        // sensores ni motores. Al arrancar se escucha de inmediato; viniendo
+        // de SENSING_CROSSING, a los 5 s.
         Serial.println(F("[FSM] Entrando a modo STANDBY (Bajo Consumo)..."));
+        ComunicadorMovil::desinicializar();
+        ModoStandby::entrar((uint32_t)millis(), anterior == EstadoBrazalete::BOOTING);
+    }
+
+    if (estadoActual == EstadoBrazalete::SENSING_CROSSING) {
+        // La radio ESP-NOW quedó encendida desde la escucha que encontró el
+        // semáforo; se suma el BLE para la telemetría al móvil
+        if (!ComunicadorMovil::inicializar()) {
+            Serial.println(F("[FSM] [ERROR] No se pudo encender el BLE"));
+        }
+        unsigned long ahora = millis();
+        ultimoTiempoPaqueteSemaforo = ahora;
+        ultimoTiempoEnvioBLE        = ahora;
+        ultimo_muestreo_ms          = ahora;
     }
 }
 
@@ -157,11 +176,11 @@ void MaquinaEstados::actualizar() {
             break;
 
         // ── STANDBY_LOW_POWER ─────────────────────────────────────────────────
-        // Espera el primer paquete del semáforo; el paquete se deja en el
-        // buffer para que SENSING_CROSSING lo procese como "semáforo nuevo".
+        // ModoStandby enciende la radio unos instantes cada 5 s. Cuando oye un
+        // paquete del semáforo, éste queda en el buffer para que
+        // SENSING_CROSSING lo procese como "semáforo nuevo".
         case EstadoBrazalete::STANDBY_LOW_POWER:
-            if (ComunicadorSemaforo::hayPaquete()) {
-                ultimoTiempoPaqueteSemaforo = ahora;
+            if (ModoStandby::actualizar((uint32_t)ahora)) {
                 setEstado(EstadoBrazalete::SENSING_CROSSING);
             }
             break;

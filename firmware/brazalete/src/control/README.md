@@ -11,6 +11,8 @@ persona.
 ## Contenido
 - `fsm.h` / `fsm.cpp` -> Clase `MaquinaEstados` y enumeración `EstadoBrazalete`. Corre en cada `loop()`.
 - `evaluador_semaforo.h` / `.cpp` -> Clase `EvaluadorSemaforo`: compara cada paquete del semáforo con el anterior, sigue la orientación y orquesta al `ControladorPatrones` (`src/vibracion/`).
+- `modo_standby.h` / `.cpp` -> Clase `ModoStandby`: apaga las radios y escucha al semáforo una ventana corta cada 5 s, durmiendo en light sleep entre ventanas.
+- `ciclo_escucha.h` / `.cpp` -> Clase `CicloEscucha`: decide cuándo abrir y cerrar cada ventana de escucha (sin Arduino, probada en `test/`).
 
 ---
 
@@ -18,8 +20,22 @@ persona.
 
 ### Estados de la FSM
 - **`BOOTING`**: estado transitorio al arrancar; pasa enseguida a standby.
-- **`STANDBY_LOW_POWER`**: sin semáforo cerca. No se leen sensores ni vibran los
-  motores; se espera el primer paquete del semáforo.
+- **`STANDBY_LOW_POWER`**: sin semáforo cerca. Se entra al arrancar y tras
+  `TIEMPO_SIN_PAQUETES_STANDBY_MS` (30 s) sin paquetes del semáforo. Mientras dura:
+  - no se leen los sensores y los motores están apagados;
+  - el BLE está apagado (`ComunicadorMovil::desinicializar()`);
+  - el WiFi está apagado, salvo una ventana de `VENTANA_ESCUCHA_STANDBY_MS` (1.2 s)
+    cada `INTERVALO_ESCUCHA_STANDBY_MS` (5 s) en la que ESP-NOW escucha buscando el
+    paquete `"ACPI"`. Al arrancar la primera ventana es inmediata; viniendo de
+    `SENSING_CROSSING`, a los 5 s;
+  - entre ventanas la CPU duerme en *light sleep* si `STANDBY_LIGHT_SLEEP` vale 1 y no
+    hay cable USB conectado (el light sleep cortaría el monitor serie; con USB se
+    espera con `delay()`).
+
+  Los paquetes ESP-NOW sin la firma `"ACPI"` o con otro tamaño se descartan en el
+  callback, así que sólo el semáforo puede sacar al brazalete de standby. Al oír uno,
+  la radio queda encendida, se enciende el BLE y se pasa a `SENSING_CROSSING`, donde
+  ese mismo paquete produce el aviso de "semáforo detectado".
 - **`SENSING_CROSSING`**: hay un semáforo a la vista. En cada vuelta del `loop()`:
   1. Recoge el paquete que dejó el callback de ESP-NOW y se lo pasa al evaluador.
   2. Si pasan `TIEMPO_SIN_PAQUETES_STANDBY_MS` (30 s) sin paquetes del semáforo que se

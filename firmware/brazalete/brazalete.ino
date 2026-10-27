@@ -40,20 +40,9 @@ void setup() {
         Serial.println("[BOOT] Brújula lista.");
     }
 
-    // 3. Inicializar Comunicaciones (ESP-NOW + BLE)
-    Serial.println("[BOOT] Inicializando receptor ESP-NOW (Semaforo)...");
-    if (!ComunicadorSemaforo::inicializar()) {
-        Serial.println("[BOOT] [ERROR] Fallo al inicializar receptor ESP-NOW!");
-    } else {
-        Serial.println("[BOOT] Receptor ESP-NOW listo.");
-    }
-
-    Serial.println("[BOOT] Inicializando BLE...");
-    if (!ComunicadorMovil::inicializar()) {
-        Serial.println("[BOOT] [ERROR] Fallo al inicializar BLE!");
-    } else {
-        Serial.println("[BOOT] BLE listo.");
-    }
+    // 3. Las radios (ESP-NOW y BLE) no se encienden aquí: el brazalete arranca
+    //    en standby, que escucha al semáforo cada 5 s, y el BLE se enciende
+    //    recién al encontrarlo (ver src/control/modo_standby.h)
 
     // 4. Inicializar FSM
     Serial.println("[BOOT] Inicializando Maquina de Estados...");

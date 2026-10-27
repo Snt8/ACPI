@@ -22,6 +22,12 @@
 // Los nodos se ENFRENTAN cuando el usuario está correctamente orientado para cruzar.
 #define UMBRAL_CRUCE_GRADOS     30.0f
 
+// ── Modo standby ─────────────────────────────────────────────────────────────
+// 1: entre escuchas la CPU duerme en light sleep (menor consumo). Sólo se usa
+// sin cable USB conectado, porque el light sleep corta el monitor serie.
+// 0: espera con delay() aunque no haya USB (útil para depurar con UART).
+#define STANDBY_LIGHT_SLEEP     1
+
 // ── Timing de vibración de error (indicar_error.cpp) ─────────────────────────
 #define INTERVALOS_ERROR        200
 

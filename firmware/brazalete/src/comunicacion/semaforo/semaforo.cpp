@@ -37,26 +37,41 @@ void ComunicadorSemaforo::onDatosRecibidos(const uint8_t *mac_addr, const uint8_
 }
 
 
+//true mientras ESP-NOW esté escuchando. El standby enciende y apaga la radio
+//cada 5 s; con esta marca, llamar dos veces seguidas no hace nada
+static bool radio_activa = false;
+
 //Desarrollamos el contenido del metodo para inicializar el dispositivo
 bool ComunicadorSemaforo::inicializar() {
+    if (radio_activa) {
+        return true;
+    }
     WiFi.mode(WIFI_STA);
     //Evaluamos para determinar si la inicializacion de ESP-Now fue exitosa
     if (esp_now_init() != ESP_OK) {
+        WiFi.mode(WIFI_OFF);
         return false;
     }
     //Evaluamos para determinar si el registro del callback es exitoso
     if (esp_now_register_recv_cb(onDatosRecibidos) != ESP_OK) {
+        esp_now_deinit();
+        WiFi.mode(WIFI_OFF);
         return false;
     }
+    radio_activa = true;
     //Retornamos verdadero si la comunicacion se ha establecido correctamente
     return true;
 }
 
 //Desarrollamos el contenido para desinicializar el dispositivo
 bool ComunicadorSemaforo::desinicializar() {
-    //Se intenta todo aunque un paso falle: lo importante es que la radio quede apagada
-    bool ok = (esp_now_unregister_recv_cb() == ESP_OK);
-    ok &= (esp_now_deinit() == ESP_OK);
+    bool ok = true;
+    if (radio_activa) {
+        //Se intenta todo aunque un paso falle: lo importante es que la radio quede apagada
+        ok &= (esp_now_unregister_recv_cb() == ESP_OK);
+        ok &= (esp_now_deinit() == ESP_OK);
+        radio_activa = false;
+    }
     //Apagamos el WiFi por completo (en standby la radio sólo se enciende para escuchar)
     ok &= WiFi.mode(WIFI_OFF);
     return ok;

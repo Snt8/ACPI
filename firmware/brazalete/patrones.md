@@ -128,5 +128,7 @@ STANDBY ──primer paquete "ACPI"──▶ [1] detectado
 ## Standby
 
 Tras `TIEMPO_SIN_PAQUETES_STANDBY_MS` (30 s) sin paquetes del semáforo, el brazalete
-corta cualquier patrón, apaga los motores y olvida el semáforo. Al encontrarlo de nuevo
-vuelve a sonar el aviso 1, respetando igualmente los 3 s desde el último patrón.
+corta cualquier patrón, apaga los motores y olvida el semáforo. En standby no vibra
+nunca: no hay paquetes ni lecturas que puedan generar un evento (ver
+`src/control/README.md`). Al encontrar de nuevo el semáforo vuelve a sonar el aviso 1,
+respetando igualmente los 3 s desde el último patrón.
