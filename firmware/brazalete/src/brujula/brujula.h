@@ -23,7 +23,8 @@ public:
 
     // Lee sensores, aplica tilt compensation y actualiza headingActual.
     // Internamente evalúa el safety check: si el heading cambia > UMBRAL_DELTA_HEADING
-    // en menos de UMBRAL_TIEMPO_SAFETY_MS, invalida la lectura.
+    // respecto a una lectura de hace menos de UMBRAL_TIEMPO_SAFETY_MS (la
+    // muestra anterior), invalida la lectura.
     static void obtenerHeading();
 
     // Retorna true si la última lectura de heading fue considerada válida

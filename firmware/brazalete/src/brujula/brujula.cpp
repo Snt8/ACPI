@@ -5,6 +5,7 @@
 #include <math.h>
 #include "../config.h"
 #include "../constantes.h"
+#include "../utils/calcular_direccion.h"
 
 // ── Variables estáticas ───────────────────────────────────────────────────────
 float        ControladorBrujula::headingActual      = 0.0f;
@@ -48,17 +49,15 @@ void ControladorBrujula::obtenerHeading() {
     float nuevo_heading = ControladorMagnetometro::calcularHeading(gx, gy, gz);
 
     // ── Safety check ──────────────────────────────────────────────────────────
-    // Si el heading cambia más de UMBRAL_DELTA_HEADING grados en menos de
-    // UMBRAL_TIEMPO_SAFETY_MS milisegundos, se considera una lectura inválida
-    // (movimiento brusco o ruido). No se actualiza headingActual.
+    // Si el heading cambia más de UMBRAL_DELTA_HEADING grados respecto a la
+    // lectura anterior y ésta tiene menos de UMBRAL_TIEMPO_SAFETY_MS (dos
+    // muestras seguidas), se considera una lectura inválida (movimiento brusco
+    // o ruido). No se actualiza headingActual.
     unsigned long dt = ahora - tiempoUltimaLectura;
 
     if (dt < UMBRAL_TIEMPO_SAFETY_MS) {
-        // Calcular diferencia angular mínima en el círculo
-        float delta = fabsf(nuevo_heading - headingAnterior);
-        if (delta > GRADOS_CIRCUNFERENCIA / 2.0f) {
-            delta = GRADOS_CIRCUNFERENCIA - delta;
-        }
+        // Diferencia angular mínima en el círculo
+        float delta = arcoMenor(nuevo_heading, headingAnterior);
 
         if (delta > UMBRAL_DELTA_HEADING) {
             // Lectura rechazada: cambio de heading demasiado rápido

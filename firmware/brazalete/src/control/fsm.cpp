@@ -76,8 +76,7 @@ static void muestrearOrientacion() {
     float hp = ControladorBrujula::headingActual;
     float hs = (float)evaluador.ultimoPaquete().grados;
     o.desviacion = desviacionEnfrentamiento(hp, hs);
-    // De frente al semáforo = mirando hacia hs + 180°
-    o.giro = calcularDireccion(fmodf(hs + 180.0f, GRADOS_CIRCUNFERENCIA), hp);
+    o.giro       = giroParaEnfrentar(hp, hs);
     evaluador.registrarOrientacion(o);
 
     Serial.printf("[HDG] Brazalete=%.1f  Semaforo=%d  Desviacion=%.1f  Giro=%.1f  %s%s\n",

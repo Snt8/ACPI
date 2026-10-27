@@ -43,12 +43,18 @@ PRUEBA(desviacion_cruza_el_norte) {
     VERIFICAR_CERCA(desviacionEnfrentamiento(5.0f, 160.0f), 25.0f, 0.01);
 }
 
+PRUEBA(arco_menor) {
+    VERIFICAR_CERCA(arcoMenor(350.0f, 10.0f), 20.0f, 0.01);
+    VERIFICAR_CERCA(arcoMenor(10.0f, 350.0f), 20.0f, 0.01);
+    VERIFICAR_CERCA(arcoMenor(0.0f, 180.0f), 180.0f, 0.01);
+    VERIFICAR_CERCA(arcoMenor(90.0f, 90.0f), 0.0f, 0.01);
+}
+
 PRUEBA(desviacion_y_giro_son_coherentes) {
-    // Girar lo que indica calcularDireccion hacia (hs + 180) deja la desviación en 0
+    // Girar lo que indica giroParaEnfrentar (lo que usa la FSM) deja la desviación en 0
     for (int hs = 0; hs < 360; hs += 13) {
         for (int hp = 0; hp < 360; hp += 17) {
-            float objetivo = (float)((hs + 180) % 360);
-            float giro = calcularDireccion(objetivo, (float)hp);
+            float giro = giroParaEnfrentar((float)hp, (float)hs);
             float nuevo = (float)hp + giro;
             while (nuevo < 0.0f) nuevo += 360.0f;
             while (nuevo >= 360.0f) nuevo -= 360.0f;

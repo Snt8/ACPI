@@ -19,10 +19,20 @@ float calcularDireccion(float posicionSemaforo, float headingActual) {
     return diferencia;
 }
 
-float desviacionEnfrentamiento(float headingBrazalete, float headingSemaforo) {
+float arcoMenor(float a, float b) {
     //Diferencia angular absoluta, llevada al arco menor [0, 180]
-    float diff = fabsf(fmodf(headingBrazalete - headingSemaforo, GRADOS_CIRCUNFERENCIA));
-    float delta_theta = (diff > GRADOS_CIRCUNFERENCIA / 2) ? (GRADOS_CIRCUNFERENCIA - diff) : diff;
+    float diff = fabsf(fmodf(a - b, GRADOS_CIRCUNFERENCIA));
+    return (diff > GRADOS_CIRCUNFERENCIA / 2) ? (GRADOS_CIRCUNFERENCIA - diff) : diff;
+}
+
+float giroParaEnfrentar(float headingBrazalete, float headingSemaforo) {
+    //De frente al semáforo = mirando hacia el lado opuesto a su heading
+    float objetivo = fmodf(headingSemaforo + GRADOS_CIRCUNFERENCIA / 2, GRADOS_CIRCUNFERENCIA);
+    return calcularDireccion(objetivo, headingBrazalete);
+}
+
+float desviacionEnfrentamiento(float headingBrazalete, float headingSemaforo) {
     //Los nodos se ENFRENTAN cuando Δθ ≈ 180°: la desviación es cuánto falta para eso
+    float delta_theta = arcoMenor(headingBrazalete, headingSemaforo);
     return fabsf(delta_theta - GRADOS_CIRCUNFERENCIA / 2);
 }

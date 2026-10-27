@@ -42,7 +42,7 @@ En su estado nominal de `SENSING_CROSSING`, el brazalete ejecuta un ciclo de mue
 1. Lee los componentes vectoriales $g_x, g_y, g_z$ del acelerómetro.
 2. Extrae las lecturas crudas del magnetómetro y les aplica compensación _Hard-Iron_ mediante un _Leaky Integrator_.
 3. Compensa el compás magnético por inclinación (_Tilt Compensation_) para obtener el Heading.
-4. Aplica una barrera de movimiento brusco (_Safety Check_): ignora lecturas si el Heading giró $>40^{\circ}$ en medio segundo.
+4. Aplica una barrera de movimiento brusco (_Safety Check_): ignora lecturas si el Heading giró $>40^{\circ}$ entre dos muestras seguidas.
 5. Evalúa la diferencia frente al rumbo transmitido por el Semáforo.
 
 La vibración la decide el **`EvaluadorSemaforo`** (`src/control/`): compara cada paquete

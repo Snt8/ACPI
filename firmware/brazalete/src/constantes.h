@@ -33,14 +33,22 @@
 #define LEAKY_ALPHA             0.99f
 #define LEAKY_BETA              0.01f
 
-// ── Safety check de heading (brazalete) ────────────────────────────────────────
-// Si el heading cambia más de este valor en menos de UMBRAL_TIEMPO_SEGURIDAD_MS,
-// la lectura se invalida y no se emite señal de cruce
-#define UMBRAL_DELTA_HEADING    40.0f
-#define UMBRAL_TIEMPO_SAFETY_MS 500UL
-
 // ── Frecuencia de muestreo (2 Hz) ────────────────────────────────────────────
 #define INTERVALO_MUESTREO_MS   500UL
+
+// ── Safety check de heading (brazalete) ────────────────────────────────────────
+// Si el heading cambia más de UMBRAL_DELTA_HEADING entre dos lecturas separadas
+// por menos de UMBRAL_TIEMPO_SAFETY_MS, la lectura se invalida (giro brusco de
+// la muñeca) y no se indica ningún giro. El umbral de tiempo tiene que ser MAYOR
+// que el intervalo de muestreo: con los dos en 500 ms, dos lecturas seguidas
+// nunca estaban a menos de 500 ms y el chequeo no se activaba nunca.
+// Tras una pausa larga (mientras vibra un motor no se lee la brújula) la primera
+// lectura no se compara: la referencia es demasiado vieja.
+#define UMBRAL_DELTA_HEADING    40.0f
+#define UMBRAL_TIEMPO_SAFETY_MS (2 * INTERVALO_MUESTREO_MS)
+
+static_assert(UMBRAL_TIEMPO_SAFETY_MS > INTERVALO_MUESTREO_MS,
+              "El safety check debe abarcar dos muestras consecutivas");
 
 // ── Standby ──────────────────────────────────────────────────────────────────
 // Sin paquetes del semáforo durante este tiempo, el brazalete pasa a standby.

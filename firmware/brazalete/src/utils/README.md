@@ -19,7 +19,13 @@ Los patrones de vibración ya no están aquí: viven en `src/vibracion/` (reprod
 ### 1. Giro hacia el cruce: `calcularDireccion`
 Debido a que el campo magnético trabaja en forma circular $[0, 360)$, la aritmética tradicional falla (ej: la diferencia geométrica entre $350^{\circ}$ y $10^{\circ}$ no es 340, sino 20 grados). La función `calcularDireccion` utiliza `fmodf()` para encontrar la desviación angular usando aritmética modular y retornar el giro más corto en $(-180, 180]$ (positivo = hacia la derecha, negativo = hacia la izquierda).
 
-### 2. Distancia a quedar de frente: `desviacionEnfrentamiento`
+### 2. Arco menor y giro para enfrentarse: `arcoMenor`, `giroParaEnfrentar`
+`arcoMenor(a, b)` da la distancia angular sin signo entre dos headings, en $[0, 180]$;
+la usan el safety check de la brújula y `desviacionEnfrentamiento`.
+`giroParaEnfrentar(hp, hs)` es el giro más corto para mirar hacia $H_s + 180^{\circ}$;
+es lo que la FSM le pasa al evaluador para elegir el motor del pulso de orientación.
+
+### 3. Distancia a quedar de frente: `desviacionEnfrentamiento`
 El brazalete y el semáforo están bien orientados cuando se **enfrentan**, es decir,
 cuando la diferencia entre sus headings es de unos $180^{\circ}$:
 
@@ -42,5 +48,5 @@ Devuelve 0 cuando están de frente y 180 cuando miran hacia el mismo lado. El
 float hp = 300.0f;   // heading del brazalete
 float hs = 90.0f;    // heading del semáforo
 float desviacion = desviacionEnfrentamiento(hp, hs);         // 30°
-float giro = calcularDireccion(fmodf(hs + 180.0f, 360.0f), hp); // -30°: girar a la izquierda
+float giro = giroParaEnfrentar(hp, hs);                      // -30°: girar a la izquierda
 ```
