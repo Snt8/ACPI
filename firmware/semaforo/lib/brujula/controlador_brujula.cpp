@@ -87,9 +87,16 @@ bool ControladorBrujulaSemaforo::leerHeading() {
 
     // QMC6308 entrega los datos LSB primero (Little-Endian por eje)
     // Orden: Xl, Xh, Yl, Yh, Zl, Zh
-    int16_t raw_x = (int16_t)((Wire.read()) | (Wire.read() << 8));
-    int16_t raw_y = (int16_t)((Wire.read()) | (Wire.read() << 8));
-    int16_t raw_z = (int16_t)((Wire.read()) | (Wire.read() << 8));
+    // Se leen primero a un arreglo: en "Wire.read() | (Wire.read() << 8)" C++ no
+    // garantiza cuál de las dos lecturas se hace primero, y el LSB y el MSB
+    // podían quedar intercambiados (el brazalete ya lo corrigió así)
+    uint8_t datos[6];
+    for (uint8_t i = 0; i < 6; i++) {
+        datos[i] = Wire.read();
+    }
+    int16_t raw_x = (int16_t)(datos[0] | (datos[1] << 8));
+    int16_t raw_y = (int16_t)(datos[2] | (datos[3] << 8));
+    int16_t raw_z = (int16_t)(datos[4] | (datos[5] << 8));
 
     float mx = (float)raw_x;
     float my = (float)raw_y;
