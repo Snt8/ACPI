@@ -18,7 +18,7 @@ Su misión principal es leer el campo magnético direccional permanente hacia do
 ## Explicación
 A diferencia del brazalete que es impulsado por eventos, el semáforo está impulsado por reloj (Temporizadores):
 
-1. Mantiene un bucle continuo de `millis()` verificando si la duración preconfigurada del estado actual del semáforo (ej: 30 segundos) ha expirado. Si expira, alterna el relé/LED y cambia internamente su estado booleano de `permitidoCruce`.
+1. Mantiene un bucle continuo de `millis()` verificando si la duración preconfigurada del estado actual del semáforo (25 segundos por luz, `DURACION_VERDE_MS` / `DURACION_ROJO_MS`) ha expirado. Si expira, alterna el relé/LED y cambia internamente su estado booleano de `permitidoCruce`.
 2. A una tasa paralela e independiente, lee periódicamente (ej: 2 Hz) el magnetómetro I2C para obtener su propia dirección en grados frente al polo magnético terrestre.
 3. Empaqueta el tiempo que le resta a la luz actual, los grados y la validación en una estructura C empaquetada.
 4. Invoca la radio ESP-NOW, propagando la carga en modo BROADCAST (Mac: `FF:FF:FF:FF:FF:FF`). Todo brazalete en rango capturará esta ráfaga de forma pasiva.

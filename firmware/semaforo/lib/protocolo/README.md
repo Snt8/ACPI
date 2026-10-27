@@ -6,13 +6,14 @@ Archivo de definición del contrato C/C++ (`struct`) de la carga útil (*Payload
 ---
 
 ## Contenido
-- `protocolo_esp.h` -> Estructura plana de 5 Bytes sin _Padding_.
+- `protocolo_esp.h` -> Estructura plana de 9 Bytes sin _Padding_.
 
 ---
 
 ## Explicación
-Se define un marco de memoria continuo utilizando el empaquetado del compilador GCC `__attribute__((packed))` compuesto de:
+Se define un marco de memoria continuo empaquetado con `#pragma pack(push, 1)` (lo entienden GCC y MSVC) compuesto de:
 
+0. `firma` (`char[4]`): siempre `"ACPI"`, escrita con `firmarPaqueteSemaforo()`. El brazalete descarta todo paquete ESP-NOW sin esta firma o con otro tamaño.
 1. `id` (`uint8_t`): Identificador único del nodo semafórico en caso de tener múltiples postes emitiendo simultáneamente en una intersección grande.
 2. `grados` (`uint16_t`): Almacenamiento trunco desde el float real del magnetómetro. Abarca del $0$ al $359$ con un peso de dos bytes.
 3. `permitidoCruce` (`uint8_t`): Señal de bandera booleana (`1` o `0`).

@@ -18,8 +18,10 @@
 #define PIN_LED_VERDE 26
 
 // ── Tiempos del ciclo del semáforo (milisegundos) ───────────────────────────
-#define DURACION_VERDE_MS 30000UL   // 30 s verde para autos (peatón espera)
-#define DURACION_ROJO_MS  30000UL   // 30 s rojo para autos  (peatón puede cruzar)
+// 25 s por luz: cada fase dura menos que los 30 s sin paquetes que mandan al
+// brazalete a standby (TIEMPO_SIN_PAQUETES_STANDBY_MS en su constantes.h).
+#define DURACION_VERDE_MS 25000UL   // 25 s verde para autos (peatón espera)
+#define DURACION_ROJO_MS  25000UL   // 25 s rojo para autos  (peatón puede cruzar)
 
 // ── Comunicación ESP-NOW ─────────────────────────────────────────────────────
 // Intervalo de envío del paquete de estado al brazalete.

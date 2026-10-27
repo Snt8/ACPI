@@ -17,7 +17,9 @@ void ComunicadorSemaforo::onDatosRecibidos(const esp_now_recv_info_t *info, cons
 void ComunicadorSemaforo::onDatosRecibidos(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
     (void)mac_addr; // La MAC remota se recibe aquí; no es necesaria en este manejador actualmente
 #endif
-    if (data_len >= (int)sizeof(estado_semaforo)) {
+    // Sólo se aceptan paquetes del semáforo ACPI (tamaño exacto y firma "ACPI");
+    // cualquier otro broadcast ESP-NOW del canal se ignora
+    if (esPaqueteSemaforo(data, data_len)) {
         memcpy(&ultimoEstado, data, sizeof(estado_semaforo));
         MaquinaEstados::registrarPaqueteRecibido();
     }

@@ -97,6 +97,7 @@ void loop() {
 
         // Construir el payload de estado
         estado_semaforo payload;
+        firmarPaqueteSemaforo(&payload); // "ACPI": el brazalete descarta paquetes sin firma
         payload.id = 1; // ID del semáforo en la red local
         payload.grados = (uint16_t)ControladorBrujulaSemaforo::headingActual;
         payload.permitidoCruce = (estadoActualAutos == EstadoSemaforoAutos::ROJO) ? 1 : 0;
