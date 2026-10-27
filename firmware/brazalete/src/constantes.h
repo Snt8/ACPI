@@ -14,12 +14,14 @@
 // ── Motores ───────────────────────────────────────────────────────────────────
 #define APAGAR_MOTOR            0
 // En la PCB v3.5 el motor ve VBAT (3.7–4.2 V): a 180/255 vibraba tan fuerte que
-// amenazaba las soldaduras. Valor inicial; ajustarlo con la prueba 03 (comandos
-// '-' / '+' y el barrido 'b', que muestra desde qué duty arranca cada motor).
-#define INTENSIDAD_MOTOR        120
-// Motor izquierdo (GPIO 3): +15 de duty para igualar la respuesta táctil
-// (valor heredado; reconfirmar cuando esté soldado en la v3.5)
-#define INTENSIDAD_MOTOR_IZQUIERDO 135
+// amenazaba las soldaduras, y 120 seguía siendo mucho. 100/255 ≈ 39 % de duty.
+// Si a este valor un motor no llega a arrancar, verlo con el barrido 'b' de la
+// prueba 03, que muestra desde qué duty arranca cada uno.
+#define INTENSIDAD_MOTOR        100
+// Motor izquierdo (GPIO 3). Antes llevaba +15 para igualar la sensación, un
+// valor heredado que nunca se confirmó en esta placa: queda igual al derecho
+// hasta medirlo con los dos motores soldados.
+#define INTENSIDAD_MOTOR_IZQUIERDO 100
 
 // ── Acelerómetro MPU6050 (rango ±2g por defecto) ────────────────────────────
 // Datasheet: 16384 LSB/g en rango ±2g.

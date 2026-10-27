@@ -12,8 +12,8 @@ Especificación aprobada el 27 oct 2026. La implementan:
 Los tiempos están en `src/constantes.h`. Las pruebas que verifican este documento
 están en `test/` (ver `test/README.md`).
 
-"Pulso" significa motor encendido a su intensidad (`INTENSIDAD_MOTOR` = 120/255 para
-el derecho, `INTENSIDAD_MOTOR_IZQUIERDO` = 135/255 para el izquierdo); entre pulsos el
+"Pulso" significa motor encendido a su intensidad (`INTENSIDAD_MOTOR` = 100/255 para
+el derecho, `INTENSIDAD_MOTOR_IZQUIERDO` = 100/255 para el izquierdo); entre pulsos el
 motor queda apagado.
 
 Leyenda de los diagramas: `█` = vibrando, `·` = apagado, cada carácter = 100 ms.

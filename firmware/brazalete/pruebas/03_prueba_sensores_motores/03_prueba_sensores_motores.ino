@@ -31,7 +31,7 @@
 
 #define FRECUENCIA_PWM        1000   // Hz
 #define RESOLUCION_PWM        8      // bits (0-255)
-#define INTENSIDAD_INICIAL    120    // mismo valor que INTENSIDAD_MOTOR del firmware (180 era demasiado)
+#define INTENSIDAD_INICIAL    100    // mismo valor que INTENSIDAD_MOTOR del firmware (180 y 120 eran demasiado)
 #define PASO_INTENSIDAD       25
 #define INTENSIDAD_MAXIMA     180    // tope de '+': más arriba el motor arriesga sus soldaduras
 #define DURACION_PULSO_MS     1000UL
