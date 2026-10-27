@@ -21,6 +21,11 @@ public:
     // Inicializa MPU6050 y QMC5883L
     static bool inicializar();
 
+    // Standby del brazalete: duerme ambos sensores para que no consuman
+    // mientras nadie los lee. despertar() los vuelve a configurar.
+    static void dormir();
+    static bool despertar();
+
     // Lee sensores, aplica tilt compensation y actualiza headingActual.
     // Internamente evalúa el safety check: si el heading cambia > UMBRAL_DELTA_HEADING
     // respecto a una lectura de hace menos de UMBRAL_TIEMPO_SAFETY_MS (la

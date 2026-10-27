@@ -28,6 +28,9 @@ private:
 public:
     static bool inicializar();
     static bool leerPosicion();  // Retorna false si la lectura I2C falla
+    // Deja de medir (modo standby del chip) para ahorrar energía en el standby
+    // del brazalete. inicializar() lo vuelve a poner en modo continuo.
+    static bool dormir();
 
     // Calcula el heading compensado por inclinación.
     // Parámetros gx, gy, gz: aceleración normalizada en unidades g (de MPU6050).

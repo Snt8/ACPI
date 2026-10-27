@@ -67,6 +67,41 @@ PRUEBA(escucha_despertar_tarde_no_encadena_ventanas) {
                     INTERVALO_ESCUCHA_STANDBY_MS - VENTANA_ESCUCHA_STANDBY_MS);
 }
 
+PRUEBA(escucha_cierre_tardio_no_encadena_ventanas) {
+    // Ventana abierta en 0 pero el loop recién vuelve en 6000 (ya pasó la hora
+    // de la siguiente): se cierra y la radio queda apagada el intervalo completo
+    CicloEscucha c;
+    c.iniciar(0, true);
+    VERIFICAR_IGUAL(c.actualizar(0), Accion::ENCENDER_RADIO);
+    VERIFICAR_IGUAL(c.actualizar(6000), Accion::APAGAR_RADIO);
+    VERIFICAR_IGUAL(c.actualizar(6001), Accion::NADA);
+    VERIFICAR_IGUAL(c.msHastaProximaEscucha(6000),
+                    INTERVALO_ESCUCHA_STANDBY_MS - VENTANA_ESCUCHA_STANDBY_MS);
+    VERIFICAR_IGUAL(c.actualizar(6000 + INTERVALO_ESCUCHA_STANDBY_MS - VENTANA_ESCUCHA_STANDBY_MS),
+                    Accion::ENCENDER_RADIO);
+}
+
+PRUEBA(escucha_ms_hasta_proxima_es_cero_con_la_ventana_abierta) {
+    CicloEscucha c;
+    c.iniciar(0, true);
+    c.actualizar(0);
+    VERIFICAR(c.escuchando());
+    VERIFICAR_IGUAL(c.msHastaProximaEscucha(100), 0);
+    // iniciar() con la ventana abierta vuelve a radio apagada
+    c.iniciar(200, false);
+    VERIFICAR(!c.escuchando());
+    VERIFICAR_IGUAL(c.msHastaProximaEscucha(200), INTERVALO_ESCUCHA_STANDBY_MS);
+}
+
+PRUEBA(escucha_cierre_tras_el_desborde) {
+    CicloEscucha c;
+    uint32_t t0 = 0xFFFFFC00u;  // 1024 ms antes del desborde
+    c.iniciar(t0, true);
+    VERIFICAR_IGUAL(c.actualizar(t0), Accion::ENCENDER_RADIO);
+    VERIFICAR_IGUAL(c.actualizar((uint32_t)(t0 + VENTANA_ESCUCHA_STANDBY_MS - 1)), Accion::NADA);
+    VERIFICAR_IGUAL(c.actualizar((uint32_t)(t0 + VENTANA_ESCUCHA_STANDBY_MS)), Accion::APAGAR_RADIO);
+}
+
 PRUEBA(escucha_desborde_de_millis) {
     CicloEscucha c;
     const uint32_t t0 = 0xFFFFFFFFu - 1000u;

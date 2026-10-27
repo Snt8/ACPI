@@ -5,6 +5,7 @@
 #include "../constantes.h"
 #include <Arduino.h>
 #include <esp_sleep.h>
+#include <driver/gpio.h>
 
 static CicloEscucha ciclo;
 
@@ -19,7 +20,21 @@ static bool usbConectado() {
 #endif
 }
 
+// En light sleep el ESP32-C3 aísla los GPIO y los deja flotando. Si la base del
+// transistor de un motor queda al aire, el motor podría encenderse sin ningún
+// evento; por eso, durante el sueño, los pines de los motores quedan como
+// entrada con pull-down interno.
+static void asegurarMotoresEnSueno() {
+    const gpio_num_t pines[] = {(gpio_num_t)PIN_MOTOR_DERECHO, (gpio_num_t)PIN_MOTOR_IZQUIERDO};
+    for (gpio_num_t pin : pines) {
+        gpio_sleep_set_direction(pin, GPIO_MODE_INPUT);
+        gpio_sleep_set_pull_mode(pin, GPIO_PULLDOWN_ONLY);
+        gpio_sleep_sel_en(pin);
+    }
+}
+
 void ModoStandby::entrar(uint32_t ahora, bool escucharYa) {
+    asegurarMotoresEnSueno();
     ComunicadorSemaforo::desinicializar();  // WiFi apagado hasta la primera ventana
     ComunicadorSemaforo::descartarPendiente();
     ciclo.iniciar(ahora, escucharYa);
@@ -43,6 +58,9 @@ bool ModoStandby::actualizar(uint32_t ahora) {
             break;
         case CicloEscucha::Accion::APAGAR_RADIO:
             ComunicadorSemaforo::desinicializar();
+            // Un paquete que llegó justo al cerrar la ventana ya no sirve: si se
+            // dejara, la próxima ventana saldría de standby con datos de 5 s atrás
+            ComunicadorSemaforo::descartarPendiente();
             break;
         case CicloEscucha::Accion::NADA:
             break;

@@ -25,6 +25,20 @@ bool ControladorBrujula::inicializar() {
     return false;
 }
 
+// ── Bajo consumo (standby) ───────────────────────────────────────────────────
+void ControladorBrujula::dormir() {
+    ControladorAcelerometro::dormir();
+    ControladorMagnetometro::dormir();
+}
+
+bool ControladorBrujula::despertar() {
+    // inicializar() vuelve a configurar los dos chips y reinicia la referencia
+    // del safety check, así la primera lectura tras el standby no se compara
+    // con una de hace más de 30 s
+    lecturaValida = false;
+    return inicializar();
+}
+
 // ── Lectura de sensores con tilt compensation y safety check ──────────────────
 void ControladorBrujula::obtenerHeading() {
     unsigned long ahora = millis();

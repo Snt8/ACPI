@@ -30,6 +30,14 @@ bool ControladorAcelerometro::inicializar() {
     return true;
 }
 
+bool ControladorAcelerometro::dormir() {
+    // Bit SLEEP (6) de PWR_MGMT_1; inicializar() escribe 0x00 y lo despierta
+    Wire.beginTransmission(MPU6050_ADDR);
+    Wire.write(REG_PWR_MGMT_1);
+    Wire.write(0x40);
+    return Wire.endTransmission() == 0;
+}
+
 bool ControladorAcelerometro::leerDatos() {
     Wire.beginTransmission(MPU6050_ADDR);
     Wire.write(REG_ACCEL_XOUT);

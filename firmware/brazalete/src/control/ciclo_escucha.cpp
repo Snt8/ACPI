@@ -18,6 +18,11 @@ CicloEscucha::Accion CicloEscucha::actualizar(uint32_t ahora) {
     if (escuchando_) {
         if ((uint32_t)(ahora - inicio_ventana_) >= VENTANA_ESCUCHA_STANDBY_MS) {
             escuchando_ = false;
+            // Si la ventana se cerró tarde y la siguiente ya debería haber
+            // empezado, se deja el apagado completo: nunca dos ventanas seguidas
+            if (yaLlego(ahora, proxima_)) {
+                proxima_ = ahora + (INTERVALO_ESCUCHA_STANDBY_MS - VENTANA_ESCUCHA_STANDBY_MS);
+            }
             return Accion::APAGAR_RADIO;
         }
         return Accion::NADA;
@@ -25,7 +30,7 @@ CicloEscucha::Accion CicloEscucha::actualizar(uint32_t ahora) {
 
     if (yaLlego(ahora, proxima_)) {
         // Si la CPU despertó tarde, la ventana empieza ahora y la siguiente se
-        // cuenta desde aquí: nunca se encadenan dos ventanas seguidas
+        // cuenta desde aquí
         escuchando_     = true;
         inicio_ventana_ = ahora;
         proxima_        = ahora + INTERVALO_ESCUCHA_STANDBY_MS;

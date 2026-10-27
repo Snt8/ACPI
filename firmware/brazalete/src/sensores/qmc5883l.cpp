@@ -16,6 +16,8 @@
 // Control 1: OSR[7:6] = 00 (512) | RNG[5:4] = 01 (±8 G) | ODR[3:2] = 11 (200 Hz) | MODE[1:0] = 01 (continuo) → 0x1D
 // Se usa ±8 G en vez de ±2 G para no saturar con el imán de los motores de vibración cercanos.
 #define QMC5883L_MODO_CONT   0x1D
+// Mismo OSR/RNG/ODR con MODE = 00 (standby): el chip deja de medir
+#define QMC5883L_MODO_STANDBY 0x1C
 // Control 2: bit[7] = 1 (soft reset)
 #define QMC5883L_SOFT_RESET  0x80
 // Valor recomendado por el datasheet para el periodo SET/RESET
@@ -75,6 +77,11 @@ bool ControladorMagnetometro::inicializar() {
 
     Serial.printf("[QMC5883L] Inicializado correctamente en 0x%02X\n", QMC5883L_ADDR);
     return true;
+}
+
+// ── Bajo consumo ─────────────────────────────────────────────────────────────
+bool ControladorMagnetometro::dormir() {
+    return escribirRegistro(QMC5883L_REG_CTRL1, QMC5883L_MODO_STANDBY);
 }
 
 // ── Lectura y calibración hard-iron ──────────────────────────────────────────

@@ -151,12 +151,16 @@ void MaquinaEstados::setEstado(EstadoBrazalete nuevoEstado) {
         // de SENSING_CROSSING, a los 5 s.
         Serial.println(F("[FSM] Entrando a modo STANDBY (Bajo Consumo)..."));
         ComunicadorMovil::desinicializar();
+        ControladorBrujula::dormir();
         ModoStandby::entrar((uint32_t)millis(), anterior == EstadoBrazalete::BOOTING);
     }
 
     if (estadoActual == EstadoBrazalete::SENSING_CROSSING) {
         // La radio ESP-NOW quedó encendida desde la escucha que encontró el
         // semáforo; se suma el BLE para la telemetría al móvil
+        if (!ControladorBrujula::despertar()) {
+            Serial.println(F("[FSM] [ERROR] No se pudieron despertar los sensores"));
+        }
         if (!ComunicadorMovil::inicializar()) {
             Serial.println(F("[FSM] [ERROR] No se pudo encender el BLE"));
         }

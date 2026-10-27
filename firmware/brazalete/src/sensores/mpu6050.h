@@ -12,6 +12,9 @@ private:
 public:
     static bool inicializar();
     static bool leerDatos();  // Retorna false si la lectura I2C falla
+    // Pone el chip en modo sleep para el standby del brazalete; inicializar()
+    // lo despierta
+    static bool dormir();
 
     // Devuelve los valores normalizados en g para tilt compensation directa
     static float getGx() { return x; }

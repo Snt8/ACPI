@@ -22,7 +22,10 @@ persona.
 - **`BOOTING`**: estado transitorio al arrancar; pasa enseguida a standby.
 - **`STANDBY_LOW_POWER`**: sin semáforo cerca. Se entra al arrancar y tras
   `TIEMPO_SIN_PAQUETES_STANDBY_MS` (30 s) sin paquetes del semáforo. Mientras dura:
-  - no se leen los sensores y los motores están apagados;
+  - no se leen los sensores, y además duermen (`ControladorBrujula::dormir()`: modo
+    sleep del MPU y standby del QMC5883L); al salir se reconfiguran;
+  - los motores están apagados, y durante el light sleep sus pines quedan como entrada
+    con pull-down, para que la base de los transistores no quede flotando;
   - el BLE está apagado (`ComunicadorMovil::desinicializar()`);
   - el WiFi está apagado, salvo una ventana de `VENTANA_ESCUCHA_STANDBY_MS` (1.2 s)
     cada `INTERVALO_ESCUCHA_STANDBY_MS` (5 s) en la que ESP-NOW escucha buscando el
@@ -33,7 +36,8 @@ persona.
     espera con `delay()`).
 
   Los paquetes ESP-NOW sin la firma `"ACPI"` o con otro tamaño se descartan en el
-  callback, así que sólo el semáforo puede sacar al brazalete de standby. Al oír uno,
+  callback, así que sólo el semáforo puede sacar al brazalete de standby. Un paquete
+  que llega justo al cerrar una ventana se descarta, para no despertar con datos viejos. Al oír uno,
   la radio queda encendida, se enciende el BLE y se pasa a `SENSING_CROSSING`, donde
   ese mismo paquete produce el aviso de "semáforo detectado".
 - **`SENSING_CROSSING`**: hay un semáforo a la vista. En cada vuelta del `loop()`:
