@@ -124,6 +124,9 @@ STANDBY ──primer paquete "ACPI"──▶ [1] detectado
   nueva se avisa cuando queda de frente.
 - **Paquetes sin cambios** (misma luz; sólo cambian los grados o el tiempo restante)
   no son eventos.
+- **Un cambio de luz se confirma con 2 paquetes seguidos** (`CONFIRMACIONES_CAMBIO_LUZ`).
+  Un paquete suelto con la luz contraria, por interferencia o por otro equipo, no hace
+  vibrar. El aviso llega medio segundo después del cambio real.
 
 ## Brújula y motores
 

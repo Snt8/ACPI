@@ -42,16 +42,30 @@ class MyServerCallbacks : public BLEServerCallbacks {
     }
 };
 
+// Lo que escribe el móvil sólo se muestra por el monitor serie. Para que un
+// equipo cercano que escriba sin parar no sature el Serial (y con él la tarea
+// de NimBLE), se muestran como mucho MAX_RX_MOSTRAR bytes y un mensaje cada
+// INTERVALO_RX_MIN_MS; el resto se ignora.
+#define MAX_RX_MOSTRAR       32
+#define INTERVALO_RX_MIN_MS  200
+
 class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic* pCharacteristic) override {
+        static unsigned long ultimo_rx = 0;
+        unsigned long ahora = millis();
+        if (ahora - ultimo_rx < INTERVALO_RX_MIN_MS) {
+            return;
+        }
+        ultimo_rx = ahora;
         // String en core v3.x, std::string en v2.x: ambos tienen length() y []
         auto value = pCharacteristic->getValue();
-        if (value.length() > 0) {
+        size_t largo = value.length();
+        if (largo > 0) {
             Serial.print("[BLE RX] Datos recibidos: ");
-            for (size_t i = 0; i < value.length(); i++) {
+            for (size_t i = 0; i < largo && i < MAX_RX_MOSTRAR; i++) {
                 Serial.print(value[i]);
             }
-            Serial.println();
+            Serial.println(largo > MAX_RX_MOSTRAR ? "..." : "");
         }
     }
 };

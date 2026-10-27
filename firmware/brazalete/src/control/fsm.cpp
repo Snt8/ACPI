@@ -65,6 +65,9 @@ void registrarVuelta(const estado_semaforo& paquete, const VueltaCruce& v) {
             case CambioPaquete::CAMBIO_A_PROHIBIDO:
                 Serial.println(F("[EVAL] Cambio de luz: cruce PROHIBIDO"));
                 break;
+            case CambioPaquete::CAMBIO_POR_CONFIRMAR:
+                Serial.println(F("[EVAL] Luz distinta en un paquete: se espera confirmacion"));
+                break;
             default:
                 break;
         }

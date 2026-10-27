@@ -7,5 +7,11 @@ CONFIG_FREERTOS_HZ=1000
 CONFIG_BT_ENABLED=y
 CONFIG_BT_NIMBLE_ENABLED=y
 
+# Task watchdog de 5 s (el mismo que trae Arduino IDE): enableLoopWDT() lo usa
+# para reiniciar el ESP32 si loop() se queda pegado
+CONFIG_ESP_TASK_WDT_EN=y
+CONFIG_ESP_TASK_WDT_INIT=y
+CONFIG_ESP_TASK_WDT_TIMEOUT_S=5
+
 # WiFi (ESP-NOW) + BLE no caben en la partición de 1 MB por defecto
 CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y

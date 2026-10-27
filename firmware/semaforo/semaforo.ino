@@ -51,6 +51,10 @@ void setup() {
         Serial.println("[SEMAFORO] ESP-NOW inicializado correctamente.");
     }
 
+    // Watchdog del loop: si loop() deja de volver por más de 5 s (algo se quedó
+    // pegado), el ESP32 se reinicia solo. El core lo alimenta en cada vuelta.
+    enableLoopWDT();
+
     tiempoInicioEstado = millis();
     Serial.println("[SEMAFORO] Inicialización completa. Iniciando ciclo FSM...");
 }

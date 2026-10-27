@@ -18,6 +18,8 @@ void EvaluadorSemaforo::reiniciar() {
     giro_                 = 0.0f;
     hubo_giro_            = false;
     ultimo_giro_          = 0;
+    luz_por_confirmar_    = 0;
+    confirmaciones_       = 0;
 }
 
 // ── Paquetes ─────────────────────────────────────────────────────────────────
@@ -39,12 +41,27 @@ CambioPaquete EvaluadorSemaforo::registrarPaquete(const estado_semaforo& paquete
         return CambioPaquete::IGNORADO;
     }
 
-    bool cambio_luz = (actual.permitidoCruce != anterior_.permitidoCruce);
-    anterior_ = actual;  // grados y tiempo se actualizan aunque no haya evento
-    if (!cambio_luz) {
+    if (actual.permitidoCruce == anterior_.permitidoCruce) {
+        confirmaciones_ = 0;  // un cambio sin confirmar que no se repitió se olvida
+        anterior_ = actual;   // grados y tiempo se actualizan aunque no haya evento
         return CambioPaquete::SIN_CAMBIOS;
     }
 
+    // La luz es distinta a la vigente: hay que verla CONFIRMACIONES_CAMBIO_LUZ
+    // veces seguidas antes de creerla
+    if (confirmaciones_ == 0 || luz_por_confirmar_ != actual.permitidoCruce) {
+        luz_por_confirmar_ = actual.permitidoCruce;
+        confirmaciones_    = 1;
+    } else {
+        confirmaciones_++;
+    }
+    if (confirmaciones_ < CONFIRMACIONES_CAMBIO_LUZ) {
+        anterior_.grados = actual.grados;  // la luz y su tiempo siguen siendo los vigentes
+        return CambioPaquete::CAMBIO_POR_CONFIRMAR;
+    }
+
+    confirmaciones_   = 0;
+    anterior_         = actual;
     cruce_notificado_ = false;  // la luz nueva todavía no se avisó
     return actual.permitidoCruce ? CambioPaquete::CAMBIO_A_PERMITIDO
                                  : CambioPaquete::CAMBIO_A_PROHIBIDO;

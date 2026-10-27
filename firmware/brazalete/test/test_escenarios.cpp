@@ -161,6 +161,10 @@ PRUEBA(escenario_cada_cambio_de_luz_vibra_una_vez) {
     s.luz = [](uint32_t t) { return (t / 25000) % 2 == 1; };
     s.lectura = deFrente;
     s.correr(0, 120000);
+    // Cada aviso llega con el segundo paquete de la luz nueva (500 ms después)
+    for (const Inicio& i : s.inicios) {
+        if (i.t >= 25000) VERIFICAR_IGUAL(i.t % 25000, INTERVALO_ENVIO_SEMAFORO_MS);
+    }
     // Cambios en 25, 50, 75 y 100 s
     VERIFICAR_IGUAL(s.contar(Patron::SEMAFORO_DETECTADO), 1);
     VERIFICAR_IGUAL(s.contar(Patron::CRUCE_PROHIBIDO), 3);  // inicial + 50 s + 100 s
@@ -266,6 +270,21 @@ PRUEBA(escenario_otro_semaforo_no_mantiene_despierto) {
     VERIFICAR_IGUAL(s.iniciosEntre(3001, s.standby[0]), 0);  // los paquetes ignorados no hacen vibrar
     VERIFICAR_IGUAL(s.contar(Patron::SEMAFORO_DETECTADO), 2);
     VERIFICAR_IGUAL(s.cruce.evaluador().ultimoPaquete().id, 2);
+    s.verificarSeparacion();
+}
+
+PRUEBA(escenario_paquetes_sueltos_con_otra_luz_no_hacen_vibrar) {
+    // Uno de cada 7 paquetes llega con la luz contraria (interferencia u otro
+    // equipo), nunca dos seguidos: la persona está de frente y no debe recibir
+    // ningún aviso más allá de "detectado" y la luz real
+    Simulador s;
+    s.lectura = deFrente;
+    int envio = 0;
+    s.luz = [&](uint32_t) { return (envio++ % 7) != 3; };  // la luz real es "permitido"
+    s.correr(0, 60000);
+    VERIFICAR_IGUAL(s.inicios.size(), 2);
+    VERIFICAR_IGUAL(s.contar(Patron::CRUCE_PERMITIDO), 1);
+    VERIFICAR_IGUAL(s.contar(Patron::CRUCE_PROHIBIDO), 0);
     s.verificarSeparacion();
 }
 

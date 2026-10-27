@@ -19,6 +19,8 @@
 //   - Persona mal orientada                  -> GIRAR_* cada INTERVALO_GIRO_MS
 //   - Queda de frente al cruce               -> CRUCE_PERMITIDO / CRUCE_PROHIBIDO
 //   - Cambia la luz estando de frente        -> CRUCE_PERMITIDO / CRUCE_PROHIBIDO
+//     (el cambio cuenta cuando CONFIRMACIONES_CAMBIO_LUZ paquetes seguidos lo
+//     repiten: un paquete suelto con otra luz no hace vibrar)
 // Cualquier otro paquete (mismo estado, sólo cambian grados o tiempo) no
 // produce vibración.
 
@@ -27,6 +29,7 @@ enum class CambioPaquete : uint8_t {
     IGNORADO,         // de otro semáforo (otro id) mientras se sigue uno
     SIN_CAMBIOS,      // misma luz que el paquete anterior
     SEMAFORO_NUEVO,   // primer paquete desde reiniciar()
+    CAMBIO_POR_CONFIRMAR,  // luz distinta, pero todavía no llegaron CONFIRMACIONES_CAMBIO_LUZ seguidos
     CAMBIO_A_PERMITIDO,
     CAMBIO_A_PROHIBIDO
 };
@@ -79,6 +82,8 @@ private:
     estado_semaforo anterior_;
     bool            detectado_pendiente_;  // falta avisar "semáforo detectado"
     bool            cruce_notificado_;     // ya se avisó la luz actual estando de frente
+    uint8_t         luz_por_confirmar_;    // luz nueva que todavía no se confirmó
+    uint8_t         confirmaciones_;       // paquetes seguidos que la repiten
 
     // Orientación
     bool  orientacion_conocida_;  // hubo al menos una lectura válida

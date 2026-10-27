@@ -9,12 +9,14 @@
 #include "src/comunicacion/movil/movil.h"
 #include "src/control/fsm.h"
 #include "src/config.h"
+#include "src/constantes.h"
 
 namespace {
     const unsigned long INTERVALO_HEARTBEAT_MS = 2000;
 }
 
 unsigned long ultimo_tiempo_heartbeat = 0;
+uint32_t descartados_anteriores = 0;
 
 void setup() {
     Serial.begin(BAUD_RATE);
@@ -48,6 +50,12 @@ void setup() {
     Serial.println("[BOOT] Inicializando Maquina de Estados...");
     MaquinaEstados::inicializar();
 
+    // 5. Watchdog del loop: si loop() deja de volver por más de
+    //    TIMEOUT_WATCHDOG_LOOP_MS (algo se quedó pegado), el ESP32 se reinicia
+    //    y arranca de nuevo en standby con los motores apagados. El core lo
+    //    alimenta solo al final de cada vuelta de loop().
+    enableLoopWDT();
+
     Serial.println("[BOOT] Inicializacion completa. Sistema en marcha.");
 }
 
@@ -67,5 +75,14 @@ void loop() {
                       MaquinaEstados::ultimoPaquete().grados,
                       (unsigned long)ComunicadorSemaforo::paquetesDescartados(),
                       (unsigned long)ESP.getFreeHeap());
+
+        // Muchos paquetes ESP-NOW ajenos: sólo se avisa, ya se descartan solos
+        uint32_t descartados = ComunicadorSemaforo::paquetesDescartados();
+        if (descartados - descartados_anteriores > UMBRAL_INTERFERENCIA_PAQUETES) {
+            Serial.printf("[RADIO] Interferencia: %lu paquetes ajenos en %lu ms (ignorados)\n",
+                          (unsigned long)(descartados - descartados_anteriores),
+                          (unsigned long)INTERVALO_HEARTBEAT_MS);
+        }
+        descartados_anteriores = descartados;
     }
 }

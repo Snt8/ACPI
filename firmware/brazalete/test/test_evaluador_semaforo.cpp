@@ -52,12 +52,50 @@ PRUEBA(evaluador_grados_y_tiempo_no_son_eventos) {
 }
 
 PRUEBA(evaluador_cambio_de_luz) {
+    // El cambio cuenta al segundo paquete seguido con la luz nueva
     ControladorPatrones c;
     EvaluadorSemaforo e(c);
     e.registrarPaquete(paquete(1, 90, 0));
+    VERIFICAR_IGUAL(e.registrarPaquete(paquete(1, 90, 1)), CambioPaquete::CAMBIO_POR_CONFIRMAR);
+    VERIFICAR_IGUAL(e.ultimoPaquete().permitidoCruce, 0);  // todavía vale la luz vieja
     VERIFICAR_IGUAL(e.registrarPaquete(paquete(1, 90, 1)), CambioPaquete::CAMBIO_A_PERMITIDO);
+    VERIFICAR_IGUAL(e.ultimoPaquete().permitidoCruce, 1);
     VERIFICAR_IGUAL(e.registrarPaquete(paquete(1, 90, 1)), CambioPaquete::SIN_CAMBIOS);
+    VERIFICAR_IGUAL(e.registrarPaquete(paquete(1, 90, 0)), CambioPaquete::CAMBIO_POR_CONFIRMAR);
     VERIFICAR_IGUAL(e.registrarPaquete(paquete(1, 90, 0)), CambioPaquete::CAMBIO_A_PROHIBIDO);
+}
+
+PRUEBA(evaluador_paquete_suelto_con_otra_luz_no_cambia_nada) {
+    // Interferencia u otro equipo: un paquete aislado con la luz contraria entre
+    // paquetes normales no es un cambio de luz y no hace vibrar
+    ControladorPatrones c;
+    EvaluadorSemaforo e(c);
+    uint32_t t = 0;
+    e.registrarPaquete(paquete(1, 90, 1));
+    e.registrarOrientacion(deFrente());
+    e.orquestar(t);
+    dejarTerminar(c, t);
+    VERIFICAR_IGUAL(e.orquestar(3000), Patron::CRUCE_PERMITIDO);
+    t = 3000;
+    dejarTerminar(c, t);
+    for (int i = 0; i < 20; ++i) {
+        VERIFICAR_IGUAL(e.registrarPaquete(paquete(1, 90, 1)), CambioPaquete::SIN_CAMBIOS);
+        VERIFICAR_IGUAL(e.registrarPaquete(paquete(1, 90, 0)), CambioPaquete::CAMBIO_POR_CONFIRMAR);
+    }
+    VERIFICAR_IGUAL(e.registrarPaquete(paquete(1, 90, 1)), CambioPaquete::SIN_CAMBIOS);
+    VERIFICAR(e.cruceNotificado());
+    VERIFICAR_IGUAL(e.ultimoPaquete().permitidoCruce, 1);
+    VERIFICAR_IGUAL(e.orquestar(20000), Patron::NINGUNO);
+}
+
+PRUEBA(evaluador_cambio_sin_confirmar_actualiza_solo_los_grados) {
+    ControladorPatrones c;
+    EvaluadorSemaforo e(c);
+    e.registrarPaquete(paquete(1, 90, 0, 20));
+    e.registrarPaquete(paquete(1, 95, 1, 25));
+    VERIFICAR_IGUAL(e.ultimoPaquete().grados, 95);
+    VERIFICAR_IGUAL(e.ultimoPaquete().permitidoCruce, 0);
+    VERIFICAR_IGUAL(e.ultimoPaquete().tiempo, 20);  // el tiempo es de la luz vigente
 }
 
 PRUEBA(evaluador_permitido_distinto_de_cero_cuenta_como_uno) {
@@ -158,6 +196,8 @@ PRUEBA(evaluador_cambio_de_luz_de_frente_vibra_una_vez) {
     dejarTerminar(c, t);
 
     t = 20000;
+    VERIFICAR_IGUAL(e.registrarPaquete(paquete(1, 90, 1)), CambioPaquete::CAMBIO_POR_CONFIRMAR);
+    VERIFICAR_IGUAL(e.orquestar(t), Patron::NINGUNO);  // sin confirmar no vibra
     VERIFICAR_IGUAL(e.registrarPaquete(paquete(1, 90, 1)), CambioPaquete::CAMBIO_A_PERMITIDO);
     VERIFICAR_IGUAL(e.orquestar(t), Patron::CRUCE_PERMITIDO);
     dejarTerminar(c, t);
@@ -173,6 +213,7 @@ PRUEBA(evaluador_cambio_de_luz_mal_orientada_espera_a_quedar_de_frente) {
     e.orquestar(t);  // detectado
     dejarTerminar(c, t);
     e.registrarPaquete(paquete(1, 90, 1));
+    e.registrarPaquete(paquete(1, 90, 1));  // cambio confirmado
     VERIFICAR_IGUAL(e.orquestar(3000), Patron::GIRAR_DERECHA);  // primero orientarse
     t = 3000;
     dejarTerminar(c, t);
@@ -281,6 +322,7 @@ PRUEBA(evaluador_cambio_de_luz_durante_un_aviso_espera_su_turno) {
     dejarTerminar(c, t);
     VERIFICAR_IGUAL(e.orquestar(3000), Patron::CRUCE_PERMITIDO);  // dura 4.5 s
     e.registrarPaquete(paquete(1, 90, 0));                        // pasa a rojo a los 4 s
+    e.registrarPaquete(paquete(1, 90, 0));                        // y se confirma
     const uint32_t libre = 3000 + 4500 + SILENCIO_TRAS_PATRON_MS;
     for (t = 4000; t < libre; t += 10) {
         c.actualizar(t);

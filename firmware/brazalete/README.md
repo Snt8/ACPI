@@ -55,6 +55,20 @@ un motor no se lee la brújula, porque sus imanes alteran el magnetómetro.
 Los paquetes del semáforo llevan la firma `"ACPI"`; cualquier otro paquete ESP-NOW se
 descarta (ver `src/protocolo/README.md`).
 
+**Interferencia y bloqueos:** celulares, computadores y audífonos comparten la banda de
+2.4 GHz. El brazalete no depende de que el aire esté limpio:
+- Un paquete ESP-NOW sólo se acepta con el tamaño exacto, la firma `"ACPI"`, el CRC-8
+  correcto y los campos en rango; todo lo demás se descarta en el callback, sin bloquear.
+- Un cambio de luz sólo cuenta si llegan 2 paquetes seguidos con la luz nueva: un paquete
+  suelto con otra luz no hace vibrar.
+- Si se pierden paquetes, no pasa nada hasta 30 s después, cuando el brazalete pasa a
+  standby y sigue buscando al semáforo.
+- Lo que un móvil cercano escriba por BLE se muestra recortado y como mucho 5 veces
+  por segundo, para no saturar el monitor serie.
+- Un watchdog reinicia el ESP32 si `loop()` deja de volver durante 5 s. Arranca en
+  standby y con los motores apagados.
+- El heartbeat avisa `[RADIO] Interferencia` cuando llegan muchos paquetes ajenos.
+
 **Standby:** el brazalete arranca en standby y vuelve a él tras 30 s sin paquetes del
 semáforo. En standby no lee sensores, no vibra, y tiene el BLE y el WiFi apagados; sólo
 enciende la radio 1.2 s cada 5 s para buscar el paquete del semáforo, y entre escuchas

@@ -73,6 +73,22 @@ static_assert(VENTANA_ESCUCHA_STANDBY_MS > 2 * INTERVALO_ENVIO_SEMAFORO_MS,
 static_assert(VENTANA_ESCUCHA_STANDBY_MS < INTERVALO_ESCUCHA_STANDBY_MS,
               "La ventana de escucha debe ser mas corta que el intervalo");
 
+// ── Watchdog del loop ────────────────────────────────────────────────────────
+// Si loop() deja de volver durante este tiempo (algo se quedó pegado: un
+// periférico que no responde, una radio saturada), el ESP32 se reinicia solo y
+// arranca en standby con los motores apagados. Es el timeout del task watchdog
+// del core (CONFIG_ESP_TASK_WDT_TIMEOUT_S = 5). Nada del firmware puede
+// bloquear tanto: lo más largo es el light sleep entre escuchas.
+#define TIMEOUT_WATCHDOG_LOOP_MS       5000UL
+
+static_assert(INTERVALO_ESCUCHA_STANDBY_MS - VENTANA_ESCUCHA_STANDBY_MS < TIMEOUT_WATCHDOG_LOOP_MS,
+              "El light sleep del standby no puede durar mas que el watchdog");
+
+// ── Monitor de interferencia ─────────────────────────────────────────────────
+// Si en un heartbeat (2 s) llegan más paquetes ESP-NOW ajenos que este umbral,
+// se avisa por el monitor serie. Sólo informa: esos paquetes ya se descartan.
+#define UMBRAL_INTERFERENCIA_PAQUETES  20
+
 // ── Patrones de vibración (ver patrones.md) ──────────────────────────────────
 // Cada patrón suena UNA vez por evento y nunca se repite solo. "Pulso" = motor
 // encendido a su INTENSIDAD_*; "pausa" = motor apagado entre dos pulsos.
@@ -108,6 +124,13 @@ static_assert(VENTANA_ESCUCHA_STANDBY_MS < INTERVALO_ESCUCHA_STANDBY_MS,
 
 static_assert(INTERVALO_GIRO_MS >= SEPARACION_MINIMA_EVENTOS_MS,
               "El pulso de orientacion no puede repetirse antes de la separacion minima");
+
+// ── Cambio de luz ────────────────────────────────────────────────────────────
+// Un cambio de luz sólo cuenta cuando llegan estos paquetes SEGUIDOS con la luz
+// nueva. Un paquete suelto que contradice a los demás (alterado por
+// interferencia u otro equipo) no hace vibrar. Con 2, el aviso se retrasa
+// medio segundo (un envío del semáforo).
+#define CONFIRMACIONES_CAMBIO_LUZ      2
 
 // ── Orientación frente al cruce ──────────────────────────────────────────────
 // La persona queda "de frente" cuando |Δθ − 180°| < UMBRAL_CRUCE_GRADOS (config.h)

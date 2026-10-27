@@ -3,6 +3,12 @@ CONFIG_IDF_TARGET="esp32"
 CONFIG_AUTOSTART_ARDUINO=y
 CONFIG_FREERTOS_HZ=1000
 
+# Task watchdog de 5 s (el mismo que trae Arduino IDE): enableLoopWDT() lo usa
+# para reiniciar el ESP32 si loop() se queda pegado
+CONFIG_ESP_TASK_WDT_EN=y
+CONFIG_ESP_TASK_WDT_INIT=y
+CONFIG_ESP_TASK_WDT_TIMEOUT_S=5
+
 # El semáforo sólo usa WiFi (ESP-NOW); el Bluetooth no hace falta
 CONFIG_BT_ENABLED=n
 

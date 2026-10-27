@@ -7,6 +7,8 @@ Su misión principal es leer el campo magnético direccional permanente hacia do
 
 Se compila con **Arduino IDE** o con **ESP-IDF**, con la misma estructura que el firmware del brazalete; ya no necesita PlatformIO.
 
+Cada paquete lleva la firma `"ACPI"` y un CRC-8 que el brazalete verifica, y un watchdog reinicia el ESP32 si `loop()` se queda pegado más de 5 s.
+
 ---
 
 ## Contenido
