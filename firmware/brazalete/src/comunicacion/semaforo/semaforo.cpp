@@ -4,10 +4,6 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-//Inicializamos los atributos de la clase
-const uint8_t ComunicadorSemaforo::BROADCAST_MAC[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-estado_semaforo ComunicadorSemaforo::ultimoEstado = {};
-
 // Buffer compartido entre el callback (tarea de WiFi) y loop(). Se protege con
 // una sección crítica; sólo guarda el último paquete porque el anterior ya no
 // sirve si llegó uno más nuevo.
@@ -86,9 +82,6 @@ bool ComunicadorSemaforo::tomarPaquete(estado_semaforo& paquete) {
         habia = true;
     }
     portEXIT_CRITICAL(&mux_paquete);
-    if (habia) {
-        ultimoEstado = paquete;
-    }
     return habia;
 }
 

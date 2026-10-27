@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <stdint.h>
+#include "../protocolo/protocolo_esp.h"
 
 enum class EstadoBrazalete {
     BOOTING,
@@ -20,6 +21,8 @@ public:
     static void inicializar();
     static void actualizar();
     static EstadoBrazalete obtenerEstadoActual();
+    // Último paquete del semáforo que se está siguiendo (vacío en standby)
+    static const estado_semaforo& ultimoPaquete();
     static void setEstado(EstadoBrazalete nuevoEstado);
 };
 

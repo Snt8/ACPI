@@ -30,23 +30,6 @@ float ControladorMagnetometro::offset_x = 0.0f;
 float ControladorMagnetometro::offset_y = 0.0f;
 float ControladorMagnetometro::offset_z = 0.0f;
 
-// ── Escáner I2C de diagnóstico ────────────────────────────────────────────────
-// Se ejecuta UNA vez al boot para reportar la dirección real del sensor.
-static void escanearI2C() {
-    Serial.println(F("[I2C SCAN] Buscando dispositivos..."));
-    uint8_t encontrados = 0;
-    for (uint8_t addr = 1; addr < 127; addr++) {
-        Wire.beginTransmission(addr);
-        if (Wire.endTransmission() == 0) {
-            Serial.printf("[I2C SCAN] Dispositivo en 0x%02X\n", addr);
-            encontrados++;
-        }
-    }
-    if (encontrados == 0) {
-        Serial.println(F("[I2C SCAN] No se encontraron dispositivos."));
-    }
-}
-
 // ── Escritura de un registro ──────────────────────────────────────────────────
 static bool escribirRegistro(uint8_t reg, uint8_t valor) {
     Wire.beginTransmission(QMC5883L_ADDR);
@@ -57,8 +40,8 @@ static bool escribirRegistro(uint8_t reg, uint8_t valor) {
 
 // ── Inicialización ────────────────────────────────────────────────────────────
 bool ControladorMagnetometro::inicializar() {
-    // Paso 0: escanear bus I2C para confirmar dirección física real
-    escanearI2C();
+    // (El escaneo del bus está en pruebas/01_escaneo_i2c: no se repite en cada
+    // arranque ni cada vez que el brazalete sale de standby)
 
     // Paso 1: Soft reset (escribe 0x80 en reg 0x0A)
     if (!escribirRegistro(QMC5883L_REG_CTRL2, QMC5883L_SOFT_RESET)) {

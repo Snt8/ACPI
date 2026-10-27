@@ -28,7 +28,4 @@
 // 0: espera con delay() aunque no haya USB (útil para depurar con UART).
 #define STANDBY_LIGHT_SLEEP     1
 
-// ── Timing de vibración de error (indicar_error.cpp) ─────────────────────────
-#define INTERVALOS_ERROR        200
-
 #endif // CONFIG_H

@@ -59,9 +59,13 @@ void loop() {
     unsigned long ahora = millis();
     if (ahora - ultimo_tiempo_heartbeat >= INTERVALO_HEARTBEAT_MS) {
         ultimo_tiempo_heartbeat = ahora;
-        Serial.printf("[SYSTEM] Estado FSM: %d | BLE: %s | Semaforo Angulo: %u\n", 
+        // El heap libre permite ver si los ciclos de standby pierden memoria
+        Serial.printf("[SYSTEM] Estado FSM: %d | BLE: %s | Semaforo Angulo: %u | "
+                      "ESP-NOW descartados: %lu | Heap libre: %lu\n",
                       (int)MaquinaEstados::obtenerEstadoActual(),
                       ComunicadorMovil::estaConectado() ? "Conectado" : "Desconectado",
-                      ComunicadorSemaforo::ultimoEstado.grados);
+                      MaquinaEstados::ultimoPaquete().grados,
+                      (unsigned long)ComunicadorSemaforo::paquetesDescartados(),
+                      (unsigned long)ESP.getFreeHeap());
     }
 }

@@ -118,9 +118,13 @@ void MaquinaEstados::inicializar() {
     setEstado(EstadoBrazalete::BOOTING);
 }
 
-// ── Getter de estado actual ───────────────────────────────────────────────────
+// ── Getters ───────────────────────────────────────────────────────────────────
 EstadoBrazalete MaquinaEstados::obtenerEstadoActual() {
     return estadoActual;
+}
+
+const estado_semaforo& MaquinaEstados::ultimoPaquete() {
+    return evaluador.ultimoPaquete();
 }
 
 // ── Transición de estado ──────────────────────────────────────────────────────

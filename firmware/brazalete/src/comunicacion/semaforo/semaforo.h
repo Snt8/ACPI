@@ -14,10 +14,7 @@
 // La FSM lo recoge desde loop() con tomarPaquete(), así toda la lógica corre
 // en un único hilo y no hay carreras con el evaluador.
 class ComunicadorSemaforo {
-private:
-    static const uint8_t BROADCAST_MAC[6]; //Direccion MAC
 public:
-    static estado_semaforo ultimoEstado; //Ultimo paquete tomado con tomarPaquete() (para depuración)
     static bool inicializar(); //Enciende el WiFi en modo estación y empieza a escuchar ESP-NOW
     static bool desinicializar(); //Deja de escuchar y apaga el WiFi por completo
     // Copia en 'paquete' el último paquete válido recibido y lo marca como

@@ -1,14 +1,13 @@
 # Módulo: Utilidades Globales (Utils)
 
 ## Descripción General
-Este submódulo centraliza funciones matemáticas de circunferencia y rutinas auxiliares
-para descargar a la FSM principal del brazalete.
+Este submódulo centraliza las funciones matemáticas de circunferencia que usan la FSM
+y el evaluador.
 
 ---
 
 ## Contenido
 - `calcular_direccion.*` -> Matemáticas de arco y geometría de círculo. Sólo usa `<math.h>`, así que también compila en las pruebas de la PC (`test/`).
-- `indicar_error.*` -> Rutina de bloqueo con vibración para errores fatales de inicialización.
 
 Los patrones de vibración ya no están aquí: viven en `src/vibracion/` (reproducción) y
 `src/control/evaluador_semaforo.*` (decisión).
@@ -33,7 +32,6 @@ Devuelve 0 cuando están de frente y 180 cuando miran hacia el mismo lado. El
 
 ## Dependencias
 - `constantes.h` (`GRADOS_CIRCUNFERENCIA`).
-- `indicar_error` usa `src/motores`.
 
 ---
 

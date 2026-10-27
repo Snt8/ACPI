@@ -53,14 +53,6 @@ void ControladorMotores::aplicar(bool derecho, bool izquierdo) {
     }
 }
 
-void ControladorMotores::vibrarMotor(Motor motor) {
-    switch (motor) {
-        case DERECHO:   aplicar(true, encendido_izquierdo); break;
-        case IZQUIERDO: aplicar(encendido_derecho, true);   break;
-        case AMBOS:     aplicar(true, true);                break;
-    }
-}
-
 void ControladorMotores::detenerMotor(Motor motor) {
     switch (motor) {
         case DERECHO:   aplicar(false, encendido_izquierdo); break;

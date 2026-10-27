@@ -33,6 +33,7 @@
 #define RESOLUCION_PWM        8      // bits (0-255)
 #define INTENSIDAD_INICIAL    120    // mismo valor que INTENSIDAD_MOTOR del firmware (180 era demasiado)
 #define PASO_INTENSIDAD       25
+#define INTENSIDAD_MAXIMA     180    // tope de '+': más arriba el motor arriesga sus soldaduras
 #define DURACION_PULSO_MS     1000UL
 #define INTERVALO_LECTURA_MS  500UL  // 2 Hz, igual que el firmware
 
@@ -283,7 +284,8 @@ void atenderComando(char c) {
             barridoMotor(PIN_MOTOR_IZQUIERDO, "IZQUIERDO");
             break;
         case '+':
-            intensidad = (intensidad > 255 - PASO_INTENSIDAD) ? 255 : intensidad + PASO_INTENSIDAD;
+            intensidad = (intensidad > INTENSIDAD_MAXIMA - PASO_INTENSIDAD) ? INTENSIDAD_MAXIMA
+                                                                         : intensidad + PASO_INTENSIDAD;
             Serial.printf("[MOTOR] Intensidad = %u/255\n", intensidad);
             break;
         case '-':
