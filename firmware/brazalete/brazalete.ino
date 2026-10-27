@@ -19,17 +19,17 @@ unsigned long ultimo_tiempo_heartbeat = 0;
 uint32_t descartados_anteriores = 0;
 
 void setup() {
+    // 1. Motores apagados ANTES que nada: la PCB v3.5 no tiene resistencia de
+    //    base a GND en los transistores, así que desde el reset hasta aquí la
+    //    base queda flotando y un motor podría dar un tirón. Cuanto antes se
+    //    fijen los pines en 0, más corto es ese intervalo.
+    bool motores_ok = ControladorMotores::inicializar();
+
     Serial.begin(BAUD_RATE);
     delay(500);
     Serial.println("\n[BOOT] Iniciando Brazalete ACPI v2.0...");
-
-    // 1. Inicializar Motores
-    Serial.println("[BOOT] Inicializando motores...");
-    if (!ControladorMotores::inicializar()) {
-        Serial.println("[BOOT] [ERROR] Fallo al inicializar motores!");
-    } else {
-        Serial.println("[BOOT] Motores listos.");
-    }
+    Serial.println(motores_ok ? "[BOOT] Motores listos (apagados)."
+                              : "[BOOT] [ERROR] Fallo al inicializar motores!");
 
     // 2. Inicializar I2C y Sensores (MPU6050 + QMC5883L) — pines en config.h
     Serial.println("[BOOT] Inicializando I2C...");
