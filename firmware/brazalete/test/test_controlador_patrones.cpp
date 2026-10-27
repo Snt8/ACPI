@@ -93,6 +93,7 @@ PRUEBA(patrones_tiempo_encendido_total) {
     const Caso casos[] = {
         {Patron::SEMAFORO_DETECTADO, 3 * 200},
         {Patron::GIRAR_DERECHA,      300},
+        {Patron::GIRAR_IZQUIERDA,    300},
         {Patron::CRUCE_PERMITIDO,    2 * 2000},
         {Patron::CRUCE_PROHIBIDO,    2000},
     };
@@ -140,8 +141,36 @@ PRUEBA(patrones_no_se_solapan_aunque_pasen_tres_segundos) {
     VERIFICAR(!c.libre(3500));
     VERIFICAR(!c.iniciar(Patron::CRUCE_PROHIBIDO, 3500));
     VERIFICAR_IGUAL(c.patronActual(), Patron::CRUCE_PERMITIDO);
-    // Al llegar a su fin queda libre, aunque actualizar() no lo haya visto aún
-    VERIFICAR(c.libre(4500));
+    // Termina en 4500, pero los motores descansan SILENCIO_TRAS_PATRON_MS más
+    VERIFICAR(!c.libre(4500));
+    VERIFICAR(!c.libre(4500 + SILENCIO_TRAS_PATRON_MS - 1));
+    // Queda libre aunque actualizar() todavía no haya visto el final
+    VERIFICAR(c.libre(4500 + SILENCIO_TRAS_PATRON_MS));
+}
+
+PRUEBA(patrones_descanso_tras_cada_patron) {
+    // Para cada patrón, el siguiente puede empezar en max(3 s, duración + 1 s)
+    const Patron todos[] = {Patron::SEMAFORO_DETECTADO, Patron::GIRAR_DERECHA,
+                            Patron::GIRAR_IZQUIERDA, Patron::CRUCE_PERMITIDO,
+                            Patron::CRUCE_PROHIBIDO};
+    for (Patron p : todos) {
+        ControladorPatrones c;
+        c.iniciar(p, 0);
+        uint32_t esperado = ControladorPatrones::duracion(p) + SILENCIO_TRAS_PATRON_MS;
+        if (esperado < SEPARACION_MINIMA_EVENTOS_MS) esperado = SEPARACION_MINIMA_EVENTOS_MS;
+        VERIFICAR(!c.libre(esperado - 1));
+        VERIFICAR(c.libre(esperado));
+    }
+}
+
+PRUEBA(patrones_cancelar_un_patron_largo_no_acorta_el_descanso) {
+    ControladorPatrones c;
+    c.iniciar(Patron::CRUCE_PERMITIDO, 0);
+    c.actualizar(1000);
+    c.cancelar();  // p. ej., al pasar a standby
+    VERIFICAR(!c.libre(3000));
+    VERIFICAR(!c.libre(4500 + SILENCIO_TRAS_PATRON_MS - 1));
+    VERIFICAR(c.libre(4500 + SILENCIO_TRAS_PATRON_MS));
 }
 
 PRUEBA(patrones_cancelar_apaga_pero_no_adelanta_el_siguiente) {
@@ -158,7 +187,7 @@ PRUEBA(patrones_cancelar_apaga_pero_no_adelanta_el_siguiente) {
 PRUEBA(patrones_desborde_de_millis) {
     // millis() se desborda cada ~49 días; las restas sin signo lo absorben
     ControladorPatrones c;
-    const uint32_t t0 = 0xFFFFFF00u;  // 256 ms antes del desborde
+    uint32_t t0 = 0xFFFFFF00u;  // 256 ms antes del desborde (no const: MSVC avisaría del desborde)
     VERIFICAR(c.iniciar(Patron::CRUCE_PROHIBIDO, t0));
     VERIFICAR(igual(c.actualizar(t0 + 100), AMBOS));
     VERIFICAR(igual(c.actualizar((uint32_t)(t0 + 1000)), AMBOS));   // ya pasó el desborde

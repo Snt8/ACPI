@@ -13,6 +13,7 @@ persona.
 - `evaluador_semaforo.h` / `.cpp` -> Clase `EvaluadorSemaforo`: compara cada paquete del semáforo con el anterior, sigue la orientación y orquesta al `ControladorPatrones` (`src/vibracion/`).
 - `modo_standby.h` / `.cpp` -> Clase `ModoStandby`: apaga las radios y escucha al semáforo una ventana corta cada 5 s, durmiendo en light sleep entre ventanas.
 - `ciclo_escucha.h` / `.cpp` -> Clase `CicloEscucha`: decide cuándo abrir y cerrar cada ventana de escucha (sin Arduino, probada en `test/`).
+- `coordinador_cruce.h` / `.cpp` -> Clase `CoordinadorCruce`: una vuelta de `SENSING_CROSSING` sin hardware. La FSM le conecta la brújula y los motores, y las pruebas de escenario de `test/` la usan con lecturas simuladas, así ambas ejecutan la misma lógica.
 
 ---
 
@@ -40,17 +41,21 @@ persona.
   que llega justo al cerrar una ventana se descarta, para no despertar con datos viejos. Al oír uno,
   la radio queda encendida, se enciende el BLE y se pasa a `SENSING_CROSSING`, donde
   ese mismo paquete produce el aviso de "semáforo detectado".
-- **`SENSING_CROSSING`**: hay un semáforo a la vista. En cada vuelta del `loop()`:
+- **`SENSING_CROSSING`**: hay un semáforo a la vista. En cada vuelta del `loop()`,
+  `CoordinadorCruce::paso()`:
   1. Recoge el paquete que dejó el callback de ESP-NOW y se lo pasa al evaluador.
-  2. Si pasan `TIEMPO_SIN_PAQUETES_STANDBY_MS` (30 s) sin paquetes del semáforo que se
-     está siguiendo, vuelve a standby.
+  2. Cierra el patrón que ya terminó.
   3. A 2 Hz, y **sólo si no está vibrando** (los imanes de los motores alteran el
      magnetómetro), lee la brújula y le pasa al evaluador la desviación respecto al
      cruce y hacia qué lado girar.
   4. `evaluador.orquestar()`: si hay un evento pendiente y el controlador está libre,
      inicia el patrón que corresponde.
-  5. Aplica a los motores la salida de `ControladorPatrones::actualizar()`.
-  6. Envía la telemetría BLE al móvil cada 500 ms.
+  5. Devuelve la salida de `ControladorPatrones::actualizar()`, que la FSM aplica a
+     los motores.
+
+  Después, si pasan `TIEMPO_SIN_PAQUETES_STANDBY_MS` (30 s) sin paquetes del semáforo
+  que se está siguiendo, la FSM vuelve a standby; si no, envía la telemetría BLE al
+  móvil cada `INTERVALO_TELEMETRIA_BLE_MS` (500 ms).
 
 ### Evaluador de paquetes (`EvaluadorSemaforo`)
 Compara cada paquete con el anterior y lo clasifica:

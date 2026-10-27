@@ -36,6 +36,9 @@
 // ── Frecuencia de muestreo (2 Hz) ────────────────────────────────────────────
 #define INTERVALO_MUESTREO_MS   500UL
 
+// ── Telemetría BLE al móvil ──────────────────────────────────────────────────
+#define INTERVALO_TELEMETRIA_BLE_MS 500UL
+
 // ── Safety check de heading (brazalete) ────────────────────────────────────────
 // Si el heading cambia más de UMBRAL_DELTA_HEADING entre dos lecturas separadas
 // por menos de UMBRAL_TIEMPO_SAFETY_MS, la lectura se invalida (giro brusco de
@@ -57,7 +60,8 @@ static_assert(UMBRAL_TIEMPO_SAFETY_MS > INTERVALO_MUESTREO_MS,
 
 // En standby la radio sólo escucha una ventana corta cada INTERVALO (inicio a
 // inicio); el resto del tiempo el WiFi está apagado. La ventana abarca más de
-// dos envíos del semáforo para no perderlo aunque el WiFi tarde en arrancar.
+// dos envíos del semáforo: si el WiFi tarda menos de 200 ms en arrancar,
+// escucha al menos dos paquetes.
 #define INTERVALO_ESCUCHA_STANDBY_MS   5000UL
 #define VENTANA_ESCUCHA_STANDBY_MS     1200UL
 #define INTERVALO_ENVIO_SEMAFORO_MS    500UL   // INTERVALO_ENVIO_MS en firmware/semaforo
@@ -75,6 +79,11 @@ static_assert(VENTANA_ESCUCHA_STANDBY_MS < INTERVALO_ESCUCHA_STANDBY_MS,
 // del siguiente pasan al menos estos ms, y dos patrones nunca se solapan.
 // La garantiza ControladorPatrones; ningún patrón puede saltársela.
 #define SEPARACION_MINIMA_EVENTOS_MS   3000UL
+
+// Además, tras terminar un patrón los motores descansan al menos este tiempo
+// antes del siguiente. Importa con los avisos de luz (4.5 s y 2 s): sin esto,
+// un cambio de luz durante el verde haría sonar el rojo pegado a él.
+#define SILENCIO_TRAS_PATRON_MS        1000UL
 
 // 1. Semáforo detectado: 3 pulsos cortos de ambos motores (1.6 s en total)
 #define DETECTADO_PULSOS               3

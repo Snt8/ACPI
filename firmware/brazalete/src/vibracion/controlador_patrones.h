@@ -14,6 +14,8 @@
 //   - Un patrón termina solo; nunca se repite por su cuenta.
 //   - Dos patrones nunca se solapan, y entre el inicio de uno y el del
 //     siguiente pasan al menos SEPARACION_MINIMA_EVENTOS_MS (constantes.h).
+//   - Tras terminar un patrón, los motores descansan al menos
+//     SILENCIO_TRAS_PATRON_MS antes del siguiente.
 //
 // Los tiempos son uint32_t en ms, como millis() en el ESP32; las restas sin
 // signo hacen que el desborde de millis() (cada ~49 días) no afecte.
@@ -42,16 +44,16 @@ class ControladorPatrones {
 public:
     ControladorPatrones();
 
-    // true si se puede iniciar un patrón ahora: no hay ninguno sonando y ya
-    // pasó la separación mínima desde el inicio del anterior
+    // true si se puede iniciar un patrón ahora: no hay ninguno sonando, ya pasó
+    // la separación mínima desde el inicio del anterior y el silencio tras su fin
     bool libre(uint32_t ahora) const;
 
     // Inicia el patrón. Devuelve false (y no hace nada) si no está libre o si
     // el patrón es NINGUNO.
     bool iniciar(Patron patron, uint32_t ahora);
 
-    // Corta el patrón en curso y apaga los motores. La separación mínima se
-    // sigue contando desde su inicio: cancelar no habilita a vibrar antes.
+    // Corta el patrón en curso y apaga los motores. La separación y el silencio
+    // se cuentan como si hubiera terminado entero: cancelar no adelanta nada.
     void cancelar();
 
     // Estado de los motores en este instante. Cuando el patrón llega a su fin,
@@ -66,7 +68,8 @@ public:
 
 private:
     Patron   actual_;
-    uint32_t inicio_;       // millis() del último iniciar() aceptado
+    uint32_t inicio_;           // millis() del último iniciar() aceptado
+    uint32_t duracion_ultimo_;  // duración completa del último patrón iniciado
     bool     hubo_inicio_;  // false hasta el primer patrón (no hay separación que respetar)
 };
 

@@ -4,7 +4,7 @@
 set -e
 AQUI=$(cd "$(dirname "$0")" && pwd)
 SALIDA="$AQUI/build"
-CXX=${CXX:-$(command -v g++ || command -v clang++)}
+CXX=${CXX:-$(command -v g++ || command -v clang++ || true)}
 if [ -z "$CXX" ]; then
     echo "No se encontro g++ ni clang++ (en Windows usar ejecutar_pruebas.bat)." >&2
     exit 1
@@ -21,6 +21,7 @@ mkdir -p "$SALIDA"
     "$AQUI/../src/vibracion/controlador_patrones.cpp" \
     "$AQUI/../src/control/evaluador_semaforo.cpp" \
     "$AQUI/../src/control/ciclo_escucha.cpp" \
+    "$AQUI/../src/control/coordinador_cruce.cpp" \
     "$AQUI/../src/utils/calcular_direccion.cpp"
 
 "$SALIDA/pruebas"

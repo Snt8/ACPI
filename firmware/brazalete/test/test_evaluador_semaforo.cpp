@@ -20,7 +20,9 @@ estado_semaforo paquete(uint8_t id, uint16_t grados, uint8_t permitido, uint8_t 
 Orientacion deFrente()              { return {true, 5.0f, 5.0f}; }
 Orientacion malOrientada(float giro) { return {true, 90.0f, giro}; }
 Orientacion conDesviacion(float d)   { return {true, d, d}; }
-Orientacion invalida()               { return {false, 90.0f, 90.0f}; }
+// Una lectura inválida "dice" estar de frente: si el evaluador la usara por
+// error, cambiaría de estado y las pruebas lo notarían
+Orientacion invalida()               { return {false, 0.0f, 0.0f}; }
 
 // Avanza el controlador hasta que termine el patrón en curso
 void dejarTerminar(ControladorPatrones& c, uint32_t& t) {
@@ -135,11 +137,11 @@ PRUEBA(evaluador_de_frente_avisa_la_luz_una_vez) {
     VERIFICAR(e.cruceNotificado());
     t = 3000;
     // Persona quieta y misma luz durante un minuto: silencio absoluto
-    for (; t < 63000; t += 10) {
+    for (t += 10; t < 63000; t += 10) {
         e.registrarPaquete(paquete(1, 90, 1));
         e.registrarOrientacion(deFrente());
         c.actualizar(t);
-        if (t > 3000 + 4500) VERIFICAR_IGUAL(e.orquestar(t), Patron::NINGUNO);
+        VERIFICAR_IGUAL(e.orquestar(t), Patron::NINGUNO);
     }
 }
 
@@ -230,9 +232,22 @@ PRUEBA(evaluador_lectura_invalida_no_indica_giro) {
     e.registrarOrientacion(malOrientada(80));
     e.registrarOrientacion(invalida());
     VERIFICAR_IGUAL(e.orquestar(3000), Patron::NINGUNO);
-    VERIFICAR(!e.orientado());  // la lectura inválida no cambió el estado
+    VERIFICAR(!e.orientado());  // la lectura inválida (que dice "de frente") no cuenta
     e.registrarOrientacion(malOrientada(80));
     VERIFICAR_IGUAL(e.orquestar(3010), Patron::GIRAR_DERECHA);
+}
+
+PRUEBA(evaluador_lectura_invalida_no_cambia_el_estado_en_ningun_sentido) {
+    ControladorPatrones c;
+    EvaluadorSemaforo e(c);
+    e.registrarOrientacion(deFrente());
+    VERIFICAR(e.orientado());
+    e.registrarOrientacion({false, 120.0f, 120.0f});  // inválida y "mal orientada"
+    VERIFICAR(e.orientado());
+    e.registrarOrientacion(malOrientada(60));
+    VERIFICAR(!e.orientado());
+    e.registrarOrientacion(invalida());               // inválida y "de frente"
+    VERIFICAR(!e.orientado());
 }
 
 PRUEBA(evaluador_lectura_invalida_corta_solo_el_pulso_de_giro) {
@@ -254,6 +269,79 @@ PRUEBA(evaluador_lectura_invalida_corta_solo_el_pulso_de_giro) {
     e.registrarOrientacion(invalida());
     VERIFICAR(c.sonando());
     VERIFICAR_IGUAL(c.patronActual(), Patron::CRUCE_PERMITIDO);
+}
+
+PRUEBA(evaluador_cambio_de_luz_durante_un_aviso_espera_su_turno) {
+    ControladorPatrones c;
+    EvaluadorSemaforo e(c);
+    uint32_t t = 0;
+    e.registrarPaquete(paquete(1, 90, 1));
+    e.registrarOrientacion(deFrente());
+    e.orquestar(t);
+    dejarTerminar(c, t);
+    VERIFICAR_IGUAL(e.orquestar(3000), Patron::CRUCE_PERMITIDO);  // dura 4.5 s
+    e.registrarPaquete(paquete(1, 90, 0));                        // pasa a rojo a los 4 s
+    const uint32_t libre = 3000 + 4500 + SILENCIO_TRAS_PATRON_MS;
+    for (t = 4000; t < libre; t += 10) {
+        c.actualizar(t);
+        VERIFICAR_IGUAL(e.orquestar(t), Patron::NINGUNO);
+    }
+    VERIFICAR_IGUAL(e.orquestar(libre), Patron::CRUCE_PROHIBIDO);
+}
+
+PRUEBA(evaluador_paquete_de_otro_id_no_toca_los_avisos) {
+    ControladorPatrones c;
+    EvaluadorSemaforo e(c);
+    uint32_t t = 0;
+    e.registrarPaquete(paquete(1, 90, 1));
+    e.registrarOrientacion(deFrente());
+    e.orquestar(t);
+    dejarTerminar(c, t);
+    VERIFICAR_IGUAL(e.orquestar(3000), Patron::CRUCE_PERMITIDO);
+    VERIFICAR_IGUAL(e.registrarPaquete(paquete(2, 270, 0)), CambioPaquete::IGNORADO);
+    VERIFICAR(e.cruceNotificado());
+    VERIFICAR_IGUAL(e.orquestar(20000), Patron::NINGUNO);
+}
+
+PRUEBA(evaluador_giro_cada_tres_segundos_tras_el_desborde) {
+    ControladorPatrones c;
+    EvaluadorSemaforo e(c);
+    uint32_t t0 = 0xFFFFF000u;
+    e.registrarPaquete(paquete(1, 90, 0));
+    VERIFICAR_IGUAL(e.orquestar(t0), Patron::SEMAFORO_DETECTADO);
+    e.registrarOrientacion(malOrientada(45));
+    VERIFICAR_IGUAL(e.orquestar((uint32_t)(t0 + 3000)), Patron::GIRAR_DERECHA);
+    VERIFICAR_IGUAL(e.orquestar((uint32_t)(t0 + 5999)), Patron::NINGUNO);
+    VERIFICAR_IGUAL(e.orquestar((uint32_t)(t0 + 6000)), Patron::GIRAR_DERECHA);
+}
+
+PRUEBA(evaluador_lado_del_giro_en_los_empates) {
+    // giro > 0 → derecha; giro <= 0 → izquierda (con datos reales |giro| es la
+    // desviación, así que 0 no ocurre estando mal orientada; 180 sí: de espaldas)
+    ControladorPatrones c;
+    EvaluadorSemaforo e(c);
+    e.registrarPaquete(paquete(1, 90, 0));
+    e.orquestar(0);
+    e.registrarOrientacion({true, 180.0f, 180.0f});
+    VERIFICAR_IGUAL(e.orquestar(3000), Patron::GIRAR_DERECHA);
+    e.registrarOrientacion({true, 180.0f, 0.0f});
+    VERIFICAR_IGUAL(e.orquestar(6000), Patron::GIRAR_IZQUIERDA);
+}
+
+PRUEBA(evaluador_reiniciar_durante_un_aviso_largo) {
+    // Al pasar a standby a mitad de un verde (4.5 s), la FSM lo corta; si el
+    // semáforo vuelve enseguida, "detectado" espera duración completa + descanso
+    ControladorPatrones c;
+    EvaluadorSemaforo e(c);
+    e.registrarPaquete(paquete(1, 90, 1));
+    e.registrarOrientacion(deFrente());
+    c.iniciar(Patron::CRUCE_PERMITIDO, 0);
+    c.cancelar();
+    e.reiniciar();
+    e.registrarPaquete(paquete(1, 90, 1));
+    VERIFICAR_IGUAL(e.orquestar(3000), Patron::NINGUNO);
+    VERIFICAR_IGUAL(e.orquestar(4500 + SILENCIO_TRAS_PATRON_MS - 1), Patron::NINGUNO);
+    VERIFICAR_IGUAL(e.orquestar(4500 + SILENCIO_TRAS_PATRON_MS), Patron::SEMAFORO_DETECTADO);
 }
 
 PRUEBA(evaluador_reiniciar_respeta_la_separacion_minima) {

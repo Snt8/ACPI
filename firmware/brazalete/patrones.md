@@ -6,7 +6,8 @@ Especificación aprobada el 27 oct 2026. La implementan:
 |---|---|---|
 | `ControladorPatrones` | `src/vibracion/controlador_patrones.*` | Reproduce **una vez** el patrón pedido y hace cumplir la separación mínima de 3 s. |
 | `EvaluadorSemaforo` | `src/control/evaluador_semaforo.*` | Compara cada paquete del semáforo con el anterior, sigue la orientación de la persona y decide qué patrón pedir. |
-| `MaquinaEstados` | `src/control/fsm.cpp` | Pasa paquetes y lecturas al evaluador y aplica a los motores lo que dice el controlador. |
+| `CoordinadorCruce` | `src/control/coordinador_cruce.*` | Una vuelta del loop con un semáforo a la vista: paquete → orientación → patrón → motores. Lo usan la FSM y las pruebas. |
+| `MaquinaEstados` | `src/control/fsm.cpp` | Conecta el coordinador con la brújula, la radio y los motores reales, y maneja el standby. |
 
 Los tiempos están en `src/constantes.h`. Las pruebas que verifican este documento
 están en `test/` (ver `test/README.md`).
@@ -34,6 +35,12 @@ Las soldaduras de los motores son débiles, así que estas reglas no tienen exce
    Esto incluye al rojo: en el borrador se proponía que cortara a cualquier otro
    patrón, pero eso rompería esta regla. El semáforo cambia de luz cada 25 s, así que
    la espera máxima de un aviso es de unos pocos segundos.
+4. **Descanso tras cada patrón.** Cuando un patrón termina, los motores descansan al
+   menos `SILENCIO_TRAS_PATRON_MS` (1 s) antes del siguiente. Importa con los avisos
+   de luz, que duran más de 3 s: si la luz cambia mientras suena el verde (4.5 s), el
+   rojo empieza 1 s después de que el verde termine, no pegado a él.
+   Si un patrón se corta (por ejemplo, al pasar a standby), los 3 s y el descanso se
+   cuentan como si hubiera sonado entero.
 
 ---
 
@@ -58,7 +65,9 @@ Izquierdo ··································
           0                             3.0 s
 ```
 
-- 1 pulso de **300 ms** sólo en el motor del lado hacia el que hay que girar.
+- 1 pulso de **300 ms** sólo en el motor del lado hacia el que hay que girar
+  (`giro > 0` → derecho; si no, izquierdo. De espaldas al cruce, a 180°, el empate se
+  resuelve hacia la derecha).
 - **Evento:** la persona no está de frente al cruce. Se repite **cada 3 s** mientras
   siga mal orientada y se detiene en cuanto queda de frente.
 - "Derecho" e "izquierdo" son los motores de `PIN_MOTOR_DERECHO` (GPIO10) y
@@ -118,10 +127,11 @@ STANDBY ──primer paquete "ACPI"──▶ [1] detectado
 
 ## Brújula y motores
 
-- **Lectura inválida** (giro brusco de más de 40° en 0.5 s): no empieza ningún pulso de
-  orientación, y si estaba sonando uno se corta, porque podría indicar el lado
-  equivocado. Cortarlo no adelanta el siguiente patrón: los 3 s se cuentan desde su
-  inicio. Los avisos de luz no se cortan.
+- **Lectura inválida** (giro brusco de más de 40° entre dos muestras seguidas): no
+  empieza ningún pulso de orientación y no cambia el estado de "de frente" / "mal
+  orientada". El evaluador además cortaría un pulso de orientación en curso, pero hoy
+  eso no ocurre: mientras vibra un motor no se lee la brújula (siguiente punto). Se
+  deja como defensa por si eso cambia.
 - **Mientras vibra un motor no se lee la brújula:** los imanes de los motores alteran
   el magnetómetro. Se usa la última lectura buena.
 

@@ -15,6 +15,12 @@ PRUEBA(direccion_giro_mas_corto) {
     VERIFICAR_CERCA(calcularDireccion(180.0f, 0.0f), 180.0f, 0.01);   // empate: derecha
 }
 
+PRUEBA(direccion_fuera_de_rango) {
+    // 400° equivale a 40°: el giro hasta 10° es de 30° a la izquierda
+    VERIFICAR_CERCA(calcularDireccion(10.0f, 400.0f), -30.0f, 0.01);
+    VERIFICAR_CERCA(calcularDireccion(10.0f, 760.0f), -30.0f, 0.01);
+}
+
 PRUEBA(direccion_resultado_siempre_en_rango) {
     for (int objetivo = 0; objetivo < 360; objetivo += 7) {
         for (int actual = 0; actual < 360; actual += 11) {

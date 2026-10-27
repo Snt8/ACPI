@@ -14,8 +14,8 @@ enum class EstadoBrazalete {
 class MaquinaEstados {
 private:
     static EstadoBrazalete estadoActual;
-    static unsigned long ultimoTiempoPaqueteSemaforo;
-    static unsigned long ultimoTiempoEnvioBLE;
+    // Hace la transición y enciende/apaga lo que corresponde a cada estado
+    static void setEstado(EstadoBrazalete nuevoEstado);
 
 public:
     static void inicializar();
@@ -23,7 +23,6 @@ public:
     static EstadoBrazalete obtenerEstadoActual();
     // Último paquete del semáforo que se está siguiendo (vacío en standby)
     static const estado_semaforo& ultimoPaquete();
-    static void setEstado(EstadoBrazalete nuevoEstado);
 };
 
 #endif // FSM_H

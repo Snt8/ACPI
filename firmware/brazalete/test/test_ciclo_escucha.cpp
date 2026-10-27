@@ -104,7 +104,7 @@ PRUEBA(escucha_cierre_tras_el_desborde) {
 
 PRUEBA(escucha_desborde_de_millis) {
     CicloEscucha c;
-    const uint32_t t0 = 0xFFFFFFFFu - 1000u;
+    uint32_t t0 = 0xFFFFFFFFu - 1000u;  // no const: MSVC avisaría del desborde
     c.iniciar(t0, false);
     VERIFICAR(c.msHastaProximaEscucha(t0) == INTERVALO_ESCUCHA_STANDBY_MS);
     VERIFICAR_IGUAL(c.actualizar((uint32_t)(t0 + 2000)), Accion::NADA);  // ya pasó el desborde
@@ -112,9 +112,5 @@ PRUEBA(escucha_desborde_de_millis) {
                     Accion::ENCENDER_RADIO);
 }
 
-PRUEBA(escucha_ventana_capta_al_menos_dos_paquetes) {
-    // El semáforo envía cada INTERVALO_ENVIO_SEMAFORO_MS: la ventana debe
-    // abarcar dos envíos aunque el WiFi tarde en arrancar
-    VERIFICAR(VENTANA_ESCUCHA_STANDBY_MS > 2 * INTERVALO_ENVIO_SEMAFORO_MS);
-    VERIFICAR(VENTANA_ESCUCHA_STANDBY_MS < INTERVALO_ESCUCHA_STANDBY_MS);
-}
+// La relación entre la ventana, el intervalo y el envío del semáforo la
+// comprueban los static_assert de constantes.h al compilar.

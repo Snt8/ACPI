@@ -34,9 +34,11 @@ devuelve qué motor debe estar encendido (`SalidaMotores`). Así:
 Garantías:
 - Sin `iniciar()` los motores nunca se encienden.
 - Un patrón termina solo y no se repite.
-- `libre()` es falso mientras suena un patrón o si no pasaron `SEPARACION_MINIMA_EVENTOS_MS`
-  desde el último inicio; `iniciar()` rechaza el pedido en ese caso.
-- `cancelar()` apaga el patrón, pero la separación se sigue contando desde su inicio.
+- `libre()` es falso mientras suena un patrón, si no pasaron `SEPARACION_MINIMA_EVENTOS_MS`
+  desde el último inicio o si no pasó `SILENCIO_TRAS_PATRON_MS` desde su fin;
+  `iniciar()` rechaza el pedido en ese caso.
+- `cancelar()` apaga el patrón, pero la separación y el descanso se cuentan como si
+  hubiera sonado entero.
 
 Quién decide **qué** patrón pedir y **cuándo** es `EvaluadorSemaforo` (`src/control/`).
 

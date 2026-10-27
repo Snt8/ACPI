@@ -38,7 +38,7 @@ const SalidaMotores APAGADOS = {false, false};
 
 // ── Implementación ───────────────────────────────────────────────────────────
 ControladorPatrones::ControladorPatrones()
-    : actual_(Patron::NINGUNO), inicio_(0), hubo_inicio_(false) {}
+    : actual_(Patron::NINGUNO), inicio_(0), duracion_ultimo_(0), hubo_inicio_(false) {}
 
 uint32_t ControladorPatrones::duracion(Patron patron) {
     Forma f = formaDe(patron);
@@ -52,19 +52,23 @@ bool ControladorPatrones::libre(uint32_t ahora) const {
     // Un patrón que ya llegó a su fin cuenta como terminado aunque actualizar()
     // todavía no lo haya registrado
     if (sonando() && transcurrido < duracion(actual_)) return false;
-    return transcurrido >= SEPARACION_MINIMA_EVENTOS_MS;
+    return transcurrido >= SEPARACION_MINIMA_EVENTOS_MS
+        && transcurrido >= duracion_ultimo_ + SILENCIO_TRAS_PATRON_MS;
 }
 
 bool ControladorPatrones::iniciar(Patron patron, uint32_t ahora) {
     if (patron == Patron::NINGUNO || !libre(ahora)) return false;
-    actual_      = patron;
-    inicio_      = ahora;
-    hubo_inicio_ = true;
+    actual_          = patron;
+    inicio_          = ahora;
+    duracion_ultimo_ = duracion(patron);
+    hubo_inicio_     = true;
     return true;
 }
 
 void ControladorPatrones::cancelar() {
-    actual_ = Patron::NINGUNO;  // inicio_ no se toca: la separación sigue corriendo
+    // inicio_ y duracion_ultimo_ no se tocan: la separación y el silencio se
+    // siguen contando como si el patrón hubiera terminado entero (más prudente)
+    actual_ = Patron::NINGUNO;
 }
 
 SalidaMotores ControladorPatrones::actualizar(uint32_t ahora) {
