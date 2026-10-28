@@ -13,6 +13,25 @@
 
 namespace {
     const unsigned long INTERVALO_HEARTBEAT_MS = 2000;
+
+    // Por qué se reinició el ESP32 la última vez. Sirve para diagnosticar
+    // reinicios en bucle: BROWNOUT = cayó el voltaje (p. ej. una pista de
+    // alimentación que hace contacto a ratos), WATCHDOG = loop() se quedó pegado.
+    const char* motivoReinicio() {
+        switch (esp_reset_reason()) {
+            case ESP_RST_POWERON:   return "ENCENDIDO (alimentacion conectada)";
+            case ESP_RST_EXT:       return "PIN EXTERNO";
+            case ESP_RST_SW:        return "SOFTWARE (carga de programa o esp_restart)";
+            case ESP_RST_PANIC:     return "PANICO (fallo del programa)";
+            case ESP_RST_INT_WDT:
+            case ESP_RST_TASK_WDT:
+            case ESP_RST_WDT:       return "WATCHDOG (loop() se quedo pegado)";
+            case ESP_RST_DEEPSLEEP: return "SALIDA DE DEEP SLEEP";
+            case ESP_RST_BROWNOUT:  return "BROWNOUT (cayo el voltaje de alimentacion)";
+            case ESP_RST_USB:       return "USB (boton RESET o reconexion)";
+            default:                return "DESCONOCIDO";
+        }
+    }
 }
 
 unsigned long ultimo_tiempo_heartbeat = 0;
@@ -28,6 +47,7 @@ void setup() {
     Serial.begin(BAUD_RATE);
     delay(500);
     Serial.println("\n[BOOT] Iniciando Brazalete ACPI v2.0...");
+    Serial.printf("[BOOT] Motivo del ultimo reinicio: %s\n", motivoReinicio());
     Serial.println(motores_ok ? "[BOOT] Motores listos (apagados)."
                               : "[BOOT] [ERROR] Fallo al inicializar motores!");
 
