@@ -70,8 +70,9 @@ Izquierdo ··································
   resuelve hacia la derecha).
 - **Evento:** la persona no está de frente al cruce. Se repite **cada 3 s** mientras
   siga mal orientada y se detiene en cuanto queda de frente.
-- "Derecho" e "izquierdo" son los motores de `PIN_MOTOR_DERECHO` (GPIO10) y
-  `PIN_MOTOR_IZQUIERDO` (GPIO3). Si al probar resultan invertidos respecto a la
+- "Derecho" e "izquierdo" son los motores de `PIN_MOTOR_DERECHO` (GPIO3) y
+  `PIN_MOTOR_IZQUIERDO` (GPIO10), vistos con el brazalete puesto (comprobado en la
+  placa el 28 oct 2026). Si al cambiar la carcasa o la muñeca resultan invertidos respecto a la
   persona, se cambian los pines en `config.h`.
 
 ## 3. Semáforo en verde (cruce permitido): 2 pulsos sostenidos, ambos motores

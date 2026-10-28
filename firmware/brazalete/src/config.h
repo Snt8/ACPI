@@ -7,8 +7,11 @@
 // ── Pines (PCB v3.5, ESP32-C3 Super Mini) ────────────────────────────────────
 #define PIN_I2C_SDA             8
 #define PIN_I2C_SCL             9
-#define PIN_MOTOR_DERECHO       10
-#define PIN_MOTOR_IZQUIERDO     3
+// Lados vistos con el brazalete puesto: el motor de GPIO3 (Q2, conector CN3)
+// queda a la derecha y el de GPIO10 (Q1, CN2) a la izquierda. Comprobado en la
+// placa con la prueba 03 el 28 oct 2026; antes estaban al revés.
+#define PIN_MOTOR_DERECHO       3
+#define PIN_MOTOR_IZQUIERDO     10
 
 // ── Direcciones I2C ───────────────────────────────────────────────────────────
 // Confirmarlas con los sketches de pruebas/ (01_escaneo_i2c, 02_identificar_sensores)

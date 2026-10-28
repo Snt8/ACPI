@@ -18,7 +18,7 @@
 // Si a este valor un motor no llega a arrancar, verlo con el barrido 'b' de la
 // prueba 03, que muestra desde qué duty arranca cada uno.
 #define INTENSIDAD_MOTOR        100
-// Motor izquierdo (GPIO 3). Antes llevaba +15 para igualar la sensación, un
+// Motor izquierdo (GPIO 10). Antes llevaba +15 para igualar la sensación, un
 // valor heredado que nunca se confirmó en esta placa: queda igual al derecho
 // hasta medirlo con los dos motores soldados.
 #define INTENSIDAD_MOTOR_IZQUIERDO 100

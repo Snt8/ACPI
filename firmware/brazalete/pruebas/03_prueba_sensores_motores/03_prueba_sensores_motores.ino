@@ -26,8 +26,8 @@
 #define BAUD_RATE             115200
 #define PIN_I2C_SDA           8
 #define PIN_I2C_SCL           9
-#define PIN_MOTOR_DERECHO     10
-#define PIN_MOTOR_IZQUIERDO   3
+#define PIN_MOTOR_DERECHO     3    // con el brazalete puesto (igual que src/config.h)
+#define PIN_MOTOR_IZQUIERDO   10
 
 #define FRECUENCIA_PWM        1000   // Hz
 #define RESOLUCION_PWM        8      // bits (0-255)

@@ -25,8 +25,8 @@ Se compila con **Arduino IDE** o con **ESP-IDF**; ya no necesita PlatformIO.
 |---|---|
 | I2C SDA | 8 |
 | I2C SCL | 9 |
-| Motor derecho | 10 |
-| Motor izquierdo | 3 |
+| Motor derecho (Q2, CN3) | 3 |
+| Motor izquierdo (Q1, CN2) | 10 |
 
 Sensores (confirmados con la prueba 02): **MPU6500** en 0x68 (acelerómetro/giroscopio; el módulo se vende como MPU9250 pero no trae magnetómetro) y GY-271 con **QMC5883L** en 0x0D.
 Las direcciones reales se confirman con las pruebas 01 y 02 y se ponen en `src/config.h`.
