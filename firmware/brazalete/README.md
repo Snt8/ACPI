@@ -121,3 +121,4 @@ Sketches independientes (no usan `src/`); se abren en Arduino IDE con la misma c
 | `01_escaneo_i2c` | Lista las direcciones que responden en el bus y revisa que SDA/SCL tengan pull-up. |
 | `02_identificar_sensores` | Lee el registro de ID de cada chip (distingue MPU6050/MPU6500/MPU9250, HMC5883L/QMC5883L/QMC5883P y el AK8963 interno del MPU9250) e imprime las líneas para `src/config.h`. |
 | `03_prueba_sensores_motores` | Lee acelerómetro, giroscopio, temperatura y magnetómetro a 2 Hz; vibra derecho → izquierdo al arrancar y acepta comandos por serie (`d`, `i`, `a`, `b` barrido, `+`/`-`, `D`/`I` encendido fijo, `0`, `l`, `r`, `h`). |
+| `04_diagnostico_i2c` | Para cuando el escaneo da resultados raros (todas las direcciones o ninguna): maneja el bus a mano, libera un sensor trabado, pregunta por direcciones que existen y que no, y escanea a 100 y 10 kHz. Así distingue un sensor sin alimentación o dañado de una línea con problemas. No toca los motores. |
