@@ -1,6 +1,6 @@
 # Configuración de Telemetría con Grafana Cloud
 
-Este documento describe cómo configurar una cuenta gratuita en **Grafana Cloud** y conectarla con la aplicación Android de **ACPI v2.0** para visualizar la telemetría del sistema en tiempo real.
+Este documento describe cómo configurar una cuenta gratuita en **Grafana Cloud** y conectarla con la app móvil de **ACPI** para visualizar la telemetría del sistema en tiempo real.
 
 ---
 
@@ -13,16 +13,24 @@ Este documento describe cómo configurar una cuenta gratuita en **Grafana Cloud*
 
 ---
 
-## 2. Configuración en la App Android
+## 2. Envío desde la app móvil
 
-El `GrafanaReporter` de la aplicación Android carga de manera dinámica la URL del servidor y el Token desde las SharedPreferences. Puedes configurarlos programáticamente o a través de la UI de la aplicación (preferencias) guardando las siguientes claves en el archivo `app_prefs`:
+No hace falta un servidor propio: el teléfono envía cada sesión de cruce directo al endpoint
+de **Loki** de Grafana Cloud.
 
-- **Key:** `grafana_url`  
-  **Value:** La URL de push de Grafana Cloud (ejemplo: `https://influx-prod-13-prod-us-east-0.grafana.net/api/v1/push`)
-- **Key:** `grafana_token`  
-  **Value:** Tu Token de API de Grafana (ejemplo: `glc_eyJ...`)
+- **URL:** `https://logs-prod-<región>.grafana.net/loki/api/v1/push` (aparece en la tarjeta de
+  Loki de tu stack).
+- **Autenticación:** HTTP Basic con el *User* de Loki (un número) y el token.
+- **Cuerpo:** un *stream* con las etiquetas `app="acpi"` y `device_id`, y como línea de log el
+  JSON de la sección 3:
+  `{"streams":[{"stream":{"app":"acpi","device_id":"ACPI_Brazalete"},"values":[["<ns>","<json>"]]}]}`
 
-*Si estas claves no están configuradas en SharedPreferences, los datos de telemetría fallarán silenciosamente para no interrumpir el flujo de seguridad principal del usuario.*
+El token queda dentro de la app, así que se crea con una *access policy* que **sólo tenga el
+permiso `logs:write`**: quien lo extraiga puede escribir registros, pero no leerlos ni borrarlos.
+Si faltan las credenciales, la telemetría se descarta sin interrumpir los avisos al usuario.
+
+> Estado (29 oct 2026): la app Kotlin que hacía este envío se retiró; en `app-movil/` el envío
+> está pendiente (ver `docs/guia-app-invidentes.md`).
 
 ---
 

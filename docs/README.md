@@ -13,7 +13,7 @@ El directorio incluye los siguientes documentos técnicos especializados:
 El sistema ACPI utiliza una separación estricta de protocolos según el dispositivo:
 - **Brazalete (ESP32-C3)**: Utiliza **BLE únicamente** para comunicarse con el celular del peatón. Tiene prohibido levantar la pila Wi-Fi para optimizar la batería.
 - **Semáforo (ESP32 DevKit V1)**: Transmite periódicamente su orientación y estado magnético al brazalete a través de **ESP-NOW** en modo broadcast (2Hz).
-- **Celular (App Android)**: Recibe los datos vía BLE y, cuando finaliza una sesión de cruce, utiliza la red móvil (Wi-Fi o Datos) para enviar las métricas agregadas por HTTP Push (POST) a Grafana Cloud.
+- **Celular (app móvil)**: Recibe los datos vía BLE y, cuando finaliza una sesión de cruce, utiliza la red móvil (Wi-Fi o Datos) para enviar las métricas agregadas por HTTP Push (POST) a Grafana Cloud.
 
 ### 2. Formato del Payload de Telemetría
 Para reducir la carga en la red móvil del usuario, el JSON de sesión se mantiene en una sola jerarquía (plano), facilitando la ingesta directa en bases de datos de series temporales (como InfluxDB o Prometheus):

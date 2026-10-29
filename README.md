@@ -11,7 +11,7 @@ El sistema combina **hardware en el borde (Edge Computing)** con sensores magné
 El repositorio principal se divide en los siguientes componentes fundamentales:
 - `/firmware/brazalete/` -> Código fuente (Arduino IDE o ESP-IDF) para el wearable (ESP32-C3 Super Mini). Ver su README.
 - `/firmware/semaforo/` -> Código fuente (Arduino IDE o ESP-IDF) para la baliza de infraestructura (ESP32 DevKit V1). Ver su README.
-- `/ACPIGPS/` -> Aplicación móvil Android nativa en Kotlin (Jetpack Compose).
+- `/app-movil/` -> Nueva app móvil para iOS y Android (React Native + Expo), pensada para personas ciegas. Ver su README y `docs/guia-app-invidentes.md`.
 - `/docs/` -> Documentación adicional y guías de configuración de la nube.
 - `Justfile` -> Orquestador de tareas para compilación y *linting* automatizado.
 
@@ -23,7 +23,7 @@ El repositorio principal se divide en los siguientes componentes fundamentales:
 El flujo de información se ejecuta de la siguiente forma:
 
 ```text
-[Semáforo ESP32]  ──ESP-NOW──►  [Brazalete ESP32-C3]  ──BLE──►  [App Android]  ──HTTPS──►  [Grafana Cloud]
+[Semáforo ESP32]  ──ESP-NOW──►  [Brazalete ESP32-C3]  ──BLE──►  [App móvil]    ──HTTPS──►  [Grafana Cloud]
  QMC6308                         QMC6308 + MPU6050              GPS + Pasos
  2 LEDs simulan                  Brújula + Decisión              Registro sesiones
  semáforo                        Feedback háptico                Telemetría
@@ -32,7 +32,7 @@ El flujo de información se ejecuta de la siguiente forma:
 
 1. **Semáforo (Infraestructura)**: Un ESP32 DevKit V1 equipado con un magnetómetro lee su orientación magnética estática y simula un ciclo de semáforo verde/rojo. Transmite su orientación (heading) y estado por ESP-NOW a 2Hz (cada 500ms).
 2. **Brazalete (Wearable)**: Actúa como el centro de cómputo en el borde. Lee su orientación tilt-compensada (acelerómetro + magnetómetro), y calcula la diferencia angular frente a la infraestructura. Si detecta que el usuario está correctamente enfrentado (`|Δθ - 180°| < 30°`), provee feedback háptico diferenciado mediante dos micromotores de vibración.
-3. **App Android**: Recibe mediante BLE los paquetes de telemetría del brazalete, controla geocercas y envía métricas asíncronas.
+3. **App móvil (iOS y Android)**: Recibe mediante BLE los paquetes de telemetría del brazalete, avisa por voz los cambios del cruce y guarda los semáforos del usuario.
 4. **Grafana Cloud**: Ingesta los datos del usuario asíncronamente para generar mapas y analíticas en tiempo real.
 
 ---
@@ -45,7 +45,7 @@ El flujo de información se ejecuta de la siguiente forma:
 - **Software**: 
   - [Arduino IDE](https://www.arduino.cc/en/software) con el paquete *esp32 by Espressif Systems* 3.x (o ESP-IDF 5.5) para compilar y flashear el firmware.
   - [Just](https://github.com/casey/just) como *command runner* (opcional pero recomendado).
-  - Android Studio para compilar la App.
+  - Node 20 y una Mac con Xcode (iOS) o Android Studio (Android) para compilar la app móvil. Ver `app-movil/README.md`.
 
 ---
 
