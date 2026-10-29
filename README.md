@@ -3,7 +3,7 @@
 ## Descripción General
 **ACPI** es un sistema **IoT de asistencia a la movilidad** diseñado para brindar **autonomía y seguridad** a personas con discapacidad visual al cruzar calles en intersecciones semaforizadas.
 
-El sistema combina **hardware en el borde (Edge Computing)** con sensores magnéticos e inerciales locales en un brazalete (wearable) y en un semáforo (infraestructura). Utiliza comunicación local ultrarrápida (ESP-NOW) entre nodos y telemetría por Bluetooth Low Energy (BLE) hacia una aplicación móvil integrada con **Grafana Cloud** para monitorear la seguridad de la sesión.
+El sistema combina **hardware en el borde (Edge Computing)** con sensores magnéticos e inerciales locales en un brazalete (wearable) y en un semáforo (infraestructura). Utiliza comunicación local ultrarrápida (ESP-NOW) entre nodos y telemetría por Bluetooth Low Energy (BLE) hacia una aplicación móvil, que envía los cruces a un servidor web propio para monitorear la seguridad de la sesión.
 
 ---
 
@@ -23,7 +23,7 @@ El repositorio principal se divide en los siguientes componentes fundamentales:
 El flujo de información se ejecuta de la siguiente forma:
 
 ```text
-[Semáforo ESP32]  ──ESP-NOW──►  [Brazalete ESP32-C3]  ──BLE──►  [App móvil]    ──HTTPS──►  [Grafana Cloud]
+[Semáforo ESP32]  ──ESP-NOW──►  [Brazalete ESP32-C3]  ──BLE──►  [App móvil]    ──HTTPS──►  [Servidor web]
  QMC6308                         QMC6308 + MPU6050              GPS + Pasos
  2 LEDs simulan                  Brújula + Decisión              Registro sesiones
  semáforo                        Feedback háptico                Telemetría
@@ -33,7 +33,7 @@ El flujo de información se ejecuta de la siguiente forma:
 1. **Semáforo (Infraestructura)**: Un ESP32 DevKit V1 equipado con un magnetómetro lee su orientación magnética estática y simula un ciclo de semáforo verde/rojo. Transmite su orientación (heading) y estado por ESP-NOW a 2Hz (cada 500ms).
 2. **Brazalete (Wearable)**: Actúa como el centro de cómputo en el borde. Lee su orientación tilt-compensada (acelerómetro + magnetómetro), y calcula la diferencia angular frente a la infraestructura. Si detecta que el usuario está correctamente enfrentado (`|Δθ - 180°| < 5°`), provee feedback háptico diferenciado mediante dos micromotores de vibración.
 3. **App móvil (iOS y Android)**: Recibe mediante BLE los paquetes de telemetría del brazalete, avisa por voz los cambios del cruce y guarda los semáforos del usuario.
-4. **Grafana Cloud**: Ingesta los datos del usuario asíncronamente para generar mapas y analíticas en tiempo real.
+4. **Servidor web (Render)**: Recibe de la app los cruces y los semáforos detectados, los guarda y alimenta la web de ACPI. Contrato en `docs/servidor-api.md`.
 
 ---
 

@@ -57,7 +57,7 @@ es un **acompañante**:
 | Se conecta sola al brazalete cuando está cerca de un semáforo, también con la pantalla apagada. | No da la orden de cruzar. Informa del estado; la persona decide. |
 | Avisa por voz (opcional) los cambios importantes: semáforo detectado, paso permitido, paso prohibido, conexión perdida, batería baja. | No repite en voz lo que el brazalete ya dice con vibración en cada paquete (cada 500 ms). |
 | Responde "¿cuál es el estado?" en una sola frase. | No pide mirar la pantalla para nada importante. |
-| Guarda un historial local de cruces y (si se configura) envía métricas a Grafana. | No escucha el micrófono de forma continua. |
+| Guarda un historial local de cruces y (si se configura) envía los cruces al servidor web de ACPI. | No escucha el micrófono de forma continua. |
 | Tiene una pantalla de diagnóstico para el equipo (pruebas de motor, datos crudos). | No reemplaza el bastón, el perro guía ni el oído. |
 
 **Regla de redacción:** los mensajes describen el estado, nunca ordenan. "Paso
@@ -180,7 +180,7 @@ La persona (o quien la acompañe) guarda en el teléfono los semáforos que usa.
 - Todo se guarda localmente (SQLite), sin cuentas ni servidor.
 - **Semáforos detectados**: cuando el brazalete encuentra un semáforo, la app toma su
   ubicación con el GPS mientras la persona espera. Si no hay uno guardado a menos de 25 m,
-  lo agrega a la lista ("Detectado por el brazalete"). Ver `docs/grafana-setup.md`.
+  lo agrega a la lista ("Detectado por el brazalete"). Ver `docs/servidor-api.md`.
 - Más adelante: avisar al acercarse a un semáforo guardado y, si el firmware agrega el
   `id` del semáforo a la telemetría BLE, unir cada paquete con su semáforo guardado.
 
@@ -258,7 +258,7 @@ app-movil/src/
   avisos/              frases, detección de eventos sin repetir (probado) y salida
                        por lector de pantalla o síntesis de voz
   semaforos/           base SQLite, distancias y rumbos (probado), ubicación, mapa
-  telemetria/          sesiones de cruce con GPS (probado), cola SQLite y envío a Loki
+  telemetria/          sesiones de cruce con GPS (probado), cola SQLite y envío al servidor
   (pendiente) historial/
 app-movil/modules/acpi-servicio/   (pendiente) servicio en primer plano Android
 ```
@@ -273,7 +273,7 @@ reproduce el cliente simulado, como `firmware/brazalete/test/`.
 | `BLEManager.kt` | Se reescribe en `src/ble/`. |
 | `MonitoringService.kt` | Lógica a `src/avisos/` y `src/brazalete/` + servicio Android nativo mínimo. |
 | `LocalNotificationManager.kt` (aviso "seguro cruzar", batería baja) | Pasa a `src/avisos/`, con la redacción descriptiva de la sección 2. |
-| `SessionLogger.kt` + `GrafanaReporter.kt` (hecho el 29 oct 2026) | Pasan a `src/telemetria/`, sin pasos ni pánicos (el teléfono ya no cuenta pasos y el brazalete no envía pánico), con la ubicación del semáforo y la duración del cruce medida con el GPS. **Sin servidor propio**: igual que antes, el teléfono hace `POST` directo al endpoint de Loki de Grafana Cloud (`/loki/api/v1/push`, autenticación Basic `usuario:token`) con el formato de `docs/grafana-setup.md`. El token sí queda dentro de la app, así que se crea con una *access policy* que sólo tenga `logs:write`: quien lo extraiga sólo puede escribir registros, no leer ni borrar. Los envíos pendientes se guardan en SQLite y se reintentan. |
+| `SessionLogger.kt` + `GrafanaReporter.kt` (hecho el 29 oct 2026) | Pasan a `src/telemetria/`, sin pasos ni pánicos (el teléfono ya no cuenta pasos y el brazalete no envía pánico), con la ubicación del semáforo y la duración del cruce medida con el GPS. Se envían por HTTPS a un **servidor web propio en Render** (`POST /api/eventos`, contrato en `docs/servidor-api.md`); Grafana Cloud se descartó el 29 oct 2026. El token queda dentro de la app, así que sólo debe permitir escribir eventos. Los envíos pendientes se guardan en SQLite y se reintentan; cada evento lleva un `id` para que el servidor descarte duplicados. |
 | `BLEDebugFragment.kt` | Pantalla de Diagnóstico. |
 | `CompassFragment.kt` + `WalkDirectionDetector.kt` (brújula y pasos del teléfono) | **No se trae**: el rumbo que importa es el del brazalete y la brújula del teléfono en el bolsillo no es fiable. |
 | Geocerca "casa" (50 m) | **No se trae** en la v1: es una función para cuidadores, con implicaciones de privacidad; se puede retomar aparte. |
@@ -294,7 +294,7 @@ reproduce el cliente simulado, como `firmware/brazalete/test/`.
 3. **Voz** — botón "Hablar" + toque mágico, 5 comandos.
 4. **Atajos del sistema** — Siri con `expo-app-intents`; equivalente Android si hay
    una vía estable.
-5. **Cierre** — Grafana, actualizar `docs/ble-protocol.md` ("app móvil" en vez de
+5. **Cierre** — servidor web en Render, actualizar `docs/ble-protocol.md` ("app móvil" en vez de
    "Android"), el README y el informe Infomatrix (sección 3.2 y capturas). La app
    Kotlin (`app/`) se retiró del repositorio el 29 oct 2026; sigue en el historial de git.
 

@@ -16,9 +16,9 @@ Estado actual (fase 1 de la guía + semáforos + telemetría):
   Todo se guarda en el teléfono (SQLite).
 - **Cruces**: cada vez que el brazalete encuentra un semáforo, el teléfono sigue el GPS, ubica el
   semáforo (y lo guarda en la lista si es nuevo), mide la espera y la duración del cruce y lo
-  manda a **Grafana Cloud (Loki)**, sin servidor propio. Sin red, espera en una cola local.
+  manda al **servidor web de ACPI en Render**. Sin red, espera en una cola local.
 - **Ajustes** → modo simulado, compartir cruces, y **Diagnóstico** (datos crudos, `TEST_ALERT`,
-  `VIBRATE_STOP`, envío de prueba a Loki).
+  `VIBRATE_STOP`, envío de prueba al servidor).
 
 Pendiente según la guía: funcionamiento en segundo plano, historial de cruces, tutorial,
 niveles de aviso, comandos de voz.
@@ -32,11 +32,11 @@ niveles de aviso, comandos de voz.
 - `src/brazalete/estado.ts` -> Estado compartido (zustand): conexión, última telemetría, registro, modo simulado.
 - `src/avisos/` -> Frases, detección de qué avisar y salida por lector de pantalla o síntesis de voz.
 - `src/semaforos/` -> Base local, distancias y rumbos, ubicación y el componente de mapa.
-- `src/telemetria/` -> Sesiones de cruce con GPS (`sesion.ts`), cola SQLite y envío a Loki.
+- `src/telemetria/` -> Sesiones de cruce con GPS (`sesion.ts`), cola SQLite y envío al servidor (`servidor.ts`).
 - `app.config.ts` -> Configuración nativa (permisos, plugins, identificador `com.snt8.acpi`).
 
 La lógica sin React (`protocolo/`, `avisos/frases.ts`, `semaforos/geo.ts`,
-`telemetria/sesion.ts`, `telemetria/loki.ts`) tiene pruebas en las
+`telemetria/sesion.ts`, `telemetria/servidor.ts`) tiene pruebas en las
 carpetas `__tests__/`.
 
 ---
@@ -67,7 +67,7 @@ Una sesión va desde que el brazalete se conecta (sólo enciende el BLE al recib
 hasta que se desconecta. La ubicación del semáforo es la lectura de GPS más precisa mientras se
 espera en la esquina. El cruce empieza con el primer "permitido" y termina cuando el GPS ubica a
 la persona a 12 m de la esquina en la dirección del rumbo del brazalete. El detalle de cada campo
-y cómo verlo en un mapa están en [`docs/grafana-setup.md`](../docs/grafana-setup.md). Por ahora
+y la API que debe cumplir el servidor están en [`docs/servidor-api.md`](../docs/servidor-api.md). Por ahora
 el GPS sólo se sigue con la app abierta.
 
 ---
@@ -87,7 +87,7 @@ el GPS sólo se sigue con la app abierta.
 git clone https://github.com/Snt8/ACPI.git
 cd ACPI/app-movil
 npm install
-cp .env.example .env    # credenciales de Loki (opcional, ver docs/grafana-setup.md)
+cp .env.example .env    # URL del servidor en Render (opcional, ver docs/servidor-api.md)
 npx expo run:ios --device
 ```
 - En Xcode → Settings → Accounts tiene que estar el Apple ID. Si `run:ios` falla al firmar,
@@ -103,7 +103,7 @@ cd app-movil
 npm start
 ```
 Con el iPhone en la misma Wi-Fi, abrir la app ACPI instalada: se conecta al servidor de
-Windows y recarga sola al guardar cambios. Las credenciales de Loki se leen del `.env` de la
+Windows y recarga sola al guardar cambios. La URL y el token del servidor se leen del `.env` de la
 computadora que corre `npm start`, así que también hay que crearlo en Windows.
 
 ### 3. Pruebas y chequeos

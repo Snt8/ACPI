@@ -8,6 +8,7 @@ import { distanciaMetros } from '@/semaforos/geo';
 import { crearSemaforo, listarSemaforos } from '@/semaforos/repositorio';
 import { sugerirNombre } from '@/semaforos/ubicacion';
 import { alEncolar, contarPendientes, encolar, idAleatorio, vaciarCola } from '@/telemetria/cola';
+import { configServidor, despertarServidor } from '@/telemetria/servidor';
 import {
   conPaquete,
   conPosicion,
@@ -50,7 +51,7 @@ async function semaforoDelCruce(db: SQLiteDatabase, resumen: ResumenCruce): Prom
 
 /**
  * Registra cada cruce (sesión de conexión con el brazalete, ver telemetria/sesion.ts) y
- * envía a Loki lo que esté en la cola. Va dentro del SQLiteProvider.
+ * envía al servidor lo que esté en la cola. Va dentro del SQLiteProvider.
  */
 export function useServiciosTelemetria() {
   const db = useSQLiteContext();
@@ -83,6 +84,10 @@ export function useServiciosTelemetria() {
       const id = idAleatorio();
       sesion = nuevaSesion(id, Date.now());
       simulada = useBrazalete.getState().simulado;
+      const servidor = configServidor();
+      if (servidor) {
+        despertarServidor(servidor);
+      }
       try {
         const { granted } = await Location.getForegroundPermissionsAsync();
         if (!granted) {

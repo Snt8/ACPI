@@ -79,11 +79,11 @@ export default function PantallaDiagnostico() {
             <Boton texto="Reiniciar conexión" variante="secundario" onPress={() => void reiniciarConexion()} />
 
             <ThemedText type="smallBold" accessibilityRole="header">
-              Telemetría (Loki)
+              Envío al servidor
             </ThemedText>
             <ThemedText accessibilityLiveRegion="polite">
               {!envio.configurada
-                ? 'Sin configurar: faltan las variables EXPO_PUBLIC_LOKI_* en .env'
+                ? 'Sin configurar: falta EXPO_PUBLIC_API_URL en .env'
                 : !envio.activa
                   ? 'Desactivada en Ajustes'
                   : `${envio.pendientes} eventos pendientes`}
@@ -91,7 +91,7 @@ export default function PantallaDiagnostico() {
             {envio.ultimoEnvio && <ThemedText themeColor="textSecondary">{envio.ultimoEnvio}</ThemedText>}
             <Boton
               texto="Enviar dato de prueba"
-              pista="Manda un evento de tipo prueba a Loki para comprobar las credenciales"
+              pista="Manda un evento de tipo prueba al servidor para comprobar la conexión"
               variante="secundario"
               disabled={!envio.activa}
               onPress={() => void encolar(db, 'prueba', { mensaje: 'Prueba desde Diagnóstico' })}

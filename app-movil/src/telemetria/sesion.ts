@@ -55,7 +55,7 @@ export interface SesionCruce {
   sinCalibrar: boolean; // el brazalete avisó la brújula sin calibrar
 }
 
-/** Lo que se manda a Loki al terminar la sesión (tipo "cruce") */
+/** Lo que se manda al servidor al terminar la sesión (tipo "cruce") */
 export interface ResumenCruce {
   sesion: string;
   inicio: number;

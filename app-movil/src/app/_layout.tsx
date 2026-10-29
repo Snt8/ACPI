@@ -9,7 +9,7 @@ import AppTabs from '@/components/app-tabs';
 import { migrarBase } from '@/semaforos/repositorio';
 import { useServiciosTelemetria } from '@/telemetria/use-servicios-telemetria';
 
-/** Servicios que necesitan la base local: registro de cruces y envío a Loki */
+/** Servicios que necesitan la base local: registro de cruces y envío al servidor */
 function ServiciosLocales() {
   useServiciosTelemetria();
   return null;

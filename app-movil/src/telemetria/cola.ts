@@ -2,18 +2,19 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import Storage from 'expo-sqlite/kv-store';
 import { create } from 'zustand';
 
-import { configLoki, cuerpoLoki, enviarALoki, momentoNs } from '@/telemetria/loki';
+import { configServidor, cuerpoEventos, enviarEventos } from '@/telemetria/servidor';
 
 /*
- * Cola de eventos para Loki en SQLite (tabla envios_pendientes, ver repositorio.ts).
- * Todo evento pasa por aquí: si no hay red o faltan credenciales, espera en el
+ * Cola de eventos para el servidor de ACPI en SQLite (tabla eventos_pendientes, ver
+ * repositorio.ts). Todo evento pasa por aquí: si no hay red, el servidor está dormido o
+ * falta la URL, espera en el
  * teléfono y se envía después. La telemetría nunca debe interrumpir los avisos, así
  * que ningún error sale de este módulo.
  */
 
 export type TipoEvento = 'cruce' | 'semaforo' | 'prueba';
 
-const VERSION_FORMATO = 2; // la 1 era el JSON de la app Kotlin
+const VERSION_FORMATO = 3; // 1: app Kotlin; 3: el cruce suma las métricas de los enlaces
 const CLAVE_ACTIVA = 'telemetria.activa';
 const CLAVE_DISPOSITIVO = 'telemetria.dispositivo';
 const MAXIMO_PENDIENTES = 1000; // sin red por semanas: se descartan los más viejos
@@ -28,7 +29,7 @@ interface EstadoTelemetria {
 
 export const useEstadoTelemetria = create<EstadoTelemetria>(() => ({
   activa: Storage.getItemSync(CLAVE_ACTIVA) !== 'false',
-  configurada: configLoki() !== null,
+  configurada: configServidor() !== null,
   pendientes: 0,
   ultimoEnvio: null,
 }));
@@ -59,7 +60,7 @@ export function alEncolar(oyente: () => void) {
 }
 
 export async function contarPendientes(db: SQLiteDatabase) {
-  const fila = await db.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM envios_pendientes');
+  const fila = await db.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM eventos_pendientes');
   useEstadoTelemetria.setState({ pendientes: fila?.n ?? 0 });
 }
 
@@ -67,18 +68,20 @@ export async function encolar(db: SQLiteDatabase, tipo: TipoEvento, datos: Recor
   if (!useEstadoTelemetria.getState().activa) {
     return;
   }
-  const ahora = Date.now();
-  const linea = JSON.stringify({ v: VERSION_FORMATO, tipo, dispositivo: dispositivo(), momento: ahora, ...datos });
+  // El id deja al servidor descartar duplicados: si se pierde la respuesta, el lote se reenvía
+  const evento = JSON.stringify({
+    v: VERSION_FORMATO,
+    id: idAleatorio(),
+    tipo,
+    dispositivo: dispositivo(),
+    momento: Date.now(),
+    ...datos,
+  });
   try {
+    await db.runAsync('INSERT INTO eventos_pendientes (evento) VALUES (?)', evento);
     await db.runAsync(
-      'INSERT INTO envios_pendientes (tipo, momento_ns, linea) VALUES (?, ?, ?)',
-      tipo,
-      momentoNs(ahora),
-      linea,
-    );
-    await db.runAsync(
-      `DELETE FROM envios_pendientes
-       WHERE id NOT IN (SELECT id FROM envios_pendientes ORDER BY id DESC LIMIT ?)`,
+      `DELETE FROM eventos_pendientes
+       WHERE id NOT IN (SELECT id FROM eventos_pendientes ORDER BY id DESC LIMIT ?)`,
       MAXIMO_PENDIENTES,
     );
     await contarPendientes(db);
@@ -90,16 +93,14 @@ export async function encolar(db: SQLiteDatabase, tipo: TipoEvento, datos: Recor
 
 interface FilaPendiente {
   id: number;
-  tipo: string;
-  momento_ns: string;
-  linea: string;
+  evento: string;
 }
 
 let enviando = false;
 
-/** Manda a Loki todo lo pendiente, en lotes; lo que no se pudo enviar queda en la cola */
+/** Manda al servidor todo lo pendiente, en lotes; lo que no se pudo enviar queda en la cola */
 export async function vaciarCola(db: SQLiteDatabase) {
-  const config = configLoki();
+  const config = configServidor();
   if (enviando || !config) {
     return;
   }
@@ -107,14 +108,13 @@ export async function vaciarCola(db: SQLiteDatabase) {
   try {
     for (;;) {
       const filas = await db.getAllAsync<FilaPendiente>(
-        'SELECT id, tipo, momento_ns, linea FROM envios_pendientes ORDER BY id LIMIT ?',
+        'SELECT id, evento FROM eventos_pendientes ORDER BY id LIMIT ?',
         LOTE,
       );
       if (filas.length === 0) {
         break;
       }
-      const cuerpo = cuerpoLoki(filas.map((f) => ({ tipo: f.tipo, momentoNs: f.momento_ns, linea: f.linea })));
-      const { resultado, detalle } = await enviarALoki(config, cuerpo);
+      const { resultado, detalle } = await enviarEventos(config, cuerpoEventos(filas.map((f) => f.evento)));
       const hora = new Date().toLocaleTimeString();
       useEstadoTelemetria.setState({
         ultimoEnvio: `${hora}  ${resultado === 'enviado' ? `${filas.length} eventos enviados` : detalle}`,
@@ -122,7 +122,10 @@ export async function vaciarCola(db: SQLiteDatabase) {
       if (resultado === 'reintentar') {
         break;
       }
-      await db.runAsync(`DELETE FROM envios_pendientes WHERE id IN (${filas.map(() => '?').join(',')})`, ...filas.map((f) => f.id));
+      await db.runAsync(
+        `DELETE FROM eventos_pendientes WHERE id IN (${filas.map(() => '?').join(',')})`,
+        ...filas.map((f) => f.id),
+      );
     }
   } catch (error) {
     useEstadoTelemetria.setState({ ultimoEnvio: `Error al enviar: ${String(error)}` });
@@ -137,7 +140,7 @@ export async function activarTelemetria(db: SQLiteDatabase, activa: boolean) {
   Storage.setItemSync(CLAVE_ACTIVA, String(activa));
   useEstadoTelemetria.setState({ activa });
   if (!activa) {
-    await db.runAsync('DELETE FROM envios_pendientes');
+    await db.runAsync('DELETE FROM eventos_pendientes');
     await contarPendientes(db);
   }
 }

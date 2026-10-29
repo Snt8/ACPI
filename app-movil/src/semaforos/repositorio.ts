@@ -48,19 +48,25 @@ const MIGRACIONES = [
      precision_metros REAL,
      creado_en INTEGER NOT NULL
    );`,
-  // Eventos que esperan su envío a Loki (telemetria/cola.ts)
+  // Cola de envío a Grafana Loki, que ya no se usa (la reemplaza la siguiente)
   `CREATE TABLE envios_pendientes (
      id INTEGER PRIMARY KEY AUTOINCREMENT,
      tipo TEXT NOT NULL,
      momento_ns TEXT NOT NULL,
      linea TEXT NOT NULL
    );`,
+  // Eventos que esperan su envío al servidor de ACPI (telemetria/cola.ts)
+  `DROP TABLE envios_pendientes;
+   CREATE TABLE eventos_pendientes (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     evento TEXT NOT NULL
+   );`,
 ];
 
 // Origen de un semáforo: guardado por la persona o detectado por el brazalete en un cruce
 export type OrigenSemaforo = 'manual' | 'brazalete';
 
-/** Cada cambio también va a Loki, para mostrar los semáforos en la web de ACPI */
+/** Cada cambio también va al servidor, para mostrar los semáforos en la web de ACPI */
 function reportar(db: SQLiteDatabase, accion: 'creado' | 'editado' | 'borrado', id: number, datos?: DatosSemaforo, origen?: OrigenSemaforo) {
   return encolar(db, 'semaforo', {
     accion,
