@@ -1,3 +1,4 @@
+import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 
@@ -7,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import type { Comando } from '@/protocolo/brazalete';
+import { encolar, useEstadoTelemetria, vaciarCola } from '@/telemetria/cola';
 
 /** Equivalente al BLEDebugFragment de la app Kotlin: para el equipo, no para el uso diario */
 export default function PantallaDiagnostico() {
@@ -14,6 +16,8 @@ export default function PantallaDiagnostico() {
   const telemetria = useBrazalete((s) => s.telemetria);
   const textoCrudo = useBrazalete((s) => s.textoCrudo);
   const registro = useBrazalete((s) => s.registro);
+  const db = useSQLiteContext();
+  const envio = useEstadoTelemetria();
   const [error, setError] = useState<string | null>(null);
 
   async function enviar(comando: Comando) {
@@ -65,6 +69,32 @@ export default function PantallaDiagnostico() {
               onPress={() => enviar('VIBRATE_STOP')}
             />
             <Boton texto="Reiniciar conexión" variante="secundario" onPress={() => void reiniciarConexion()} />
+
+            <ThemedText type="smallBold" accessibilityRole="header">
+              Telemetría (Loki)
+            </ThemedText>
+            <ThemedText accessibilityLiveRegion="polite">
+              {!envio.configurada
+                ? 'Sin configurar: faltan las variables EXPO_PUBLIC_LOKI_* en .env'
+                : !envio.activa
+                  ? 'Desactivada en Ajustes'
+                  : `${envio.pendientes} eventos pendientes`}
+            </ThemedText>
+            {envio.ultimoEnvio && <ThemedText themeColor="textSecondary">{envio.ultimoEnvio}</ThemedText>}
+            <Boton
+              texto="Enviar dato de prueba"
+              pista="Manda un evento de tipo prueba a Loki para comprobar las credenciales"
+              variante="secundario"
+              disabled={!envio.activa}
+              onPress={() => void encolar(db, 'prueba', { mensaje: 'Prueba desde Diagnóstico' })}
+            />
+            <Boton
+              texto="Enviar pendientes ahora"
+              variante="secundario"
+              disabled={envio.pendientes === 0}
+              onPress={() => void vaciarCola(db)}
+            />
+
             <ThemedText type="smallBold" accessibilityRole="header">
               Registro
             </ThemedText>

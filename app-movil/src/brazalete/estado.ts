@@ -25,7 +25,8 @@ export const useBrazalete = create<EstadoBrazalete>(() => ({
   simulado: Storage.getItemSync(CLAVE_SIMULADO) === 'true',
 }));
 
-function registrar(mensaje: string) {
+/** Agrega una línea al registro que muestra Diagnóstico */
+export function registrar(mensaje: string) {
   const hora = new Date().toLocaleTimeString();
   useBrazalete.setState((s) => ({
     registro: [`${hora}  ${mensaje}`, ...s.registro].slice(0, MAXIMO_REGISTRO),

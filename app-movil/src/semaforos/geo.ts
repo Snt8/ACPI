@@ -22,6 +22,12 @@ export function rumboGrados(a: Coordenadas, b: Coordenadas): number {
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
+/** Diferencia entre dos rumbos, de 0 a 180 grados */
+export function diferenciaAngular(a: number, b: number): number {
+  const d = (((a - b) % 360) + 360) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
 const PUNTOS = ['norte', 'noreste', 'este', 'sureste', 'sur', 'suroeste', 'oeste', 'noroeste'];
 
 export function puntoCardinal(grados: number): string {

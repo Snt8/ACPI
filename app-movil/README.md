@@ -1,23 +1,27 @@
 # App móvil ACPI (React Native)
 
 ## Descripción General
-Reescritura en **React Native + Expo** de la app Android (`app/`), para **iOS y Android**,
+Reescritura en **React Native + Expo** de la antigua app Android en Kotlin, para **iOS y Android**,
 pensada para personas ciegas. El diseño está en
 [`docs/guia-app-invidentes.md`](../docs/guia-app-invidentes.md): funciona con VoiceOver y
 TalkBack, avisa por voz los cambios importantes del brazalete sin repetirlos, y nunca da la
 orden de cruzar.
 
-Estado actual (fase 1 de la guía + semáforos):
+Estado actual (fase 1 de la guía + semáforos + telemetría):
 - Conexión BLE con el brazalete (real o **simulada**), con búsqueda y reconexión automática.
 - Pantalla **Estado** con la frase del cruce, avisos de voz y "Repetir estado" (también con el
   toque mágico de VoiceOver: doble toque con dos dedos).
 - **Semáforos**: guardar uno en la ubicación actual con un toque, lista ordenada por distancia
   ("a 120 metros al norte"), mapa de OpenStreetMap para marcar o corregir puntos, editar y borrar.
   Todo se guarda en el teléfono (SQLite).
-- **Ajustes** → modo simulado y **Diagnóstico** (datos crudos, `TEST_ALERT`, `VIBRATE_STOP`).
+- **Cruces**: cada vez que el brazalete encuentra un semáforo, el teléfono sigue el GPS, ubica el
+  semáforo (y lo guarda en la lista si es nuevo), mide la espera y la duración del cruce y lo
+  manda a **Grafana Cloud (Loki)**, sin servidor propio. Sin red, espera en una cola local.
+- **Ajustes** → modo simulado, compartir cruces, y **Diagnóstico** (datos crudos, `TEST_ALERT`,
+  `VIBRATE_STOP`, envío de prueba a Loki).
 
 Pendiente según la guía: funcionamiento en segundo plano, historial de cruces, tutorial,
-niveles de aviso, comandos de voz, Grafana.
+niveles de aviso, comandos de voz.
 
 ---
 
@@ -28,9 +32,11 @@ niveles de aviso, comandos de voz, Grafana.
 - `src/brazalete/estado.ts` -> Estado compartido (zustand): conexión, última telemetría, registro, modo simulado.
 - `src/avisos/` -> Frases, detección de qué avisar y salida por lector de pantalla o síntesis de voz.
 - `src/semaforos/` -> Base local, distancias y rumbos, ubicación y el componente de mapa.
+- `src/telemetria/` -> Sesiones de cruce con GPS (`sesion.ts`), cola SQLite y envío a Loki.
 - `app.config.ts` -> Configuración nativa (permisos, plugins, identificador `com.snt8.acpi`).
 
-La lógica sin React (`protocolo/`, `avisos/frases.ts`, `semaforos/geo.ts`) tiene pruebas en las
+La lógica sin React (`protocolo/`, `avisos/frases.ts`, `semaforos/geo.ts`,
+`telemetria/sesion.ts`, `telemetria/loki.ts`) tiene pruebas en las
 carpetas `__tests__/`.
 
 ---
@@ -56,6 +62,14 @@ detectado, cambio a verde o rojo, desconexión. La orientación no se dice por v
 brazalete ya vibra hacia donde girar. Con VoiceOver/TalkBack activo el aviso va por el lector,
 para no hablar encima de él.
 
+### Cruces y telemetría
+Una sesión va desde que el brazalete se conecta (sólo enciende el BLE al recibir un semáforo)
+hasta que se desconecta. La ubicación del semáforo es la lectura de GPS más precisa mientras se
+espera en la esquina. El cruce empieza con el primer "permitido" y termina cuando el GPS ubica a
+la persona a 12 m de la esquina en la dirección del rumbo del brazalete. El detalle de cada campo
+y cómo verlo en un mapa están en [`docs/grafana-setup.md`](../docs/grafana-setup.md). Por ahora
+el GPS sólo se sigue con la app abierta.
+
 ---
 
 ## Dependencias
@@ -73,6 +87,7 @@ para no hablar encima de él.
 git clone https://github.com/Snt8/ACPI.git
 cd ACPI/app-movil
 npm install
+cp .env.example .env    # credenciales de Loki (opcional, ver docs/grafana-setup.md)
 npx expo run:ios --device
 ```
 - En Xcode → Settings → Accounts tiene que estar el Apple ID. Si `run:ios` falla al firmar,
@@ -88,7 +103,8 @@ cd app-movil
 npm start
 ```
 Con el iPhone en la misma Wi-Fi, abrir la app ACPI instalada: se conecta al servidor de
-Windows y recarga sola al guardar cambios.
+Windows y recarga sola al guardar cambios. Las credenciales de Loki se leen del `.env` de la
+computadora que corre `npm start`, así que también hay que crearlo en Windows.
 
 ### 3. Pruebas y chequeos
 ```bash

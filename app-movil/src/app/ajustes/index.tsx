@@ -1,44 +1,42 @@
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { useSQLiteContext } from 'expo-sqlite';
+import { ScrollView, StyleSheet } from 'react-native';
 
 import { useBrazalete, usarSimulado } from '@/brazalete/estado';
 import { Boton } from '@/components/boton';
-import { ThemedText } from '@/components/themed-text';
+import { FilaInterruptor } from '@/components/fila-interruptor';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Spacing } from '@/constants/theme';
+import { activarTelemetria, useEstadoTelemetria } from '@/telemetria/cola';
 
 export default function PantallaAjustes() {
+  const db = useSQLiteContext();
   const simulado = useBrazalete((s) => s.simulado);
+  const telemetriaActiva = useEstadoTelemetria((s) => s.activa);
 
   return (
     <ThemedView style={styles.pantalla}>
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.contenido}>
-        {/* Fila completa como un solo interruptor, para que el lector lea texto y estado juntos */}
-        <Pressable
-          style={styles.fila}
-          accessibilityRole="switch"
-          accessibilityLabel="Brazalete simulado"
-          accessibilityHint="Reproduce un cruce de prueba sin usar el brazalete real"
-          accessibilityState={{ checked: simulado }}
-          onPress={() => void usarSimulado(!simulado)}>
-          <View style={styles.textoFila}>
-            <ThemedText style={styles.etiqueta}>Brazalete simulado</ThemedText>
-            <ThemedText themeColor="textSecondary">
-              Reproduce un cruce de prueba sin el brazalete real.
-            </ThemedText>
-          </View>
-          <Switch
-            value={simulado}
-            onValueChange={(valor) => void usarSimulado(valor)}
-            accessibilityElementsHidden
-            importantForAccessibility="no"
-          />
-        </Pressable>
+        <FilaInterruptor
+          titulo="Brazalete simulado"
+          descripcion="Reproduce un cruce de prueba sin el brazalete real."
+          pista="Reproduce un cruce de prueba sin usar el brazalete real"
+          activo={simulado}
+          alCambiar={(valor) => void usarSimulado(valor)}
+        />
+
+        <FilaInterruptor
+          titulo="Compartir cruces con ACPI"
+          descripcion="Envía al equipo de ACPI la ubicación de cada semáforo y cuánto duró el cruce. No incluye tu nombre."
+          pista="Al desactivarlo también se borra lo que faltaba por enviar"
+          activo={telemetriaActiva}
+          alCambiar={(valor) => void activarTelemetria(db, valor)}
+        />
 
         <Boton
           texto="Diagnóstico (para técnicos)"
           variante="secundario"
-          pista="Datos crudos del brazalete y pruebas de vibración"
+          pista="Datos crudos del brazalete, pruebas de vibración y envío de telemetría"
           onPress={() => router.push('/ajustes/diagnostico')}
         />
       </ScrollView>
@@ -54,19 +52,5 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     paddingBottom: BottomTabInset + Spacing.three,
     gap: Spacing.four,
-  },
-  fila: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-    minHeight: 64,
-  },
-  textoFila: {
-    flex: 1,
-    gap: Spacing.one,
-  },
-  etiqueta: {
-    fontSize: 18,
-    fontWeight: 700,
   },
 });

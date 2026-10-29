@@ -1,4 +1,4 @@
-import { describirUbicacion, distanciaMetros, puntoCardinal, rumboGrados } from '@/semaforos/geo';
+import { describirUbicacion, diferenciaAngular, distanciaMetros, puntoCardinal, rumboGrados } from '@/semaforos/geo';
 
 const origen = { latitud: 19.4326, longitud: -99.1332 };
 // 0,001° de latitud ≈ 111 m
@@ -27,6 +27,12 @@ describe('geo', () => {
     [-90, 'oeste'],
   ])('%i° es %s', (grados, punto) => {
     expect(puntoCardinal(grados)).toBe(punto);
+  });
+
+  it('mide la diferencia entre rumbos por el lado corto', () => {
+    expect(diferenciaAngular(350, 10)).toBe(20);
+    expect(diferenciaAngular(10, 350)).toBe(20);
+    expect(diferenciaAngular(90, 270)).toBe(180);
   });
 
   it('describe la ubicación en palabras', () => {

@@ -1,5 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { encolar } from '@/telemetria/cola';
+
 export interface Coordenadas {
   latitud: number;
   longitud: number;
@@ -46,7 +48,32 @@ const MIGRACIONES = [
      precision_metros REAL,
      creado_en INTEGER NOT NULL
    );`,
+  // Eventos que esperan su envío a Loki (telemetria/cola.ts)
+  `CREATE TABLE envios_pendientes (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     tipo TEXT NOT NULL,
+     momento_ns TEXT NOT NULL,
+     linea TEXT NOT NULL
+   );`,
 ];
+
+// Origen de un semáforo: guardado por la persona o detectado por el brazalete en un cruce
+export type OrigenSemaforo = 'manual' | 'brazalete';
+
+/** Cada cambio también va a Loki, para mostrar los semáforos en la web de ACPI */
+function reportar(db: SQLiteDatabase, accion: 'creado' | 'editado' | 'borrado', id: number, datos?: DatosSemaforo, origen?: OrigenSemaforo) {
+  return encolar(db, 'semaforo', {
+    accion,
+    semaforo_id: id,
+    ...(datos && {
+      nombre: datos.nombre,
+      lat: datos.latitud,
+      lon: datos.longitud,
+      precision_m: datos.precisionMetros === null ? null : Math.round(datos.precisionMetros),
+    }),
+    ...(origen && { origen }),
+  });
+}
 
 /** onInit del SQLiteProvider: crea o actualiza las tablas */
 export async function migrarBase(db: SQLiteDatabase) {
@@ -72,7 +99,11 @@ export async function obtenerSemaforo(db: SQLiteDatabase, id: number): Promise<S
   return fila ? aSemaforo(fila) : null;
 }
 
-export async function crearSemaforo(db: SQLiteDatabase, datos: DatosSemaforo): Promise<number> {
+export async function crearSemaforo(
+  db: SQLiteDatabase,
+  datos: DatosSemaforo,
+  origen: OrigenSemaforo = 'manual',
+): Promise<number> {
   const resultado = await db.runAsync(
     `INSERT INTO semaforos (nombre, notas, latitud, longitud, precision_metros, creado_en)
      VALUES (?, ?, ?, ?, ?, ?)`,
@@ -83,6 +114,7 @@ export async function crearSemaforo(db: SQLiteDatabase, datos: DatosSemaforo): P
     datos.precisionMetros,
     Date.now(),
   );
+  await reportar(db, 'creado', resultado.lastInsertRowId, datos, origen);
   return resultado.lastInsertRowId;
 }
 
@@ -98,8 +130,10 @@ export async function actualizarSemaforo(db: SQLiteDatabase, id: number, datos: 
     datos.precisionMetros,
     id,
   );
+  await reportar(db, 'editado', id, datos);
 }
 
 export async function eliminarSemaforo(db: SQLiteDatabase, id: number) {
   await db.runAsync('DELETE FROM semaforos WHERE id = ?', id);
+  await reportar(db, 'borrado', id);
 }

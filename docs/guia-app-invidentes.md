@@ -175,6 +175,9 @@ La persona (o quien la acompañe) guarda en el teléfono los semáforos que usa.
   largo para marcar un semáforo en otro punto y arrastrar el marcador para corregirlo. **Se oculta al lector de
   pantalla**; la lista es su equivalente accesible.
 - Todo se guarda localmente (SQLite), sin cuentas ni servidor.
+- **Semáforos detectados**: cuando el brazalete encuentra un semáforo, la app toma su
+  ubicación con el GPS mientras la persona espera. Si no hay uno guardado a menos de 25 m,
+  lo agrega a la lista ("Detectado por el brazalete"). Ver `docs/grafana-setup.md`.
 - Más adelante: avisar al acercarse a un semáforo guardado y, si el firmware agrega el
   `id` del semáforo a la telemetría BLE, unir cada paquete con su semáforo guardado.
 
@@ -252,7 +255,8 @@ app-movil/src/
   avisos/              frases, detección de eventos sin repetir (probado) y salida
                        por lector de pantalla o síntesis de voz
   semaforos/           base SQLite, distancias y rumbos (probado), ubicación, mapa
-  (pendiente) historial/, telemetria/ (Grafana)
+  telemetria/          sesiones de cruce con GPS (probado), cola SQLite y envío a Loki
+  (pendiente) historial/
 app-movil/modules/acpi-servicio/   (pendiente) servicio en primer plano Android
 ```
 
@@ -266,8 +270,7 @@ reproduce el cliente simulado, como `firmware/brazalete/test/`.
 | `BLEManager.kt` | Se reescribe en `src/ble/`. |
 | `MonitoringService.kt` | Lógica a `src/avisos/` y `src/brazalete/` + servicio Android nativo mínimo. |
 | `LocalNotificationManager.kt` (aviso "seguro cruzar", batería baja) | Pasa a `src/avisos/`, con la redacción descriptiva de la sección 2. |
-| `SessionLogger.kt` | Pasa a `src/historial/`. |
-| `GrafanaReporter.kt` | Pasa a `src/telemetria/`, **sin servidor propio**: igual que antes, el teléfono hace `POST` directo al endpoint de Loki de Grafana Cloud (`/loki/api/v1/push`, autenticación Basic `usuario:token`) con el formato de `docs/grafana-setup.md`. El token sí queda dentro de la app, así que se crea con una *access policy* que sólo tenga `logs:write`: quien lo extraiga sólo puede escribir registros, no leer ni borrar. Los envíos pendientes se guardan en SQLite y se reintentan. |
+| `SessionLogger.kt` + `GrafanaReporter.kt` (hecho el 29 oct 2026) | Pasan a `src/telemetria/`, sin pasos ni pánicos (el teléfono ya no cuenta pasos y el brazalete no envía pánico), con la ubicación del semáforo y la duración del cruce medida con el GPS. **Sin servidor propio**: igual que antes, el teléfono hace `POST` directo al endpoint de Loki de Grafana Cloud (`/loki/api/v1/push`, autenticación Basic `usuario:token`) con el formato de `docs/grafana-setup.md`. El token sí queda dentro de la app, así que se crea con una *access policy* que sólo tenga `logs:write`: quien lo extraiga sólo puede escribir registros, no leer ni borrar. Los envíos pendientes se guardan en SQLite y se reintentan. |
 | `BLEDebugFragment.kt` | Pantalla de Diagnóstico. |
 | `CompassFragment.kt` + `WalkDirectionDetector.kt` (brújula y pasos del teléfono) | **No se trae**: el rumbo que importa es el del brazalete y la brújula del teléfono en el bolsillo no es fiable. |
 | Geocerca "casa" (50 m) | **No se trae** en la v1: es una función para cuidadores, con implicaciones de privacidad; se puede retomar aparte. |
