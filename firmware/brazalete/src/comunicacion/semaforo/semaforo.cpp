@@ -11,14 +11,18 @@ static portMUX_TYPE     mux_paquete      = portMUX_INITIALIZER_UNLOCKED;
 static estado_semaforo  paquete_pendiente = {};
 static bool             hay_pendiente     = false;
 static uint32_t         descartados       = 0;
+static int8_t           rssi_pendiente    = 0;
+static int8_t           rssi_entregado    = 0;
 
 //Desarrollamos el metodo para pasar la callback con la información
 #if ESP_IDF_VERSION_MAJOR >= 5
 void ComunicadorSemaforo::onDatosRecibidos(const esp_now_recv_info_t *info, const uint8_t *data, int data_len) {
-    (void)info; // Trae la MAC remota; no es necesaria en este manejador actualmente
+    // Trae la MAC remota (no se usa) y la señal con que llegó el paquete
+    int8_t rssi = (info != nullptr && info->rx_ctrl != nullptr) ? (int8_t)info->rx_ctrl->rssi : 0;
 #else
 void ComunicadorSemaforo::onDatosRecibidos(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
     (void)mac_addr; // La MAC remota se recibe aquí; no es necesaria en este manejador actualmente
+    int8_t rssi = 0; // ESP-IDF 4 no informa la señal en este callback
 #endif
     // Sólo se aceptan paquetes del semáforo ACPI (tamaño, firma, CRC y rangos);
     // cualquier otro broadcast ESP-NOW del canal se ignora. La validación se hace
@@ -29,6 +33,7 @@ void ComunicadorSemaforo::onDatosRecibidos(const uint8_t *mac_addr, const uint8_
     if (valido) {
         memcpy(&paquete_pendiente, data, sizeof(estado_semaforo));
         hay_pendiente = true;
+        rssi_pendiente = rssi;
     } else {
         descartados++;
     }
@@ -82,6 +87,7 @@ bool ComunicadorSemaforo::tomarPaquete(estado_semaforo& paquete) {
     if (hay_pendiente) {
         paquete = paquete_pendiente;
         hay_pendiente = false;
+        rssi_entregado = rssi_pendiente;
         habia = true;
     }
     portEXIT_CRITICAL(&mux_paquete);
@@ -99,6 +105,13 @@ void ComunicadorSemaforo::descartarPendiente() {
     portENTER_CRITICAL(&mux_paquete);
     hay_pendiente = false;
     portEXIT_CRITICAL(&mux_paquete);
+}
+
+int8_t ComunicadorSemaforo::rssiUltimoPaquete() {
+    portENTER_CRITICAL(&mux_paquete);
+    int8_t rssi = rssi_entregado;
+    portEXIT_CRITICAL(&mux_paquete);
+    return rssi;
 }
 
 uint32_t ComunicadorSemaforo::paquetesDescartados() {

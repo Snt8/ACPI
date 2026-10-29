@@ -23,6 +23,9 @@ public:
     static bool hayPaquete(); //true si hay un paquete sin tomar
     static void descartarPendiente(); //Olvida el paquete sin tomar, si lo hay
     static uint32_t paquetesDescartados(); //Paquetes ESP-NOW rechazados por tamaño o firma
+    // Señal (dBm) con que llegó el último paquete entregado por tomarPaquete().
+    // 0 si el core no la informa (ESP-IDF 4) o todavía no llegó ninguno.
+    static int8_t rssiUltimoPaquete();
 private:
     // La firma del callback cambió en ESP-IDF 5 (core Arduino-ESP32 v3.x): ahora recibe
     // esp_now_recv_info_t en vez de la MAC remota. Se compila la que corresponda.

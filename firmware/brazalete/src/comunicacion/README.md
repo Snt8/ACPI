@@ -16,10 +16,11 @@ El módulo se divide en dos sub-módulos críticos aislados:
 
 ### 1. Comunicación con el Móvil (BLE)
 Para maximizar la autonomía, el brazalete emite un **Servicio GATT** con características configuradas en modo *Notify* (Transmisión) y *Write* (Recepción). 
-En lugar de enviar un flujo continuo de bytes incomprensibles, el brazalete envía telemetría compacta en JSON plano cada medio segundo, conteniendo el Heading (`hd`), Estado de Máquina (`st`), Alineación (`ok`), Tiempo del Semáforo (`tr`), y Batería (`bt`).
+En lugar de enviar un flujo continuo de bytes incomprensibles, el brazalete envía telemetría compacta en JSON plano cada medio segundo (`paquete_telemetria.cpp`, versión 2): rumbo (`hd`), estado del cruce (`st`), alineación (`ok`), tiempo de la luz (`tr`) y batería (`bt`), más secuencia, semáforo, luz, giro, estado de la brújula, patrón en curso y recepción y señal del semáforo. El contrato completo está en `docs/ble-protocol.md`.
 ```json
-{"hd":275,"st":0,"ok":true,"tr":15,"bt":-1}
+{"v":2,"n":412,"hd":21,"st":1,"ok":true,"tr":18,"bt":-1,"id":1,"lz":1,"hs":200,"gr":-1,"br":1,"pt":4,"rx":20,"rs":-67}
 ```
+Pide un MTU de 185 (el paquete no cabe en el de 23 por defecto) y atiende los comandos `TEST_ALERT` y `VIBRATE_STOP` de la app (pantalla Diagnóstico).
 
 ### 2. Comunicación con el Semáforo (ESP-NOW)
 ESP-NOW permite conectividad sin enrutadores *peer-to-peer* (P2P). El brazalete expone una función de Callback (`onDatosRecibidos`) que se ejecuta a nivel de Interrupción de Hardware en el procesador.

@@ -30,10 +30,18 @@ export default function PantallaDiagnostico() {
   }
 
   const conectado = conexion === 'conectado';
+  const ext = telemetria?.extendida;
   const datos = telemetria
     ? `Rumbo ${telemetria.rumbo}°, estado ${telemetria.estado}, ` +
       `${telemetria.orientado ? 'orientado' : 'no orientado'}, ${telemetria.segundosRestantes} s, ` +
-      `batería ${telemetria.bateria === null ? 'no disponible' : `${telemetria.bateria} %`}`
+      `batería ${telemetria.bateria === null ? 'no disponible' : `${telemetria.bateria} %`}` +
+      (ext
+        ? `. Semáforo ${ext.semaforoId ?? '?'} a ${ext.rumboSemaforo ?? '?'}°, ` +
+          `luz ${ext.verde === null ? '?' : ext.verde ? 'verde' : 'roja'}, giro ${ext.giro ?? '?'}°, ` +
+          `brújula ${ext.brujula ?? '?'}, vibrando ${ext.patron ?? '?'}, ` +
+          `${ext.paquetesSemaforo ?? '?'} de 20 paquetes del semáforo, ` +
+          `señal ${ext.rssi === null ? '?' : `${ext.rssi} dBm`}, paquete ${ext.secuencia ?? '?'}`
+        : '. Firmware sin telemetría extendida')
     : 'Sin datos';
 
   return (

@@ -47,6 +47,13 @@ public:
     VueltaCruce paso(uint32_t ahora, const estado_semaforo* paquete,
                      LectorOrientacion leer, void* contexto);
 
+    // Comandos de la app (Diagnóstico). La prueba suena con el patrón de
+    // "semáforo detectado" y respeta las mismas reglas que cualquier patrón:
+    // si no está libre (separación de 3 s, descanso de 1 s) no suena y devuelve
+    // false. Detener corta el patrón en curso, sea cual sea.
+    bool probarVibracion(uint32_t ahora);
+    void detenerVibracion();
+
     // true si pasaron TIEMPO_SIN_PAQUETES_STANDBY_MS sin paquetes del semáforo
     // que se sigue (los de otro id no cuentan)
     bool sinPaquetes(uint32_t ahora) const;

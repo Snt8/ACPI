@@ -49,6 +49,14 @@ VueltaCruce CoordinadorCruce::paso(uint32_t ahora, const estado_semaforo* paquet
     return v;
 }
 
+bool CoordinadorCruce::probarVibracion(uint32_t ahora) {
+    return patrones_.iniciar(Patron::SEMAFORO_DETECTADO, ahora);
+}
+
+void CoordinadorCruce::detenerVibracion() {
+    patrones_.cancelar();
+}
+
 bool CoordinadorCruce::sinPaquetes(uint32_t ahora) const {
     return (uint32_t)(ahora - ultimo_paquete_) >= TIEMPO_SIN_PAQUETES_STANDBY_MS;
 }

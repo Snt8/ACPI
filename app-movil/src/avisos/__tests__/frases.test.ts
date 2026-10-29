@@ -49,6 +49,19 @@ describe('detectarAviso', () => {
     expect(detectarAviso(conectado('prohibido'), conectado('mal-orientado'))).toBeNull();
   });
 
+  it('avisa una vez que la brújula no está calibrada', () => {
+    const sinCalibrar: Instantanea = {
+      conexion: 'conectado',
+      telemetria: parsearTelemetria('{"v":2,"hd":0,"st":2,"ok":false,"tr":10,"bt":-1,"br":0}'),
+    };
+    expect(detectarAviso({ conexion: 'conectado', telemetria: null }, sinCalibrar)).toEqual({
+      texto: 'La brújula del brazalete no está calibrada: no puede indicar hacia dónde girar',
+      prioridad: 'alta',
+    });
+    expect(detectarAviso(sinCalibrar, sinCalibrar)).toBeNull();
+    expect(fraseEstado(sinCalibrar)).toMatch(/no está calibrada/);
+  });
+
   it('un cruce simulado completo produce los avisos esperados, sin repetir', () => {
     const paquetes = paquetesSimulados();
     let anterior: Instantanea = buscando;

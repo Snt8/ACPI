@@ -74,10 +74,13 @@ Sin cambios respecto a `docs/ble-protocol.md` y
 - Nombre anunciado: `ACPI_Brazalete`.
 - Servicio `12345678-1234-1234-1234-123456789abc` (se anuncia en el *advertising*, lo
   que permite el escaneo en segundo plano en iOS, que exige filtrar por UUID).
-- TX (notify) `87654321-4321-4321-4321-cba987654321`: JSON
-  `{"hd":135,"st":1,"ok":true,"tr":18,"bt":-1}` cada 500 ms.
-- RX (write) `11111111-2222-3333-4444-555555555555`: `TEST_ALERT`, `VIBRATE_STOP`
-  (sólo diagnóstico; el firmware actual sólo los imprime por serie).
+- TX (notify) `87654321-4321-4321-4321-cba987654321`: JSON cada 500 ms. Desde el 29
+  oct 2026 es la versión 2, que agrega a `{"hd":135,"st":1,"ok":true,"tr":18,"bt":-1}`
+  la secuencia, el semáforo, la luz, el giro, el estado de la brújula (`br = 0`: sin
+  calibrar, la app lo avisa por voz), el patrón en curso y la recepción y señal del
+  semáforo. Los campos de la versión 1 no cambiaron. Detalle en `docs/ble-protocol.md`.
+- RX (write) `11111111-2222-3333-4444-555555555555`: `TEST_ALERT` (vibración de
+  prueba, respeta los 3 s entre patrones) y `VIBRATE_STOP` (corta el patrón).
 
 Lo que hace hoy el firmware (`fsm.cpp`, `enviarTelemetria`) y debe respetar la app:
 

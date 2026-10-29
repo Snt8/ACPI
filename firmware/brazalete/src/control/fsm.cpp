@@ -22,6 +22,34 @@ CoordinadorCruce cruce;
 
 unsigned long ultimo_envio_ble_ms = 0;
 
+// ── Datos para la telemetría BLE (paquete_telemetria.h) ──────────────────────
+uint16_t    secuencia_ble = 0;
+Orientacion ultima_orientacion = {false, 0.0f, 0.0f};
+bool        hubo_lectura = false;
+
+// Instantes de llegada de los últimos paquetes del semáforo seguido, para
+// contar cuántos llegaron en los últimos VENTANA_RECIBIDOS_MS (el semáforo
+// manda 2 por segundo: 20 en 10 s es el 100 %)
+const uint32_t VENTANA_RECIBIDOS_MS = 10000;
+const int      MAX_LLEGADAS = 32;
+uint32_t llegadas[MAX_LLEGADAS];
+int      n_llegadas = 0;
+int      pos_llegadas = 0;
+
+void anotarLlegada(uint32_t ahora) {
+    llegadas[pos_llegadas] = ahora;
+    pos_llegadas = (pos_llegadas + 1) % MAX_LLEGADAS;
+    if (n_llegadas < MAX_LLEGADAS) n_llegadas++;
+}
+
+uint8_t llegadasRecientes(uint32_t ahora) {
+    int n = 0;
+    for (int i = 0; i < n_llegadas; i++) {
+        if ((uint32_t)(ahora - llegadas[i]) < VENTANA_RECIBIDOS_MS) n++;
+    }
+    return (uint8_t)n;
+}
+
 // Diagnóstico: rumbo justo antes de cada patrón, para comparar con la primera
 // lectura después. Con la persona quieta deberían coincidir; si cambian
 // varios grados, la vibración (el imán o el rotor del motor, o la carcasa
@@ -56,6 +84,8 @@ Orientacion leerOrientacion(const estado_semaforo& semaforo, void*) {
 
     Serial.printf("[HDG] Brazalete=%.1f  Semaforo=%d  Desviacion=%.1f  Giro=%.1f%s\n",
                   hp, (int)hs, o.desviacion, o.giro, o.valida ? "" : "  (lectura invalida)");
+    ultima_orientacion = o;
+    hubo_lectura = true;
     return o;
 }
 
@@ -101,7 +131,7 @@ void registrarVuelta(const estado_semaforo& paquete, const VueltaCruce& v) {
 }
 
 // ── Telemetría BLE ───────────────────────────────────────────────────────────
-void enviarTelemetria() {
+void enviarTelemetria(uint32_t ahora) {
     const estado_semaforo& s = cruce.evaluador().ultimoPaquete();
     bool orientado = cruce.evaluador().orientado();
 
@@ -114,13 +144,47 @@ void enviarTelemetria() {
         st = 0;  // Cruce prohibido: orientado pero semaforo verde para autos (rojo peaton)
     }
 
-    ComunicadorMovil::enviarDatos(
-        (uint16_t)(lroundf(ControladorBrujula::headingActual) % 360),
-        st,
-        orientado,
-        s.tiempo,
-        -1  // Bateria no disponible
-    );
+    TelemetriaBle t;
+    t.secuencia      = secuencia_ble++;
+    t.rumbo          = (uint16_t)(lroundf(ControladorBrujula::headingActual) % 360);
+    t.estado         = st;
+    t.orientado      = orientado;
+    t.tiempo         = s.tiempo;
+    t.bateria        = -1;  // la PCB v3.5 no mide la batería
+    t.semaforo       = s.id;
+    t.verde          = s.permitidoCruce != 0;
+    t.rumbo_semaforo = s.grados;
+    t.giro           = hubo_lectura ? (int16_t)lroundf(ultima_orientacion.giro) : 0;
+    if (!ControladorBrujula::calibrada()) {
+        t.brujula = EstadoBrujulaBle::SIN_CALIBRAR;
+    } else if (hubo_lectura && ultima_orientacion.valida) {
+        t.brujula = EstadoBrujulaBle::VALIDA;
+    } else {
+        t.brujula = EstadoBrujulaBle::DESCARTADA;
+    }
+    t.patron    = (uint8_t)cruce.patrones().patronActual();
+    t.recibidos = llegadasRecientes(ahora);
+    t.rssi      = ComunicadorSemaforo::rssiUltimoPaquete();
+    ComunicadorMovil::enviarTelemetria(t);
+}
+
+// Comandos de Diagnóstico de la app
+void atenderComandoMovil(uint32_t ahora) {
+    switch (ComunicadorMovil::tomarComando()) {
+        case ComandoMovil::PROBAR_VIBRACION:
+            if (cruce.probarVibracion(ahora)) {
+                Serial.println(F("[BLE] TEST_ALERT: vibracion de prueba"));
+            } else {
+                Serial.println(F("[BLE] TEST_ALERT ignorado: los motores no estan libres (3 s entre patrones)"));
+            }
+            break;
+        case ComandoMovil::DETENER_VIBRACION:
+            cruce.detenerVibracion();
+            Serial.println(F("[BLE] VIBRATE_STOP: patron cortado"));
+            break;
+        default:
+            break;
+    }
 }
 
 } // namespace
@@ -178,6 +242,9 @@ void MaquinaEstados::setEstado(EstadoBrazalete nuevoEstado) {
         unsigned long ahora = millis();
         cruce.entrar((uint32_t)ahora);
         ultimo_envio_ble_ms = ahora;
+        hubo_lectura = false;
+        n_llegadas = 0;
+        pos_llegadas = 0;
     }
 }
 
@@ -206,9 +273,13 @@ void MaquinaEstados::actualizar() {
         case EstadoBrazalete::SENSING_CROSSING: {
             estado_semaforo paquete{};
             bool hay_paquete = ComunicadorSemaforo::tomarPaquete(paquete);
+            atenderComandoMovil((uint32_t)ahora);
 
             VueltaCruce v = cruce.paso((uint32_t)ahora, hay_paquete ? &paquete : nullptr,
                                        leerOrientacion, nullptr);
+            if (v.hubo_paquete && v.cambio != CambioPaquete::IGNORADO) {
+                anotarLlegada((uint32_t)ahora);
+            }
             registrarVuelta(paquete, v);
             ControladorMotores::aplicar(v.salida.derecho, v.salida.izquierdo);
 
@@ -221,7 +292,7 @@ void MaquinaEstados::actualizar() {
             // Telemetría BLE al móvil
             if (ahora - ultimo_envio_ble_ms >= INTERVALO_TELEMETRIA_BLE_MS) {
                 ultimo_envio_ble_ms = ahora;
-                enviarTelemetria();
+                enviarTelemetria((uint32_t)ahora);
             }
             break;
         }

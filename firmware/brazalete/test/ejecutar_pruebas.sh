@@ -19,12 +19,14 @@ mkdir -p "$SALIDA"
     "$AQUI/test_utilidades.cpp" \
     "$AQUI/test_ciclo_escucha.cpp" \
     "$AQUI/test_brujula.cpp" \
+    "$AQUI/test_telemetria.cpp" \
     "$AQUI/../src/vibracion/controlador_patrones.cpp" \
     "$AQUI/../src/control/evaluador_semaforo.cpp" \
     "$AQUI/../src/control/ciclo_escucha.cpp" \
     "$AQUI/../src/control/coordinador_cruce.cpp" \
     "$AQUI/../src/utils/calcular_direccion.cpp" \
     "$AQUI/../src/brujula/calibracion_magnetica.cpp" \
-    "$AQUI/../src/brujula/ejes_acelerometro.cpp"
+    "$AQUI/../src/brujula/ejes_acelerometro.cpp" \
+    "$AQUI/../src/comunicacion/movil/paquete_telemetria.cpp"
 
 "$SALIDA/pruebas"

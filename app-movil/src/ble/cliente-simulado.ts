@@ -12,16 +12,38 @@ const GUION = [
   { st: 1, paquetes: 50, desde: 25 },
 ] as const;
 
-/** Paquetes JSON idénticos a los del firmware, en bucle */
+// El semáforo simulado apunta a 180°: de frente al cruce es mirar a 0°
+const RUMBO_SEMAFORO = 180;
+
+/** Paquetes JSON idénticos a los del firmware (versión 2), en bucle */
 export function* paquetesSimulados(): Generator<string> {
   let rumbo = 300;
+  let secuencia = 0;
   for (;;) {
     for (const tramo of GUION) {
       for (let i = 0; i < tramo.paquetes; i++) {
         // Mal orientada gira poco a poco hacia el cruce (0°); después queda quieta
         rumbo = tramo.st === 2 ? (rumbo + 8) % 360 : 0;
         const segundos = Math.max(tramo.desde - Math.floor(i / 2), 0);
-        yield JSON.stringify({ hd: rumbo, st: tramo.st, ok: tramo.st !== 2, tr: segundos, bt: -1 });
+        const giro = ((((0 - rumbo) % 360) + 540) % 360) - 180;
+        yield JSON.stringify({
+          v: 2,
+          n: secuencia,
+          hd: rumbo,
+          st: tramo.st,
+          ok: tramo.st !== 2,
+          tr: segundos,
+          bt: -1,
+          id: 1,
+          lz: tramo.st === 1 ? 1 : 0, // mientras gira la luz está en rojo
+          hs: RUMBO_SEMAFORO,
+          gr: giro,
+          br: 1,
+          pt: 0,
+          rx: 20,
+          rs: -60,
+        });
+        secuencia = (secuencia + 1) % 65536;
       }
     }
   }

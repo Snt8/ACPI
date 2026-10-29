@@ -330,3 +330,17 @@ PRUEBA(escenario_aleatorio_media_hora_respeta_las_garantias) {
     // por debajo de la mitad del tiempo
     VERIFICAR(s.ms_encendido < 30u * 60u * 1000u / 2);
 }
+
+PRUEBA(escenario_prueba_de_vibracion_desde_la_app) {
+    // TEST_ALERT suena con el patrón de "detectado" y respeta las mismas reglas:
+    // pegado a otro patrón no suena; VIBRATE_STOP corta lo que esté sonando
+    CoordinadorCruce cruce;
+    VERIFICAR(cruce.probarVibracion(1000));
+    VERIFICAR_IGUAL(cruce.patrones().patronActual(), Patron::SEMAFORO_DETECTADO);
+    VERIFICAR(!cruce.probarVibracion(2000));             // menos de 3 s después
+    cruce.detenerVibracion();
+    VERIFICAR(!cruce.patrones().sonando());
+    VERIFICAR(!cruce.probarVibracion(3000));             // cortar no adelanta los 3 s
+    VERIFICAR(cruce.probarVibracion(1000 + ControladorPatrones::duracion(Patron::SEMAFORO_DETECTADO) +
+                                    SEPARACION_MINIMA_EVENTOS_MS));
+}

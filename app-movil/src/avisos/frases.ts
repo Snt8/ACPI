@@ -44,6 +44,12 @@ function fraseCruce(t: Telemetria): string {
   }
 }
 
+// Sin calibrar, el brazalete no indica giros ni la luz (sólo "semáforo detectado"):
+// la persona tiene que saber que no va a recibir esas vibraciones
+const FRASE_SIN_CALIBRAR = 'La brújula del brazalete no está calibrada: no puede indicar hacia dónde girar';
+
+const sinCalibrar = (t: Telemetria | null) => t?.extendida?.brujula === 'sin-calibrar';
+
 /** Frase completa del estado actual, para la tarjeta de estado y "Repetir estado" */
 export function fraseEstado({ conexion, telemetria }: Instantanea): string {
   if (conexion !== 'conectado') {
@@ -51,6 +57,9 @@ export function fraseEstado({ conexion, telemetria }: Instantanea): string {
   }
   if (!telemetria) {
     return 'Brazalete conectado, esperando datos del semáforo';
+  }
+  if (sinCalibrar(telemetria)) {
+    return FRASE_SIN_CALIBRAR;
   }
   return fraseCruce(telemetria);
 }
@@ -81,7 +90,14 @@ export function detectarAviso(anterior: Instantanea, actual: Instantanea): Aviso
 
   const antes = anterior.telemetria?.estado;
   const ahora = actual.telemetria;
-  if (actual.conexion !== 'conectado' || !ahora || ahora.estado === antes) {
+  if (actual.conexion !== 'conectado' || !ahora) {
+    return null;
+  }
+  if (sinCalibrar(ahora)) {
+    // Una vez por sesión: los paquetes siguen diciendo lo mismo cada 500 ms
+    return sinCalibrar(anterior.telemetria) ? null : { texto: FRASE_SIN_CALIBRAR, prioridad: 'alta' };
+  }
+  if (ahora.estado === antes) {
     return null;
   }
   if (!CRUCE_ANUNCIADO.has(ahora.estado)) {

@@ -1,4 +1,4 @@
-import type { EstadoCruce, Telemetria } from '@/protocolo/brazalete';
+import { parsearTelemetria, type EstadoCruce, type Telemetria } from '@/protocolo/brazalete';
 import type { Posicion } from '@/semaforos/ubicacion';
 import { conPaquete, conPosicion, nuevaSesion, resumir, type SesionCruce } from '@/telemetria/sesion';
 
@@ -75,5 +75,66 @@ describe('sesión de cruce', () => {
       cruzo: false,
       veces_mal_orientado: 2,
     });
+  });
+});
+
+describe('métricas de los enlaces (telemetría extendida)', () => {
+  const v2 = (n: number, extra: Partial<Record<string, number>> = {}) =>
+    parsearTelemetria(JSON.stringify({ v: 2, n, hd: 0, st: 0, ok: true, tr: 10, bt: -1, id: 3, br: 1, ...extra }))!;
+
+  it('cuenta los paquetes BLE perdidos por los saltos de la secuencia', () => {
+    let sesion = nuevaSesion('a', 0);
+    for (const n of [10, 11, 12, 15, 16, 20]) {
+      sesion = conPaquete(sesion, v2(n), s(n));
+    }
+    const r = resumir(sesion, s(30));
+    expect(r.paquetes_ble).toBe(6);
+    expect(r.paquetes_ble_perdidos).toBe(5); // faltaron 13, 14, 17, 18, 19
+    expect(r.semaforo_ble_id).toBe(3);
+  });
+
+  it('la secuencia da la vuelta en 65535 sin contar perdidos', () => {
+    let sesion = nuevaSesion('a', 0);
+    sesion = conPaquete(sesion, v2(65534), 0);
+    sesion = conPaquete(sesion, v2(65535), 1);
+    sesion = conPaquete(sesion, v2(0), 2);
+    expect(resumir(sesion, 3).paquetes_ble_perdidos).toBe(0);
+  });
+
+  it('un salto enorme es un reinicio del brazalete, no paquetes perdidos', () => {
+    let sesion = nuevaSesion('a', 0);
+    sesion = conPaquete(sesion, v2(30000), 0);
+    sesion = conPaquete(sesion, v2(2), 1);
+    expect(resumir(sesion, 2).paquetes_ble_perdidos).toBe(0);
+  });
+
+  it('promedia la recepción y la señal del semáforo', () => {
+    let sesion = nuevaSesion('a', 0);
+    sesion = conPaquete(sesion, v2(1, { rx: 20, rs: -60 }), 0);
+    sesion = conPaquete(sesion, v2(2, { rx: 15, rs: -70 }), 1);
+    sesion = conPaquete(sesion, v2(3, { rx: 19, rs: 0 }), 2); // 0 = sin dato de señal
+    const r = resumir(sesion, 3);
+    expect(r.recepcion_semaforo_pct).toBe(90); // (20 + 15 + 19) / 60
+    expect(r.rssi_semaforo_medio_dbm).toBe(-65);
+    expect(r.rssi_semaforo_min_dbm).toBe(-70);
+    expect(r.brujula_sin_calibrar).toBe(false);
+  });
+
+  it('con firmware viejo las métricas de enlace quedan en null', () => {
+    let sesion = nuevaSesion('a', 0);
+    sesion = conPaquete(sesion, paquete('prohibido'), 0);
+    expect(resumir(sesion, 1)).toMatchObject({
+      paquetes_ble: 1,
+      paquetes_ble_perdidos: null,
+      recepcion_semaforo_pct: null,
+      rssi_semaforo_medio_dbm: null,
+      semaforo_ble_id: null,
+    });
+  });
+
+  it('anota si el brazalete estaba sin calibrar', () => {
+    let sesion = nuevaSesion('a', 0);
+    sesion = conPaquete(sesion, v2(1, { br: 0, st: 2 }), 0);
+    expect(resumir(sesion, 1).brujula_sin_calibrar).toBe(true);
   });
 });

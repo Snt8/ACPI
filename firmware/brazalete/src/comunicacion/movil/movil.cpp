@@ -18,6 +18,13 @@
 // Cuánto se espera a que el móvil confirme la desconexión antes de apagar el stack
 #define ESPERA_DESCONEXION_MS 500
 
+// MTU que acepta el brazalete. El paquete de telemetría mide hasta
+// TELEMETRIA_LARGO_MAXIMO bytes y una notificación lleva MTU − 3: con el MTU por
+// defecto (23) llegaría cortado y la app lo descartaría. El móvil lo negocia
+// (Android lo pide en cliente-ble.ts, iOS solo) hasta este valor.
+#define MTU_BLE 185
+static_assert(TELEMETRIA_LARGO_MAXIMO <= MTU_BLE - 3, "El paquete de telemetria no cabe en una notificacion");
+
 static BLEServer* pServer = nullptr;
 static BLEService* pService = nullptr;
 static BLECharacteristic* pTxCharacteristic = nullptr;
@@ -25,6 +32,7 @@ static BLECharacteristic* pRxCharacteristic = nullptr;
 // Se escriben desde la tarea de NimBLE y se leen desde loop()
 static volatile bool clienteConectado = false;
 static volatile bool apagando = false;  // desinicializar() en curso
+static volatile ComandoMovil comandoPendiente = ComandoMovil::NINGUNO;
 
 class MyServerCallbacks : public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) override {
@@ -49,6 +57,18 @@ class MyServerCallbacks : public BLEServerCallbacks {
 #define MAX_RX_MOSTRAR       32
 #define INTERVALO_RX_MIN_MS  200
 
+// true si los 'largo' bytes de 'datos' son exactamente el texto 'comando'
+// (la app no manda '\0' ni salto de línea)
+template <typename Texto>
+static bool esComando(const Texto& datos, size_t largo, const char* comando) {
+    size_t n = strlen(comando);
+    if (largo != n) return false;
+    for (size_t i = 0; i < n; i++) {
+        if (datos[i] != comando[i]) return false;
+    }
+    return true;
+}
+
 class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic* pCharacteristic) override {
         static unsigned long ultimo_rx = 0;
@@ -60,6 +80,11 @@ class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
         // String en core v3.x, std::string en v2.x: ambos tienen length() y []
         auto value = pCharacteristic->getValue();
         size_t largo = value.length();
+        if (esComando(value, largo, "TEST_ALERT")) {
+            comandoPendiente = ComandoMovil::PROBAR_VIBRACION;
+        } else if (esComando(value, largo, "VIBRATE_STOP")) {
+            comandoPendiente = ComandoMovil::DETENER_VIBRACION;
+        }
         if (largo > 0) {
             Serial.print("[BLE RX] Datos recibidos: ");
             for (size_t i = 0; i < largo && i < MAX_RX_MOSTRAR; i++) {
@@ -82,6 +107,7 @@ bool ComunicadorMovil::inicializar() {
     if (!BLEDevice::init("ACPI_Brazalete")) {
         return false;
     }
+    BLEDevice::setMTU(MTU_BLE);
 
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(&callbacksServidor);
@@ -117,18 +143,24 @@ bool ComunicadorMovil::estaConectado() {
     return clienteConectado;
 }
 
-void ComunicadorMovil::enviarDatos(uint16_t heading, uint8_t estado, bool orientacionOk, uint8_t tiempoRestante, int8_t bateria) {
+void ComunicadorMovil::enviarTelemetria(const TelemetriaBle& telemetria) {
     if (!clienteConectado || pTxCharacteristic == nullptr) {
         return;
     }
 
-    char buffer[128];
-    snprintf(buffer, sizeof(buffer),
-             "{\"hd\":%u,\"st\":%u,\"ok\":%s,\"tr\":%u,\"bt\":%d}",
-             heading, estado, orientacionOk ? "true" : "false", tiempoRestante, (int)bateria);
-
-    pTxCharacteristic->setValue((uint8_t*)buffer, strlen(buffer));
+    char buffer[TELEMETRIA_LARGO_MAXIMO + 1];
+    size_t largo = formatearTelemetria(telemetria, buffer, sizeof(buffer));
+    if (largo == 0) {
+        return;  // no pasa (lo comprueba test_telemetria.cpp), pero nunca medio JSON
+    }
+    pTxCharacteristic->setValue((uint8_t*)buffer, largo);
     pTxCharacteristic->notify();
+}
+
+ComandoMovil ComunicadorMovil::tomarComando() {
+    ComandoMovil c = comandoPendiente;
+    comandoPendiente = ComandoMovil::NINGUNO;
+    return c;
 }
 
 void ComunicadorMovil::desinicializar() {
@@ -168,5 +200,6 @@ void ComunicadorMovil::desinicializar() {
     pRxCharacteristic = nullptr;
     clienteConectado = false;
     apagando = false;
+    comandoPendiente = ComandoMovil::NINGUNO;
     Serial.println("[BLE] Servidor BLE desinicializado.");
 }

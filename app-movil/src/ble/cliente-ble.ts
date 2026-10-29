@@ -16,7 +16,7 @@ import {
 // standby), así que la app busca en tandas y reintenta con esperas crecientes
 const SEGUNDOS_POR_BUSQUEDA = 10;
 const ESPERAS_REINTENTO_MS = [2000, 5000, 10000, 30000];
-// El JSON de telemetría ocupa ~45 bytes; con el MTU por defecto (23) se cortaría.
+// El JSON de telemetría ocupa hasta 160 bytes; con el MTU por defecto (23) se cortaría.
 // iOS negocia el MTU solo; en Android hay que pedirlo.
 const MTU_PEDIDO = 185;
 
