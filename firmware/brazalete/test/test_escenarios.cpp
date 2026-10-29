@@ -125,7 +125,7 @@ private:
     }
 };
 
-Orientacion deFrente(uint32_t)   { return {true, 5.0f, 5.0f}; }
+Orientacion deFrente(uint32_t)   { return {true, 2.0f, 2.0f}; }
 Orientacion malDerecha(uint32_t) { return {true, 90.0f, 90.0f}; }
 bool siemprePermitido(uint32_t)  { return true; }
 bool siempreProhibido(uint32_t)  { return false; }
@@ -210,12 +210,13 @@ PRUEBA(escenario_se_orienta_y_luego_silencio) {
 }
 
 PRUEBA(escenario_ruido_en_el_umbral_no_repite_avisos) {
-    // La lectura oscila entre 25° y 38° (alrededor del umbral de 30°): con la
-    // histéresis queda "de frente" y la luz se avisa una sola vez
+    // Ya de frente, la lectura oscila entre 3° y 9.5° (a ambos lados del umbral
+    // de 5°, dentro de la histéresis): sigue "de frente" y la luz se avisa una
+    // sola vez
     Simulador s;
     s.luz = siemprePermitido;
     s.lectura = [](uint32_t t) {
-        float d = ((t / 500) % 2 == 0) ? 25.0f : 38.0f;
+        float d = (t < 3000 || (t / 500) % 2 == 0) ? 3.0f : 9.5f;
         return Orientacion{true, d, d};
     };
     s.correr(0, 24000);

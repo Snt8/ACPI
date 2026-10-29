@@ -20,13 +20,8 @@ Al solicitar una lectura, lee secuencialmente 6 bytes (registros a partir del `0
 
 ### 2. Magnetómetro (QMC5883L)
 Al iniciar, inyecta un *Soft Reset* (`0x80` al reg `0x0A`), fija el periodo SET/RESET recomendado (`0x01` al reg `0x0B`) y se configura en modo continuo a 200 Hz, rango ±8 G (`0x1D` al reg `0x09`). Se usa ±8 G para no saturar con el imán de los motores de vibración cercanos.
-Al solicitar una lectura, lee 6 bytes desde el reg `0x00` (X, Y, Z, byte bajo primero).
-Incluye un algoritmo iterativo de **Filtro Leaky Integrator** para autocalibración de _Hard-Iron_:
-```cpp
-offset_x = (offset_x * 0.99f) + (lectura_actual_x * 0.01f);
-x_corregida = lectura_actual_x - offset_x;
-```
-Posteriormente, implementa el algoritmo complejo de **Tilt Compensation**. Dado que un compás se deforma al estar inclinado, utiliza los vectores $g$ limpios del MPU6050 para rotar la matriz magnética de forma tridimensional antes de calcular el Azimuth / Heading.
+Al solicitar una lectura, lee 7 bytes desde el reg `0x00` (X, Y, Z, byte bajo primero, y el registro de estado `0x06`). Si el bit OVL avisa que un eje se saturó, la lectura se descarta.
+El driver sólo entrega el campo **crudo**: la calibración _Hard-Iron_ y la **Tilt Compensation** las hace `ControladorBrujula` (`src/brujula/`).
 
 ---
 
@@ -54,7 +49,8 @@ float gx = ControladorAcelerometro::getGx();
 float gy = ControladorAcelerometro::getGy();
 float gz = ControladorAcelerometro::getGz();
 
-// Leer Norte Magnético, autocalibrar y aplicar inclinación
-ControladorMagnetometro::leerPosicion();
-float orientacion = ControladorMagnetometro::calcularHeading(gx, gy, gz);
+// Leer el campo magnético crudo (LSB); la calibración y el rumbo los calcula
+// ControladorBrujula
+float crudo[3];
+ControladorMagnetometro::leerCrudo(crudo);
 ```

@@ -33,8 +33,9 @@ VueltaCruce CoordinadorCruce::paso(uint32_t ahora, const estado_semaforo* paquet
     //    justo la vuelta en que los motores quedan quietos
     patrones_.actualizar(ahora);
 
-    // 3. Orientación a 2 Hz, nunca con un motor vibrando
-    if ((uint32_t)(ahora - ultimo_muestreo_) >= INTERVALO_MUESTREO_MS && !patrones_.sonando()) {
+    // 3. Orientación a 5 Hz, nunca con un motor vibrando ni justo después
+    if ((uint32_t)(ahora - ultimo_muestreo_) >= INTERVALO_MUESTREO_MS &&
+        patrones_.quietosDesde(ahora, ASENTAMIENTO_TRAS_VIBRAR_MS)) {
         ultimo_muestreo_ = ahora;
         v.muestreo = true;
         evaluador_.registrarOrientacion(leer(evaluador_.ultimoPaquete(), contexto));

@@ -22,6 +22,14 @@ CoordinadorCruce cruce;
 
 unsigned long ultimo_envio_ble_ms = 0;
 
+// Diagnóstico: rumbo justo antes de cada patrón, para comparar con la primera
+// lectura después. Con la persona quieta deberían coincidir; si cambian
+// varios grados, la vibración (el imán o el rotor del motor, o la carcasa
+// que se movió en la muñeca) está desviando la brújula.
+float   rumbo_antes_patron = 0.0f;
+bool    rumbo_antes_valido = false;
+Patron  patron_diagnostico = Patron::NINGUNO;
+
 const char* nombrePatron(Patron p) {
     switch (p) {
         case Patron::SEMAFORO_DETECTADO: return "SEMAFORO DETECTADO";
@@ -35,7 +43,7 @@ const char* nombrePatron(Patron p) {
 
 // ── Orientación ──────────────────────────────────────────────────────────────
 // Lee la brújula y calcula qué tan lejos está la persona de quedar de frente
-// al cruce y hacia qué lado tiene que girar. El coordinador la llama a 2 Hz.
+// al cruce y hacia qué lado tiene que girar. El coordinador la llama a 5 Hz.
 Orientacion leerOrientacion(const estado_semaforo& semaforo, void*) {
     ControladorBrujula::obtenerHeading();
 
@@ -74,9 +82,21 @@ void registrarVuelta(const estado_semaforo& paquete, const VueltaCruce& v) {
     }
     if (v.muestreo) {
         Serial.printf("[EVAL] %s\n", cruce.evaluador().orientado() ? "DE FRENTE" : "MAL ORIENTADO");
+        if (patron_diagnostico != Patron::NINGUNO && ControladorBrujula::headingValido()) {
+            if (rumbo_antes_valido) {
+                float cambio = calcularDireccion(ControladorBrujula::headingActual, rumbo_antes_patron);
+                Serial.printf("[DIAG] Tras %s el rumbo cambio %+.1f deg (%.1f -> %.1f)\n",
+                              nombrePatron(patron_diagnostico), cambio, rumbo_antes_patron,
+                              ControladorBrujula::headingActual);
+            }
+            patron_diagnostico = Patron::NINGUNO;
+        }
     }
     if (v.iniciado != Patron::NINGUNO) {
         Serial.printf("[PAT] %s\n", nombrePatron(v.iniciado));
+        rumbo_antes_patron = ControladorBrujula::headingActual;
+        rumbo_antes_valido = ControladorBrujula::headingValido();
+        patron_diagnostico = v.iniciado;
     }
 }
 
@@ -95,7 +115,7 @@ void enviarTelemetria() {
     }
 
     ComunicadorMovil::enviarDatos(
-        (uint16_t)ControladorBrujula::headingActual,
+        (uint16_t)(lroundf(ControladorBrujula::headingActual) % 360),
         st,
         orientado,
         s.tiempo,

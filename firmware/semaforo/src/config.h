@@ -28,13 +28,22 @@
 // Sincronizado con el ciclo de muestreo del brazalete (2Hz = 500ms).
 #define INTERVALO_ENVIO_MS 500UL    // Cada 500 ms (2 Hz)
 
-// ── Calibración Hard-Iron (Leaky Integrator) ─────────────────────────────────
-// Offset_nuevo = (Offset_anterior * LEAKY_ALPHA) + (Lectura_actual * LEAKY_BETA)
-#define LEAKY_ALPHA  0.99f
-#define LEAKY_BETA   0.01f
+// ── Calibración de la brújula (ver brujula/calibracion_magnetica.h) ─────────
+// El QMC6308 en su rango por defecto (±30 G) da ~1000 LSB/G: el campo
+// horizontal de Colombia (~0.30 G) hace recorrer a X e Y ~600 LSB en una vuelta.
+#define CALIBRACION_SPAN_MINIMO_LSB  400.0f
+#define CALIBRACION_ESTABLE_MS       5000UL
+#define CALIBRACION_INTERVALO_MS     50UL
+// Al arrancar sin calibración guardada se dan estos ms para calibrar; si no se
+// completa, el semáforo funciona igual con el rumbo sin calibrar
+#define CALIBRACION_AL_ARRANCAR_MS   30000UL
+// Con 'c' por el monitor serie se borra y se calibra con este tiempo máximo
+#define CALIBRACION_MANUAL_MS        90000UL
 
 // ── Brújula ──────────────────────────────────────────────────────────────────
 // Intervalo de lectura del magnetómetro
 #define INTERVALO_LECTURA_BRUJULA_MS 500UL
+// El rumbo enviado es el promedio circular de estas lecturas (10 × 500 ms = 5 s)
+#define LECTURAS_PROMEDIO 10
 
 #endif // CONFIG_SEMAFORO_H

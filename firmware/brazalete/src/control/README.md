@@ -45,7 +45,7 @@ persona.
   `CoordinadorCruce::paso()`:
   1. Recoge el paquete que dejó el callback de ESP-NOW y se lo pasa al evaluador.
   2. Cierra el patrón que ya terminó.
-  3. A 2 Hz, y **sólo si no está vibrando** (los imanes de los motores alteran el
+  3. A 5 Hz, y **sólo si no está vibrando ni vibró en los últimos 300 ms** (los imanes de los motores alteran el
      magnetómetro), lee la brújula y le pasa al evaluador la desviación respecto al
      cruce y hacia qué lado girar.
   4. `evaluador.orquestar()`: si hay un evento pendiente y el controlador está libre,
@@ -73,7 +73,9 @@ Con esos eventos y la orientación decide el patrón (ver `patrones.md`):
 3. De frente y con la luz sin avisar: `CRUCE_PERMITIDO` o `CRUCE_PROHIBIDO`, una vez.
 4. Cualquier otro caso: nada.
 
-"De frente" usa histéresis: se entra con desviación < 30° y se sale con > 40°. Sólo
+"De frente" usa histéresis: se entra con desviación < 5° en dos lecturas seguidas y
+se sale con una lectura > 10°. La orientación va antes que la luz: el aviso de la luz
+sólo suena con la orientación confirmada. Sólo
 pide patrones cuando el controlador está libre, así que la separación mínima de 3 s
 entre patrones se cumple siempre.
 

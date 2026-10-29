@@ -29,14 +29,37 @@
 // datasheet del MPU6050 es 16384.0 LSB/g. Se usa el valor del datasheet.
 #define FACTOR_ESCALA_ACCEL     16384.0f
 
-// ── Calibración Hard-Iron (Leaky Integrator) ─────────────────────────────────
-// Offset_nuevo = (Offset_anterior * LEAKY_ALPHA) + (Lectura_actual * LEAKY_BETA)
-// Con LEAKY_ALPHA=0.99 y LEAKY_BETA=0.01 la calibración converge en ~100 ciclos
-#define LEAKY_ALPHA             0.99f
-#define LEAKY_BETA              0.01f
+// ── Calibración del magnetómetro (ver brujula/calibracion_magnetica.h) ──────
+// Cada eje tiene que recorrer al menos este rango (máx − mín) para dar la
+// calibración por buena. El QMC5883L a ±8 G da 3000 LSB/G; el campo de la
+// Tierra en Colombia es de ~0.33 G (~1000 LSB), así que al girar el brazalete
+// en todas direcciones cada eje recorre ~2000 LSB. 1200 LSB exige ~60 %.
+#define CALIBRACION_SPAN_MINIMO_LSB    1200.0f
+// La calibración termina cuando está lista y lleva este tiempo sin crecer
+// más de un 1 %, o al llegar al tiempo máximo (entonces queda sin calibrar)
+#define CALIBRACION_ESTABLE_MS         5000UL
+#define CALIBRACION_DURACION_MAX_MS    90000UL
+#define CALIBRACION_INTERVALO_MS       50UL
 
-// ── Frecuencia de muestreo (2 Hz) ────────────────────────────────────────────
-#define INTERVALO_MUESTREO_MS   500UL
+// ── Lectura de la brújula ────────────────────────────────────────────────────
+// Cada lectura promedia estas muestras de ambos sensores (el QMC5883L mide a
+// 200 Hz: una muestra nueva cada 5 ms). Reduce el ruido del rumbo a la mitad.
+#define MUESTRAS_POR_LECTURA           4
+#define PAUSA_ENTRE_MUESTRAS_MS        5
+// Si el acelerómetro no mide ~1 g, la muñeca se está moviendo y la gravedad
+// medida no sirve para compensar la inclinación: la lectura se descarta
+#define TOLERANCIA_GRAVEDAD_G          0.15f
+
+// ── Frecuencia de muestreo de la brújula (5 Hz) ──────────────────────────────
+// Con el cono de 5° la lectura tiene que seguir a la persona mientras gira: a
+// 2 Hz, girando a 10°/s, entre dos lecturas avanzaba 5° (medio cono) y el
+// aviso llegaba tarde. Cada lectura bloquea ~15 ms (4 muestras).
+#define INTERVALO_MUESTREO_MS   200UL
+
+// Tras cada patrón se espera esto antes de volver a leer la brújula: el motor
+// sigue girando por inercia y la muñeca sigue vibrando un instante después de
+// cortar la corriente, y esa lectura podía sacar a la persona de "de frente".
+#define ASENTAMIENTO_TRAS_VIBRAR_MS 300UL
 
 // ── Telemetría BLE al móvil ──────────────────────────────────────────────────
 #define INTERVALO_TELEMETRIA_BLE_MS 500UL
@@ -135,8 +158,27 @@ static_assert(INTERVALO_GIRO_MS >= SEPARACION_MINIMA_EVENTOS_MS,
 // ── Orientación frente al cruce ──────────────────────────────────────────────
 // La persona queda "de frente" cuando |Δθ − 180°| < UMBRAL_CRUCE_GRADOS (config.h)
 // y sólo vuelve a "mal orientada" cuando supera UMBRAL + HISTERESIS. Sin esta
-// banda, una lectura que oscila alrededor de 30° alternaría los dos estados y
+// banda, una lectura que oscila alrededor del umbral alternaría los dos estados y
 // cada vuelta a "de frente" repetiría el patrón del semáforo sin un evento real.
-#define HISTERESIS_ORIENTACION_GRADOS  10.0f
+// Con el umbral en 5°, se sale de "de frente" al pasar de 10°.
+#define HISTERESIS_ORIENTACION_GRADOS  5.0f
+
+// La orientación va antes que la luz: para quedar "de frente" hacen falta
+// estas lecturas SEGUIDAS bajo el umbral (2 = 0.4 s a 5 Hz). Mientras se
+// confirma no se pide ningún pulso de giro. Mientras la luz no se avisó, el
+// cono es el de UMBRAL_CRUCE_GRADOS: la banda de histéresis sólo protege un
+// aviso ya dado, así nunca suena la luz con la persona ya pasada del cono.
+#define CONFIRMACIONES_ORIENTACION     2
+
+// Si la persona ya está girando hacia el cruce no se repite el pulso de giro:
+// el pulso cada 3 s le decía "sigue girando" justo cuando estaba por llegar,
+// y con los motores ocupados el aviso de la luz (la señal de "para") llegaba
+// hasta 3 s tarde, ya pasada del otro lado. "Acercándose" = la desviación bajó
+// al menos UMBRAL_ACERCAMIENTO_GRADOS a lo largo de LECTURAS_ACERCAMIENTO
+// lecturas seguidas, todas del mismo lado (1° en 0.4 s ≈ 2.5°/s).
+#define LECTURAS_ACERCAMIENTO          3
+#define UMBRAL_ACERCAMIENTO_GRADOS     1.0f
+
+static_assert(CONFIRMACIONES_ORIENTACION >= 1, "Hace falta al menos una lectura para quedar de frente");
 
 #endif // CONSTANTES_H

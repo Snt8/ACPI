@@ -38,9 +38,9 @@ Las direcciones reales se confirman con las pruebas 01 y 02 y se ponen en `src/c
 ## Explicación
 El firmware está construido bajo un enfoque modular y orientado a eventos discretos, implementando una **Máquina de Estados Finita (FSM)**.
 
-En su estado nominal de `SENSING_CROSSING`, el brazalete ejecuta un ciclo de muestreo a **2 Hz (cada 500 ms)**:
-1. Lee los componentes vectoriales $g_x, g_y, g_z$ del acelerómetro.
-2. Extrae las lecturas crudas del magnetómetro y les aplica compensación _Hard-Iron_ mediante un _Leaky Integrator_.
+En su estado nominal de `SENSING_CROSSING`, el brazalete ejecuta un ciclo de muestreo a **5 Hz (cada 200 ms)**:
+1. Lee los componentes vectoriales $g_x, g_y, g_z$ del acelerómetro (promedio de 4 muestras).
+2. Extrae las lecturas crudas del magnetómetro (promedio de 4 muestras) y les resta el campo fijo del brazalete (_Hard-Iron_), medido una vez al calibrar y guardado en la memoria no volátil (ver `src/brujula/README.md`).
 3. Compensa el compás magnético por inclinación (_Tilt Compensation_) para obtener el Heading.
 4. Aplica una barrera de movimiento brusco (_Safety Check_): ignora lecturas si el Heading giró $>40^{\circ}$ entre dos muestras seguidas.
 5. Evalúa la diferencia frente al rumbo transmitido por el Semáforo.

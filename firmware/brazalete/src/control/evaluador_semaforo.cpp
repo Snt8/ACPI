@@ -1,6 +1,7 @@
 #include "evaluador_semaforo.h"
 #include "../config.h"
 #include "../constantes.h"
+#include <math.h>
 
 EvaluadorSemaforo::EvaluadorSemaforo(ControladorPatrones& patrones)
     : patrones_(patrones) {
@@ -15,6 +16,8 @@ void EvaluadorSemaforo::reiniciar() {
     orientacion_conocida_ = false;
     ultima_valida_        = false;
     orientado_            = false;
+    lecturas_de_frente_   = 0;
+    n_historial_          = 0;
     giro_                 = 0.0f;
     hubo_giro_            = false;
     ultimo_giro_          = 0;
@@ -76,21 +79,53 @@ void EvaluadorSemaforo::registrarOrientacion(const Orientacion& orientacion) {
         if (p == Patron::GIRAR_DERECHA || p == Patron::GIRAR_IZQUIERDA) {
             patrones_.cancelar();
         }
-        return;  // una lectura inválida no cambia el estado de orientación
+        // Una lectura inválida no cambia el estado de orientación, pero corta
+        // la racha: "de frente" se confirma con lecturas válidas SEGUIDAS
+        lecturas_de_frente_ = 0;
+        n_historial_ = 0;
+        return;
     }
 
     orientacion_conocida_ = true;
     giro_ = orientacion.giro;
 
-    // Histéresis: entra a "de frente" bajo UMBRAL y sale sólo sobre UMBRAL + HISTERESIS
+    // Historial con signo: + a la derecha del cruce, − a la izquierda
+    float con_signo = (orientacion.giro > 0.0f) ? orientacion.desviacion : -orientacion.desviacion;
+    for (int i = LECTURAS_ACERCAMIENTO - 1; i > 0; --i) historial_[i] = historial_[i - 1];
+    historial_[0] = con_signo;
+    if (n_historial_ < LECTURAS_ACERCAMIENTO) n_historial_++;
+
+    // Histéresis: entra a "de frente" bajo UMBRAL (confirmado con
+    // CONFIRMACIONES_ORIENTACION lecturas seguidas) y sale con UNA lectura
+    // sobre UMBRAL + HISTERESIS, para volver a indicar el giro cuanto antes.
+    // Mientras la luz todavía no se avisó, sale apenas deja el cono: el aviso
+    // es la señal de "para" y no puede llegar con la persona ya pasada.
     if (orientado_) {
-        if (orientacion.desviacion > UMBRAL_CRUCE_GRADOS + HISTERESIS_ORIENTACION_GRADOS) {
+        bool salio = cruce_notificado_
+                   ? orientacion.desviacion > UMBRAL_CRUCE_GRADOS + HISTERESIS_ORIENTACION_GRADOS
+                   : orientacion.desviacion >= UMBRAL_CRUCE_GRADOS;
+        if (salio) {
             orientado_ = false;
+            lecturas_de_frente_ = 0;
             cruce_notificado_ = false;  // al volver a quedar de frente se avisa la luz otra vez
         }
     } else if (orientacion.desviacion < UMBRAL_CRUCE_GRADOS) {
-        orientado_ = true;
+        if (++lecturas_de_frente_ >= CONFIRMACIONES_ORIENTACION) {
+            orientado_ = true;
+        }
+    } else {
+        lecturas_de_frente_ = 0;
     }
+}
+
+bool EvaluadorSemaforo::acercandose() const {
+    if (n_historial_ < LECTURAS_ACERCAMIENTO) return false;
+    const float actual = historial_[0];
+    const float antigua = historial_[LECTURAS_ACERCAMIENTO - 1];
+    for (int i = 0; i < LECTURAS_ACERCAMIENTO; ++i) {
+        if ((historial_[i] > 0.0f) != (actual > 0.0f)) return false;  // cruzó el objetivo
+    }
+    return fabsf(antigua) - fabsf(actual) >= UMBRAL_ACERCAMIENTO_GRADOS;
 }
 
 // ── Orquestación ─────────────────────────────────────────────────────────────
@@ -116,8 +151,14 @@ Patron EvaluadorSemaforo::decidir(uint32_t ahora) {
     // Sin una orientación fiable no se indica nada más
     if (!orientacion_conocida_ || !ultima_valida_) return Patron::NINGUNO;
 
-    // 2. Mal orientada: un pulso hacia el lado del giro cada INTERVALO_GIRO_MS
+    // 2. Mal orientada: un pulso hacia el lado del giro cada INTERVALO_GIRO_MS.
+    //    Si la última lectura ya cayó dentro del umbral y sólo falta
+    //    confirmarla, se espera: un pulso ahora la empujaría fuera del cono.
+    //    Tampoco se repite si ya está girando hacia el cruce: así los motores
+    //    quedan libres para el aviso de la luz en cuanto llegue.
     if (!orientado_) {
+        if (lecturas_de_frente_ > 0) return Patron::NINGUNO;
+        if (acercandose()) return Patron::NINGUNO;
         if (hubo_giro_ && (uint32_t)(ahora - ultimo_giro_) < INTERVALO_GIRO_MS) {
             return Patron::NINGUNO;
         }

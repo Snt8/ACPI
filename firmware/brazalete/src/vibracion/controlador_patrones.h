@@ -61,6 +61,10 @@ public:
     SalidaMotores actualizar(uint32_t ahora);
 
     bool sonando() const { return actual_ != Patron::NINGUNO; }
+
+    // true si ningún motor vibra y el último patrón terminó hace al menos
+    // 'ms' (un patrón cortado cuenta como si hubiera sonado entero)
+    bool quietosDesde(uint32_t ahora, uint32_t ms) const;
     Patron patronActual() const { return actual_; }
 
     // Duración total de un patrón en ms (pulsos + pausas entre ellos)

@@ -19,4 +19,11 @@ float giroParaEnfrentar(float headingBrazalete, float headingSemaforo);
 //(de frente) a 180 (mirando hacia el mismo lado que el semáforo).
 float desviacionEnfrentamiento(float headingBrazalete, float headingSemaforo);
 
+//Rumbo [0, 360) del eje x del magnetómetro proyectado en el plano horizontal,
+//es decir, hacia dónde apunta aunque la muñeca esté inclinada (tilt
+//compensation). (mx, my, mz): campo ya calibrado; (gx, gy, gz): lectura del
+//acelerómetro en el MISMO marco de ejes (en reposo apunta hacia arriba). No
+//hace falta normalizar ninguno de los dos vectores.
+float rumboCompensado(float mx, float my, float mz, float gx, float gy, float gz);
+
 #endif

@@ -36,3 +36,23 @@ float desviacionEnfrentamiento(float headingBrazalete, float headingSemaforo) {
     float delta_theta = arcoMenor(headingBrazalete, headingSemaforo);
     return fabsf(delta_theta - GRADOS_CIRCUNFERENCIA / 2);
 }
+
+float rumboCompensado(float mx, float my, float mz, float gx, float gy, float gz) {
+    //Con g hacia arriba, el este es m × g y el norte es la parte horizontal de m:
+    //  norte = m − (m·ĝ)ĝ        este = m × g
+    //El rumbo del eje x es atan2(este_x, norte_x). Proyectar m al plano
+    //horizontal y tomar atan2(y, x) en el marco del sensor (la fórmula de antes)
+    //sólo es exacto con la muñeca plana: daba 4° de error a 30° de inclinación
+    //y 16° a 30°/30°.
+    float g2 = gx * gx + gy * gy + gz * gz;
+    float m_dot_g = mx * gx + my * gy + mz * gz;
+    float norte_x = mx - (m_dot_g / g2) * gx;
+    float este_x  = my * gz - mz * gy;   // el módulo de g se cancela en atan2
+    float g_norma = sqrtf(g2);
+    float rumbo = atan2f(este_x / g_norma, norte_x) * RAD_A_GRADOS;
+    if (rumbo < 0.0f) {
+        rumbo += GRADOS_CIRCUNFERENCIA;
+    }
+    //atan2 de un ángulo diminuto negativo + 360 puede redondear a 360 exacto
+    return (rumbo >= GRADOS_CIRCUNFERENCIA) ? 0.0f : rumbo;
+}

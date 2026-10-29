@@ -65,6 +65,12 @@ bool ControladorPatrones::iniciar(Patron patron, uint32_t ahora) {
     return true;
 }
 
+bool ControladorPatrones::quietosDesde(uint32_t ahora, uint32_t ms) const {
+    if (!hubo_inicio_) return true;
+    uint32_t transcurrido = ahora - inicio_;
+    return transcurrido >= duracion_ultimo_ + ms;
+}
+
 void ControladorPatrones::cancelar() {
     // inicio_ y duracion_ultimo_ no se tocan: la separación y el silencio se
     // siguen contando como si el patrón hubiera terminado entero (más prudente)

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "../protocolo/protocolo_esp.h"
 #include "../vibracion/controlador_patrones.h"
+#include "../constantes.h"
 
 // ── Evaluador de paquetes del semáforo ───────────────────────────────────────
 // Compara cada paquete con el anterior para detectar EVENTOS (semáforo
@@ -18,6 +19,8 @@
 //   - Primer paquete de un semáforo          -> SEMAFORO_DETECTADO
 //   - Persona mal orientada                  -> GIRAR_* cada INTERVALO_GIRO_MS
 //   - Queda de frente al cruce               -> CRUCE_PERMITIDO / CRUCE_PROHIBIDO
+//     (de frente = CONFIRMACIONES_ORIENTACION lecturas seguidas bajo el umbral:
+//     la orientación va siempre antes que el aviso de la luz)
 //   - Cambia la luz estando de frente        -> CRUCE_PERMITIDO / CRUCE_PROHIBIDO
 //     (el cambio cuenta cuando CONFIRMACIONES_CAMBIO_LUZ paquetes seguidos lo
 //     repiten: un paquete suelto con otra luz no hace vibrar)
@@ -89,7 +92,13 @@ private:
     bool  orientacion_conocida_;  // hubo al menos una lectura válida
     bool  ultima_valida_;
     bool  orientado_;
+    uint8_t lecturas_de_frente_;  // lecturas válidas seguidas bajo el umbral
     float giro_;
+    // Últimas desviaciones válidas (con el signo del giro), para saber si la
+    // persona ya está girando hacia el cruce
+    float   historial_[LECTURAS_ACERCAMIENTO];
+    uint8_t n_historial_;
+    bool acercandose() const;
     bool     hubo_giro_;
     uint32_t ultimo_giro_;        // inicio del último pulso de orientación
 };

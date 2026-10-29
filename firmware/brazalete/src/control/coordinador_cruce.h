@@ -10,8 +10,9 @@
 // Una vuelta del loop mientras hay un semáforo a la vista, sin hardware:
 //   1. pasa el paquete nuevo (si llegó) al evaluador;
 //   2. cierra el patrón que ya terminó;
-//   3. a 2 Hz, y sólo si no vibra ningún motor (sus imanes alteran el
-//      magnetómetro), pide una lectura de orientación y se la pasa al evaluador;
+//   3. a 5 Hz, y sólo si ningún motor vibra ni vibró en los últimos
+//      ASENTAMIENTO_TRAS_VIBRAR_MS (sus imanes alteran el magnetómetro), pide
+//      una lectura de orientación y se la pasa al evaluador;
 //   4. deja que el evaluador inicie el patrón que corresponda;
 //   5. devuelve qué motor debe estar encendido.
 //

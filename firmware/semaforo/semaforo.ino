@@ -43,6 +43,10 @@ void setup() {
     } else {
         Serial.println("[SEMAFORO] Brújula inicializada correctamente.");
     }
+    // Sin calibración guardada se da un tiempo para calibrar antes de empezar
+    if (!ControladorBrujulaSemaforo::calibrada()) {
+        ControladorBrujulaSemaforo::calibrar(CALIBRACION_AL_ARRANCAR_MS);
+    }
 
     // Inicializar ESP-NOW
     if (!ComunicadorBrazalete::inicializar()) {
@@ -59,11 +63,29 @@ void setup() {
     Serial.println("[SEMAFORO] Inicialización completa. Iniciando ciclo FSM...");
 }
 
+// 'c' por el monitor serie: borra la calibración de la brújula y calibra de
+// nuevo (el watchdog del loop se apaga mientras tanto: la calibración bloquea)
+void atenderMonitorSerie() {
+    while (Serial.available() > 0) {
+        if (Serial.read() == 'c') {
+            ControladorBrujulaSemaforo::borrarCalibracion();
+            disableLoopWDT();
+            ControladorBrujulaSemaforo::calibrar(CALIBRACION_MANUAL_MS);
+            enableLoopWDT();
+        }
+    }
+}
+
 void loop() {
+    atenderMonitorSerie();
     unsigned long ahora = millis();
 
     // ── 1. Máquina de Estados (FSM) del Semáforo ─────────────────────────────
     if (ahora - tiempoInicioEstado >= duracionEstadoActual) {
+        // Diagnóstico: si el rumbo cambia varios grados entre una luz y otra,
+        // la corriente de los LEDs está desviando la brújula del semáforo
+        Serial.printf("[DIAG] Rumbo promedio al terminar la luz: %.1f deg\n",
+                      ControladorBrujulaSemaforo::headingActual);
         // Cambiar de estado
         if (estadoActualAutos == EstadoSemaforoAutos::VERDE) {
             estadoActualAutos = EstadoSemaforoAutos::ROJO;
@@ -106,7 +128,7 @@ void loop() {
         estado_semaforo payload;
         firmarPaqueteSemaforo(&payload); // "ACPI": el brazalete descarta paquetes sin firma
         payload.id = 1; // ID del semáforo en la red local
-        payload.grados = (uint16_t)ControladorBrujulaSemaforo::headingActual;
+        payload.grados = ControladorBrujulaSemaforo::gradosParaEnviar();
         payload.permitidoCruce = (estadoActualAutos == EstadoSemaforoAutos::ROJO) ? 1 : 0;
         payload.tiempo = tiempoRestante;
         sellarPaqueteSemaforo(&payload); // CRC-8: siempre después de llenar los campos

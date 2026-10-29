@@ -9,33 +9,18 @@
 //   3. Modo continuo, 200 Hz, ±8 G, OSR 512: escribir 0x1D en reg 0x09 (Control 1)
 // Lectura: 6 bytes desde reg 0x00, orden LSB-first por eje (X, Y, Z)
 //
-// Calibración hard-iron: Leaky Integrator
-//   offset_nuevo = offset_anterior * LEAKY_ALPHA + lectura_actual * LEAKY_BETA
-//   valor_corregido = lectura_actual - offset_acumulado
+// El driver sólo entrega la lectura cruda: la calibración (hard-iron y
+// escala) y el rumbo con tilt compensation los calcula ControladorBrujula.
 
 class ControladorMagnetometro {
-private:
-    // Lecturas crudas corregidas por hard-iron [LSB]
-    static float x;
-    static float y;
-    static float z;
-
-    // Offsets de calibración hard-iron (Leaky Integrator)
-    static float offset_x;
-    static float offset_y;
-    static float offset_z;
-
 public:
     static bool inicializar();
-    static bool leerPosicion();  // Retorna false si la lectura I2C falla
+    // Lee el campo crudo en LSB (x, y, z). Retorna false si la lectura I2C
+    // falla o si el chip avisa que un eje se saturó.
+    static bool leerCrudo(float crudo[3]);
     // Deja de medir (modo standby del chip) para ahorrar energía en el standby
     // del brazalete. inicializar() lo vuelve a poner en modo continuo.
     static bool dormir();
-
-    // Calcula el heading compensado por inclinación.
-    // Parámetros gx, gy, gz: aceleración normalizada en unidades g (de MPU6050).
-    // Fórmula de tilt compensation directa sobre vectores magnéticos.
-    static float calcularHeading(float gx, float gy, float gz);
 };
 
 #endif // QMC5883L_DRIVER_H

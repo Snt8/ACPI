@@ -1,8 +1,6 @@
 #include "qmc5883l.h"
 #include <Wire.h>
 #include <Arduino.h>
-#include <math.h>
-#include "../constantes.h"
 #include "../config.h"
 
 // ── Mapa de registros QMC5883L ────────────────────────────────────────────────
@@ -23,14 +21,8 @@
 // Valor recomendado por el datasheet para el periodo SET/RESET
 #define QMC5883L_PERIODO_REC 0x01
 #define QMC5883L_ID_ESPERADO 0xFF
-
-// ── Variables estáticas ───────────────────────────────────────────────────────
-float ControladorMagnetometro::x        = 0.0f;
-float ControladorMagnetometro::y        = 0.0f;
-float ControladorMagnetometro::z        = 0.0f;
-float ControladorMagnetometro::offset_x = 0.0f;
-float ControladorMagnetometro::offset_y = 0.0f;
-float ControladorMagnetometro::offset_z = 0.0f;
+// Registro de estado (0x06): bit[1] = OVL, algún eje saturado
+#define QMC5883L_ESTADO_OVL  0x02
 
 // ── Escritura de un registro ──────────────────────────────────────────────────
 static bool escribirRegistro(uint8_t reg, uint8_t valor) {
@@ -84,66 +76,33 @@ bool ControladorMagnetometro::dormir() {
     return escribirRegistro(QMC5883L_REG_CTRL1, QMC5883L_MODO_STANDBY);
 }
 
-// ── Lectura y calibración hard-iron ──────────────────────────────────────────
-bool ControladorMagnetometro::leerPosicion() {
+// ── Lectura cruda ────────────────────────────────────────────────────────────
+bool ControladorMagnetometro::leerCrudo(float crudo[3]) {
+    // Se leen 7 bytes: X, Y, Z y el registro de estado (0x06)
     Wire.beginTransmission(QMC5883L_ADDR);
     Wire.write(QMC5883L_REG_DATA);
     if (Wire.endTransmission(false) != 0) {
         return false;
     }
 
-    Wire.requestFrom((uint8_t)QMC5883L_ADDR, (uint8_t)6);
-    if (Wire.available() < 6) {
+    Wire.requestFrom((uint8_t)QMC5883L_ADDR, (uint8_t)7);
+    if (Wire.available() < 7) {
         return false;
     }
 
     // Lecturas en sentencias separadas: el orden de evaluación de los operandos
     // de "|" no está definido en C++ y podría invertir LSB y MSB.
-    uint8_t datos[6];
-    for (uint8_t i = 0; i < 6; i++) {
+    uint8_t datos[7];
+    for (uint8_t i = 0; i < 7; i++) {
         datos[i] = Wire.read();
     }
-    int16_t raw_x = (int16_t)(datos[0] | (datos[1] << 8));
-    int16_t raw_y = (int16_t)(datos[2] | (datos[3] << 8));
-    int16_t raw_z = (int16_t)(datos[4] | (datos[5] << 8));
-
-    float mx = (float)raw_x;
-    float my = (float)raw_y;
-    float mz = (float)raw_z;
-
-    offset_x = (offset_x * LEAKY_ALPHA) + (mx * LEAKY_BETA);
-    offset_y = (offset_y * LEAKY_ALPHA) + (my * LEAKY_BETA);
-    offset_z = (offset_z * LEAKY_ALPHA) + (mz * LEAKY_BETA);
-
-    x = mx - offset_x;
-    y = my - offset_y;
-    z = mz - offset_z;
-    return true;
-}
-
-// ── Cálculo de heading con tilt compensation ──────────────────────────────────
-// gx, gy, gz: componentes de gravedad normalizadas en unidades g (de MPU6050).
-// Fórmula especificada en el requisito SPIM:
-//   x_h = mx*(1 - gx²) + my*(-gx*gy) + mz*(-gx*gz)
-//   y_h = mx*(-gy*gx)  + my*(1 - gy²) + mz*(-gy*gz)
-//   heading = atan2(y_h, x_h) * (180/PI)  → normalizado a [0, 360)
-float ControladorMagnetometro::calcularHeading(float gx, float gy, float gz) {
-    // Proyectar campo magnético al plano horizontal compensando la inclinación
-    float x_h = (x * (1.0f - gx * gx))
-              + (y * (-gx * gy))
-              + (z * (-gx * gz));
-
-    float y_h = (x * (-gy * gx))
-              + (y * (1.0f - gy * gy))
-              + (z * (-gy * gz));
-
-    // Calcular ángulo azimut y convertir a grados
-    float heading = atan2f(y_h, x_h) * RAD_A_GRADOS;
-
-    // Normalizar al rango [0, 360)
-    if (heading < 0.0f) {
-        heading += GRADOS_CIRCUNFERENCIA;
+    // Bit OVL: algún eje se salió del rango (p. ej. un imán pegado al sensor).
+    // Esa lectura no sirve ni para el rumbo ni para la calibración.
+    if (datos[6] & QMC5883L_ESTADO_OVL) {
+        return false;
     }
-
-    return heading;
+    crudo[0] = (float)(int16_t)(datos[0] | (datos[1] << 8));
+    crudo[1] = (float)(int16_t)(datos[2] | (datos[3] << 8));
+    crudo[2] = (float)(int16_t)(datos[4] | (datos[5] << 8));
+    return true;
 }

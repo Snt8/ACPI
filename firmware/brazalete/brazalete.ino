@@ -61,6 +61,11 @@ void setup() {
     } else {
         Serial.println("[BOOT] Brújula lista.");
     }
+    // Sin calibración guardada (primer arranque o tras enviar 'c') se calibra
+    // aquí, con los motores todavía apagados y antes de activar el watchdog
+    if (!ControladorBrujula::calibrada()) {
+        ControladorBrujula::calibrar();
+    }
 
     // 3. Las radios (ESP-NOW y BLE) no se encienden aquí: el brazalete arranca
     //    en standby, que escucha al semáforo cada 5 s, y el BLE se enciende
@@ -79,9 +84,24 @@ void setup() {
     Serial.println("[BOOT] Inicializacion completa. Sistema en marcha.");
 }
 
+// 'c' por el monitor serie: borra la calibración de la brújula y reinicia,
+// así el arranque vuelve a calibrar
+void atenderMonitorSerie() {
+    while (Serial.available() > 0) {
+        if (Serial.read() == 'c') {
+            Serial.println("[CALIBRACION] Calibracion borrada; reiniciando para calibrar de nuevo...");
+            ControladorMotores::detenerMotor(ControladorMotores::AMBOS);
+            ControladorBrujula::borrarCalibracion();
+            Serial.flush();
+            ESP.restart();
+        }
+    }
+}
+
 void loop() {
     // Actualizar la Máquina de Estados principal (FSM)
     MaquinaEstados::actualizar();
+    atenderMonitorSerie();
 
     // Heartbeat de depuración
     unsigned long ahora = millis();

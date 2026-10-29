@@ -31,7 +31,7 @@ El flujo de información se ejecuta de la siguiente forma:
 ```
 
 1. **Semáforo (Infraestructura)**: Un ESP32 DevKit V1 equipado con un magnetómetro lee su orientación magnética estática y simula un ciclo de semáforo verde/rojo. Transmite su orientación (heading) y estado por ESP-NOW a 2Hz (cada 500ms).
-2. **Brazalete (Wearable)**: Actúa como el centro de cómputo en el borde. Lee su orientación tilt-compensada (acelerómetro + magnetómetro), y calcula la diferencia angular frente a la infraestructura. Si detecta que el usuario está correctamente enfrentado (`|Δθ - 180°| < 30°`), provee feedback háptico diferenciado mediante dos micromotores de vibración.
+2. **Brazalete (Wearable)**: Actúa como el centro de cómputo en el borde. Lee su orientación tilt-compensada (acelerómetro + magnetómetro), y calcula la diferencia angular frente a la infraestructura. Si detecta que el usuario está correctamente enfrentado (`|Δθ - 180°| < 5°`), provee feedback háptico diferenciado mediante dos micromotores de vibración.
 3. **App móvil (iOS y Android)**: Recibe mediante BLE los paquetes de telemetría del brazalete, avisa por voz los cambios del cruce y guarda los semáforos del usuario.
 4. **Grafana Cloud**: Ingesta los datos del usuario asíncronamente para generar mapas y analíticas en tiempo real.
 

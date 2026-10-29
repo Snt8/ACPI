@@ -115,11 +115,23 @@ STANDBY ──primer paquete "ACPI"──▶ [1] detectado
                                        sí ─▶ silencio
 ```
 
-- **De frente** significa `|Δθ − 180°| < 30°` (`UMBRAL_CRUCE_GRADOS`). Para volver a
-  "mal orientada" hay que pasar de 40° (`+ HISTERESIS_ORIENTACION_GRADOS`). Sin esta
-  banda, una lectura que oscila alrededor de 30° haría repetir el aviso de la luz sin
-  un evento real.
-- **Al volver a quedar de frente** después de haberse desviado (más de 40°), se avisa
+- **De frente** significa `|Δθ − 180°| < 5°` (`UMBRAL_CRUCE_GRADOS`, 30° hasta el
+  28 oct 2026) en **2 lecturas seguidas** (`CONFIRMACIONES_ORIENTACION`, 1 s quieta y
+  alineada). Para volver a "mal orientada" basta una lectura de más de 10°
+  (`+ HISTERESIS_ORIENTACION_GRADOS`). Sin esta banda, una lectura que oscila alrededor
+  de 5° haría repetir el aviso de la luz sin un evento real.
+- **La orientación va antes que la luz.** El aviso de la luz sólo suena con la
+  orientación confirmada (2 lecturas seguidas, 0.4 s a 5 Hz) y con la ÚLTIMA lectura
+  dentro del cono de 5°: la banda hasta 10° sólo protege un aviso ya dado. Si la
+  persona sale del cono mientras la luz espera su turno, no suena la luz (estaría
+  pasada) sino el giro. Mientras se confirma no se pide ningún pulso.
+- **Sin pulso de giro si ya se está acercando.** Mientras la desviación baje (al menos
+  1° en 3 lecturas, del mismo lado) no se repite el pulso: el pulso cada 3 s le decía
+  "sigue girando" justo antes de llegar, ocupaba los motores y el aviso de la luz (la
+  señal de "para") llegaba hasta 3 s tarde, con la persona ya pasada al otro lado.
+  Era la causa de que, tras sonar la luz, el brazalete indicara girar hacia el lado
+  contrario. Si la persona se detiene antes de llegar, el pulso vuelve.
+- **Al volver a quedar de frente** después de haberse desviado (más de 10°), se avisa
   otra vez la luz actual. Es un evento real: la persona se había salido del cruce.
 - **Cambio de luz con la persona mal orientada:** no vibra en ese momento; la luz
   nueva se avisa cuando queda de frente.
@@ -136,8 +148,14 @@ STANDBY ──primer paquete "ACPI"──▶ [1] detectado
   orientada". El evaluador además cortaría un pulso de orientación en curso, pero hoy
   eso no ocurre: mientras vibra un motor no se lee la brújula (siguiente punto). Se
   deja como defensa por si eso cambia.
-- **Mientras vibra un motor no se lee la brújula:** los imanes de los motores alteran
-  el magnetómetro. Se usa la última lectura buena.
+- **Mientras vibra un motor no se lee la brújula**, ni durante los 300 ms siguientes
+  (`ASENTAMIENTO_TRAS_VIBRAR_MS`: el motor sigue girando por inercia y la muñeca
+  sigue vibrando). Se usa la última lectura buena. La brújula se lee a 5 Hz.
+- **Diagnóstico:** tras cada patrón el monitor serie muestra `[DIAG] Tras ... el rumbo
+  cambio X deg`. Con la persona quieta X debería ser 0-1°; si es de varios grados, la
+  vibración (el motor o la carcasa que se corre en la muñeca) desvía la brújula.
+- **Sin calibrar la brújula** (ver `src/brujula/README.md`) todas las lecturas son
+  inválidas: suena "semáforo detectado" pero no hay pulsos de giro ni aviso de la luz.
 
 ## Standby
 
