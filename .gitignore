@@ -45,3 +45,13 @@ Thumbs.db
 *-backups/
 _autosave-*
 fp-info-cache
+
+# Informe de Infomatrix: plantilla, borradores, PDF de inscripción y fotos (se trabajan fuera de git;
+# las figuras de arquitectura de docs/figuras/ sí se versionan porque las usa acpi-website)
+docs/*infomatrix*.docx
+docs/IM_SUDAMERICA_*
+docs/formato-reporte-avanzado-cientifico.docx
+docs/figuras/*.jpeg
+docs/figuras/etitc-logo.png
+docs/figuras/infomatrix-logo.png
+docs/figuras/first-ACPI-prototipe.png
