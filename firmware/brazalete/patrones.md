@@ -25,7 +25,9 @@ Leyenda de los diagramas: `█` = vibrando, `·` = apagado, cada carácter = 100
 Las soldaduras de los motores son débiles, así que estas reglas no tienen excepciones:
 
 1. **Sin evento no hay vibración.** Los motores sólo se encienden mientras suena un
-   patrón, y un patrón sólo empieza por uno de los eventos de abajo.
+   patrón, y un patrón sólo empieza por uno de los eventos de abajo (o por la prueba
+   `TEST_ALERT` de la app, que suena el patrón 1 con estas mismas reglas; ver
+   `docs/ble-protocol.md`).
 2. **Cada evento vibra una sola vez.** Ningún patrón se repite solo. El único que se
    repite es el de orientación, y lo hace porque cada 3 s con la persona mal orientada
    cuenta como un evento nuevo.
@@ -116,15 +118,17 @@ STANDBY ──primer paquete "ACPI"──▶ [1] detectado
 ```
 
 - **De frente** significa `|Δθ − 180°| < 5°` (`UMBRAL_CRUCE_GRADOS`, 30° hasta el
-  28 oct 2026) en **2 lecturas seguidas** (`CONFIRMACIONES_ORIENTACION`, 1 s quieta y
-  alineada). Para volver a "mal orientada" basta una lectura de más de 10°
+  28 oct 2026) en **2 lecturas seguidas** (`CONFIRMACIONES_ORIENTACION`, 0.4 s a 5 Hz
+  quieta y alineada). Para volver a "mal orientada" basta una lectura de más de 10°
   (`+ HISTERESIS_ORIENTACION_GRADOS`). Sin esta banda, una lectura que oscila alrededor
   de 5° haría repetir el aviso de la luz sin un evento real.
 - **La orientación va antes que la luz.** El aviso de la luz sólo suena con la
   orientación confirmada (2 lecturas seguidas, 0.4 s a 5 Hz) y con la ÚLTIMA lectura
   dentro del cono de 5°: la banda hasta 10° sólo protege un aviso ya dado. Si la
   persona sale del cono mientras la luz espera su turno, no suena la luz (estaría
-  pasada) sino el giro. Mientras se confirma no se pide ningún pulso.
+  pasada) sino el giro. Mientras se confirma no se pide ningún pulso. Lo mismo al
+  cambiar la luz: si la persona estaba en la banda de 5°-10°, la luz nueva espera la
+  siguiente lectura (luz si vuelve al cono, giro si no).
 - **Sin pulso de giro si ya se está acercando.** Mientras la desviación baje (al menos
   1° en 3 lecturas, del mismo lado) no se repite el pulso: el pulso cada 3 s le decía
   "sigue girando" justo antes de llegar, ocupaba los motores y el aviso de la luz (la

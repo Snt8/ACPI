@@ -100,8 +100,10 @@ static_assert(VENTANA_ESCUCHA_STANDBY_MS < INTERVALO_ESCUCHA_STANDBY_MS,
 // Si loop() deja de volver durante este tiempo (algo se quedó pegado: un
 // periférico que no responde, una radio saturada), el ESP32 se reinicia solo y
 // arranca en standby con los motores apagados. Es el timeout del task watchdog
-// del core (CONFIG_ESP_TASK_WDT_TIMEOUT_S = 5). Nada del firmware puede
-// bloquear tanto: lo más largo es el light sleep entre escuchas.
+// del core (CONFIG_ESP_TASK_WDT_TIMEOUT_S = 5). Se activa al final de setup(),
+// así que la calibración de la brújula (hasta CALIBRACION_DURACION_MAX_MS, en
+// setup()) no cuenta. Dentro de loop() lo más largo es el light sleep entre
+// escuchas (3.8 s); apagar el BLE espera además hasta 500 ms la desconexión.
 #define TIMEOUT_WATCHDOG_LOOP_MS       5000UL
 
 static_assert(INTERVALO_ESCUCHA_STANDBY_MS - VENTANA_ESCUCHA_STANDBY_MS < TIMEOUT_WATCHDOG_LOOP_MS,

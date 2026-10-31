@@ -93,7 +93,7 @@ El código también compila con el core 2.x (los cambios de API de LEDC y ESP-NO
 3. Configurar en **Herramientas**:
    - Placa: **ESP32C3 Dev Module**
    - USB CDC On Boot: **Enabled** (sin esto el monitor serie no muestra nada)
-   - Partition Scheme: la de por defecto alcanza (el firmware ocupa ~94 % de 1.2 MB). Si crece, usar **Huge APP**.
+   - Partition Scheme: la de por defecto alcanza, pero justa (el firmware ocupa ~96 %: ~1 268 000 de 1 310 720 bytes). Si crece, usar **Huge APP**.
    - Si la placa se reinicia en bucle después de cargar, probar Flash Mode: **DIO**.
 4. Subir y abrir el monitor serie a **115200** baudios.
 

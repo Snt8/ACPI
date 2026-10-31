@@ -46,7 +46,8 @@ void setup() {
 
     Serial.begin(BAUD_RATE);
     delay(500);
-    Serial.println("\n[BOOT] Iniciando Brazalete ACPI v2.0...");
+    Serial.printf("\n[BOOT] Iniciando Brazalete ACPI (PCB v3.5, telemetria BLE v%d)...\n",
+                  TELEMETRIA_VERSION);
     Serial.printf("[BOOT] Motivo del ultimo reinicio: %s\n", motivoReinicio());
     Serial.println(motores_ok ? "[BOOT] Motores listos (apagados)."
                               : "[BOOT] [ERROR] Fallo al inicializar motores!");

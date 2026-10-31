@@ -1,7 +1,7 @@
 # Módulo: Comunicaciones Inalámbricas (Brazalete)
 
 ## Descripción General
-Este directorio contiene las capas de abstracción para la topología de red de doble enlace requerida por el Brazalete ACPI. El ESP32-C3 gestiona dos canales de radio de forma simultánea pero asíncrona: **ESP-NOW** para recibir comandos inmediatos desde el semáforo de infraestructura, y **Bluetooth Low Energy (BLE)** para actuar como servidor pasivo frente al Smartphone Android.
+Este directorio contiene las capas de abstracción para la topología de red de doble enlace requerida por el Brazalete ACPI. El ESP32-C3 gestiona dos canales de radio de forma asíncrona: **ESP-NOW** para recibir el estado del semáforo de infraestructura, y **Bluetooth Low Energy (BLE)** para actuar como servidor GATT frente a la app móvil (`app-movil/`, iOS y Android). Las dos radios sólo están encendidas a la vez en `SENSING_CROSSING`: en standby el BLE está apagado y el WiFi sólo se enciende en las ventanas de escucha (ver `src/control/README.md`).
 
 ---
 
@@ -20,11 +20,10 @@ En lugar de enviar un flujo continuo de bytes incomprensibles, el brazalete env�
 ```json
 {"v":2,"n":412,"hd":21,"st":1,"ok":true,"tr":18,"bt":-1,"id":1,"lz":1,"hs":200,"gr":-1,"br":1,"pt":4,"rx":20,"rs":-67}
 ```
-Pide un MTU de 185 (el paquete no cabe en el de 23 por defecto) y atiende los comandos `TEST_ALERT` y `VIBRATE_STOP` de la app (pantalla Diagnóstico).
+Acepta un MTU de hasta 185 (el paquete no cabe en el de 23 por defecto; lo negocia el móvil) y atiende los comandos `TEST_ALERT` y `VIBRATE_STOP` de la app (pantalla Diagnóstico), como mucho uno cada 200 ms. Atiende un móvil a la vez y vuelve a anunciarse cuando se desconecta.
 
 ### 2. Comunicación con el Semáforo (ESP-NOW)
-ESP-NOW permite conectividad sin enrutadores *peer-to-peer* (P2P). El brazalete expone una función de Callback (`onDatosRecibidos`) que se ejecuta a nivel de Interrupción de Hardware en el procesador.
-Al recibir el empaquetado estructurado (`estado_semaforo`), los bytes se transcriben en memoria y se reportan inmediatamente a la Máquina de Estados para resetear los temporizadores de Suspensión (Sleep).
+ESP-NOW permite conectividad sin enrutadores *peer-to-peer* (P2P). El callback `onDatosRecibidos` corre en la tarea de WiFi (no en `loop()`): sólo valida el paquete (tamaño, firma `"ACPI"`, CRC-8 y rangos) y lo deja en un buffer protegido. La FSM lo recoge desde `loop()` con `tomarPaquete()`, y es ella la que reinicia el temporizador de standby (ver `semaforo/README.md`).
 
 ---
 
@@ -37,30 +36,33 @@ Al recibir el empaquetado estructurado (`estado_semaforo`), los bytes se transcr
 
 ## Ejemplo de Uso
 
-Inicialización dual en el boot del microcontrolador:
+En el firmware las radios no se encienden en `setup()`: las enciende y apaga la FSM
+(`src/control/fsm.cpp` y `modo_standby.cpp`). Lo que hace en cada caso:
 
 ```cpp
 #include "comunicacion/semaforo/semaforo.h"
 #include "comunicacion/movil/movil.h"
 
-void setup() {
-    // Inicializar el radio Wi-Fi en modo Estación (necesario para ESP-NOW)
-    ComunicadorSemaforo::inicializar();
-    
-    // Inicializar la pila del radio Bluetooth LE
-    ComunicadorMovil::inicializar();
-}
+// Ventana de escucha del standby: WiFi en modo estación + ESP-NOW
+ComunicadorSemaforo::inicializar();
 
-void loop() {
-    // El receptor ESP-NOW es un callback automático invisible al loop.
-    
-    // Para notificar un nuevo estado al celular conectado:
-    ComunicadorMovil::enviarDatos(
-        headingActual, 
-        estadoFSM, 
-        orientacionCorrecta, 
-        tiempoSemaforo, 
-        nivelBateria
-    );
+// Al oír al semáforo (SENSING_CROSSING): se suma el BLE
+ComunicadorMovil::inicializar();
+
+// En cada vuelta de loop()
+estado_semaforo paquete;
+if (ComunicadorSemaforo::tomarPaquete(paquete)) {
+    // paquete.id, paquete.grados, paquete.permitidoCruce, paquete.tiempo
 }
+ComandoMovil comando = ComunicadorMovil::tomarComando();  // TEST_ALERT / VIBRATE_STOP
+
+// Cada 500 ms, si hay un móvil conectado (campos en paquete_telemetria.h)
+TelemetriaBle t = {};
+t.rumbo = 21;
+t.estado = 1;
+ComunicadorMovil::enviarTelemetria(t);
+
+// De vuelta a standby: primero el BLE, después el WiFi
+ComunicadorMovil::desinicializar();
+ComunicadorSemaforo::desinicializar();
 ```

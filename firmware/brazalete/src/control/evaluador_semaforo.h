@@ -94,6 +94,7 @@ private:
     bool  orientado_;
     uint8_t lecturas_de_frente_;  // lecturas válidas seguidas bajo el umbral
     float giro_;
+    float desviacion_;            // de la última lectura válida
     // Últimas desviaciones válidas (con el signo del giro), para saber si la
     // persona ya está girando hacia el cruce
     float   historial_[LECTURAS_ACERCAMIENTO];

@@ -532,3 +532,41 @@ PRUEBA(evaluador_cruzar_el_objetivo_no_cuenta_como_acercarse) {
     e.registrarOrientacion({true, 7.0f, -7.0f});
     VERIFICAR_IGUAL(e.orquestar(3000), Patron::GIRAR_IZQUIERDA);
 }
+
+PRUEBA(evaluador_cambio_de_luz_en_la_banda_de_histeresis_espera_volver_al_cono) {
+    // De frente con el verde ya avisado, la persona queda a 7° (dentro de la
+    // histéresis, sigue "de frente"). Cambia la luz: el rojo NO suena con esa
+    // lectura, porque la banda sólo protege un aviso ya dado (patrones.md).
+    // Con la siguiente lectura, o vuelve al cono y suena la luz, o se indica
+    // el giro.
+    ControladorPatrones c;
+    EvaluadorSemaforo e(c);
+    uint32_t t = 0;
+    deFrenteConLuzAvisada(e, c, t);
+    e.registrarOrientacion({true, 7.0f, 7.0f});
+    VERIFICAR(e.orientado());
+
+    t += 20000;
+    e.registrarPaquete(paquete(1, 90, 0));
+    VERIFICAR_IGUAL(e.registrarPaquete(paquete(1, 90, 0)), CambioPaquete::CAMBIO_A_PROHIBIDO);
+    VERIFICAR_IGUAL(e.orquestar(t), Patron::NINGUNO);
+
+    // Sigue a 7°: deja de estar "de frente" y se le indica el giro
+    e.registrarOrientacion({true, 7.0f, 7.0f});
+    VERIFICAR(!e.orientado());
+    VERIFICAR_IGUAL(e.orquestar(t + 200), Patron::GIRAR_DERECHA);
+
+    // Otra persona en el mismo caso que vuelve al cono: suena la luz nueva
+    ControladorPatrones c2;
+    EvaluadorSemaforo e2(c2);
+    uint32_t t2 = 0;
+    deFrenteConLuzAvisada(e2, c2, t2);
+    e2.registrarOrientacion({true, 7.0f, 7.0f});
+    t2 += 20000;
+    e2.registrarPaquete(paquete(1, 90, 0));
+    e2.registrarPaquete(paquete(1, 90, 0));
+    VERIFICAR_IGUAL(e2.orquestar(t2), Patron::NINGUNO);
+    e2.registrarOrientacion({true, 3.0f, 3.0f});
+    VERIFICAR(e2.orientado());
+    VERIFICAR_IGUAL(e2.orquestar(t2 + 200), Patron::CRUCE_PROHIBIDO);
+}

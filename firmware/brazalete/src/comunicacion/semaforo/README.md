@@ -15,8 +15,9 @@ El módulo está compuesto por los archivos:
 - **Clase *ComunicadorSemaforo***: Esta clase se encarga de recibir los paquetes
   que provienen del semáforo y dejarlos listos para que la FSM los lea desde `loop()`.
 - **Recepción segura**: el callback de ESP-NOW corre en la tarea de WiFi, no en
-  `loop()`. Sólo acepta paquetes con el tamaño exacto de `estado_semaforo` y la firma
-  `"ACPI"` (`esPaqueteSemaforo()`, en `src/protocolo/protocolo_esp.h`); los demás se
+  `loop()`. Sólo acepta paquetes con el tamaño exacto de `estado_semaforo`, la firma
+  `"ACPI"`, el CRC-8 correcto y los campos en rango (`esPaqueteSemaforo()`, en
+  `src/protocolo/protocolo_esp.h`); los demás se
   cuentan como descartados. El paquete válido queda en un buffer protegido con una
   sección crítica, así toda la lógica corre en un único hilo. Sólo se guarda el último
   paquete: si llegan dos antes de que la FSM lea, el anterior ya no sirve.
@@ -31,8 +32,10 @@ El módulo está compuesto por los archivos:
     Devuelve `false` si no llegó ninguno desde la última llamada.
   - **hayPaquete( )**: indica si hay un paquete sin tomar (lo usa el standby).
   - **descartarPendiente( )**: olvida el paquete sin tomar, si lo hay.
-  - **paquetesDescartados( )**: cuántos paquetes ESP-NOW se rechazaron por tamaño o
-    firma (sale en el heartbeat del monitor serie).
+  - **paquetesDescartados( )**: cuántos paquetes ESP-NOW se rechazaron por tamaño,
+    firma, CRC o rango (sale en el heartbeat del monitor serie).
+  - **rssiUltimoPaquete( )**: señal (dBm) del último paquete entregado por
+    `tomarPaquete()`; 0 si no hay dato. Va en la telemetría BLE (`rs`).
   - **onDatosRecibidos( )**: callback privado que valida el paquete y lo deja en el
     buffer.
 

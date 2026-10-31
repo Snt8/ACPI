@@ -1,7 +1,6 @@
 #include "mpu6050.h"
 #include <Wire.h>
 #include <Arduino.h>
-#include <math.h>
 #include "../constantes.h"
 #include "../config.h"
 
@@ -64,11 +63,4 @@ bool ControladorAcelerometro::leerDatos() {
     y = (float)raw_y / FACTOR_ESCALA_ACCEL;
     z = (float)raw_z / FACTOR_ESCALA_ACCEL;
     return true;
-}
-
-void ControladorAcelerometro::obtenerPitchRoll(float &pitch, float &roll) {
-    // Pitch: inclinación adelante/atrás
-    pitch = atan2f(-x, sqrtf((y * y) + (z * z))) * RAD_A_GRADOS;
-    // Roll: inclinación lateral
-    roll  = atan2f(y, z) * RAD_A_GRADOS;
 }

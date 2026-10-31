@@ -19,6 +19,7 @@ void EvaluadorSemaforo::reiniciar() {
     lecturas_de_frente_   = 0;
     n_historial_          = 0;
     giro_                 = 0.0f;
+    desviacion_           = 0.0f;
     hubo_giro_            = false;
     ultimo_giro_          = 0;
     luz_por_confirmar_    = 0;
@@ -88,6 +89,7 @@ void EvaluadorSemaforo::registrarOrientacion(const Orientacion& orientacion) {
 
     orientacion_conocida_ = true;
     giro_ = orientacion.giro;
+    desviacion_ = orientacion.desviacion;
 
     // Historial con signo: + a la derecha del cruce, − a la izquierda
     float con_signo = (orientacion.giro > 0.0f) ? orientacion.desviacion : -orientacion.desviacion;
@@ -167,8 +169,12 @@ Patron EvaluadorSemaforo::decidir(uint32_t ahora) {
         return (giro_ > 0.0f) ? Patron::GIRAR_DERECHA : Patron::GIRAR_IZQUIERDA;
     }
 
-    // 3. De frente: avisar la luz actual una sola vez
+    // 3. De frente: avisar la luz actual una sola vez, y sólo con la última
+    //    lectura dentro del cono. Si la luz cambió con la persona en la banda
+    //    de histéresis (5°-10°), se espera la lectura siguiente: o vuelve al
+    //    cono y suena la luz, o deja de estar de frente y se indica el giro.
     if (!cruce_notificado_) {
+        if (desviacion_ >= UMBRAL_CRUCE_GRADOS) return Patron::NINGUNO;
         cruce_notificado_ = true;
         return anterior_.permitidoCruce ? Patron::CRUCE_PERMITIDO : Patron::CRUCE_PROHIBIDO;
     }

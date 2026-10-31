@@ -20,9 +20,6 @@ public:
     static float getGx() { return x; }
     static float getGy() { return y; }
     static float getGz() { return z; }
-
-    // Obtiene pitch y roll en grados (mantiene compatibilidad con código existente)
-    static void obtenerPitchRoll(float &pitch, float &roll);
 };
 
 #endif // MPU6050_H

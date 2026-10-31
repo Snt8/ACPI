@@ -10,7 +10,8 @@
 
 // Receptor ESP-NOW de los paquetes del semáforo.
 // El callback de ESP-NOW corre en la tarea de WiFi, no en loop(): por eso sólo
-// valida el paquete (tamaño y firma "ACPI") y lo deja en un buffer protegido.
+// valida el paquete (tamaño, firma "ACPI", CRC-8 y rangos: esPaqueteSemaforo())
+// y lo deja en un buffer protegido.
 // La FSM lo recoge desde loop() con tomarPaquete(), así toda la lógica corre
 // en un único hilo y no hay carreras con el evaluador.
 class ComunicadorSemaforo {
@@ -22,7 +23,7 @@ public:
     static bool tomarPaquete(estado_semaforo& paquete);
     static bool hayPaquete(); //true si hay un paquete sin tomar
     static void descartarPendiente(); //Olvida el paquete sin tomar, si lo hay
-    static uint32_t paquetesDescartados(); //Paquetes ESP-NOW rechazados por tamaño o firma
+    static uint32_t paquetesDescartados(); //Paquetes ESP-NOW rechazados por esPaqueteSemaforo()
     // Señal (dBm) con que llegó el último paquete entregado por tomarPaquete().
     // 0 si el core no la informa (ESP-IDF 4) o todavía no llegó ninguno.
     static int8_t rssiUltimoPaquete();

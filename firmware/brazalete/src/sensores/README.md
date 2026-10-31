@@ -27,7 +27,7 @@ El driver sólo entrega el campo **crudo**: la calibración _Hard-Iron_ y la **T
 
 ## Dependencias
 - Biblioteca Estándar **Wire.h** de Arduino para las transferencias asíncronas vía Bus I2C.
-- `<math.h>` para algoritmos trigonométricos avanzados (`atan2f`, `sqrtf`).
+- `constantes.h` (`FACTOR_ESCALA_ACCEL`) y `config.h` (direcciones I2C). La trigonometría del rumbo está en `src/utils/` y `src/brujula/`.
 
 ---
 

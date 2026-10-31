@@ -63,7 +63,8 @@ Compara cada paquete con el anterior y lo clasifica:
 | Resultado | Cuándo |
 |---|---|
 | `SEMAFORO_NUEVO` | Primer paquete desde que se reinició (al salir de standby). |
-| `CAMBIO_A_PERMITIDO` / `CAMBIO_A_PROHIBIDO` | Cambió `permitidoCruce` respecto al paquete anterior. |
+| `CAMBIO_POR_CONFIRMAR` | Llegó un paquete con otra luz, pero todavía no `CONFIRMACIONES_CAMBIO_LUZ` (2) seguidos: no es un evento; sólo se actualizan los grados. |
+| `CAMBIO_A_PERMITIDO` / `CAMBIO_A_PROHIBIDO` | Cambió `permitidoCruce` y lo repitieron 2 paquetes seguidos. |
 | `SIN_CAMBIOS` | Misma luz; sólo cambian los grados o el tiempo restante (no es un evento). |
 | `IGNORADO` | Paquete de otro `id`: se sigue al primer semáforo hasta volver a standby. |
 
@@ -75,7 +76,8 @@ Con esos eventos y la orientación decide el patrón (ver `patrones.md`):
 
 "De frente" usa histéresis: se entra con desviación < 5° en dos lecturas seguidas y
 se sale con una lectura > 10°. La orientación va antes que la luz: el aviso de la luz
-sólo suena con la orientación confirmada. Sólo
+sólo suena con la orientación confirmada y con la última lectura dentro de 5° (la
+banda hasta 10° sólo protege un aviso ya dado, también cuando cambia la luz). Sólo
 pide patrones cuando el controlador está libre, así que la separación mínima de 3 s
 entre patrones se cumple siempre.
 
