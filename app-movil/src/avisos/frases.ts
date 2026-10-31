@@ -20,6 +20,7 @@ const FRASES_CONEXION: Record<EstadoConexion, string> = {
   apagado: 'Conexión con el brazalete detenida',
   'sin-permisos': 'Falta permiso de Bluetooth. Actívalo en los ajustes del teléfono',
   'bluetooth-apagado': 'El Bluetooth del teléfono está apagado',
+  'no-compatible': 'Este teléfono no tiene Bluetooth compatible con el brazalete',
   buscando: 'Buscando el brazalete',
   conectando: 'Conectando con el brazalete',
   conectado: 'Brazalete conectado',
@@ -49,6 +50,36 @@ function fraseCruce(t: Telemetria): string {
 const FRASE_SIN_CALIBRAR = 'La brújula del brazalete no está calibrada: no puede indicar hacia dónde girar';
 
 const sinCalibrar = (t: Telemetria | null) => t?.extendida?.brujula === 'sin-calibrar';
+
+// Títulos cortos de la tarjeta de estado; el detalle va en la frase
+const TITULOS_CONEXION: Record<Exclude<EstadoConexion, 'conectado'>, string> = {
+  apagado: 'Conexión detenida',
+  'sin-permisos': 'Falta un permiso',
+  'bluetooth-apagado': 'Bluetooth apagado',
+  'no-compatible': 'Sin Bluetooth',
+  // El brazalete sólo enciende el BLE cerca de un semáforo
+  buscando: 'Sin semáforo cerca',
+  conectando: 'Conectando',
+};
+
+const TITULOS_CRUCE: Record<EstadoCruce, string> = {
+  permitido: 'Verde peatonal',
+  prohibido: 'Rojo peatonal',
+  'mal-orientado': 'Mal orientado',
+  panico: 'Pánico',
+  desconocido: 'Estado desconocido',
+};
+
+/** Título de la tarjeta de estado */
+export function tituloEstado({ conexion, telemetria }: Instantanea): string {
+  if (conexion !== 'conectado') {
+    return TITULOS_CONEXION[conexion];
+  }
+  if (!telemetria) {
+    return 'Semáforo detectado';
+  }
+  return sinCalibrar(telemetria) ? 'Brújula sin calibrar' : TITULOS_CRUCE[telemetria.estado];
+}
 
 /** Frase completa del estado actual, para la tarjeta de estado y "Repetir estado" */
 export function fraseEstado({ conexion, telemetria }: Instantanea): string {
@@ -80,9 +111,17 @@ export function detectarAviso(anterior: Instantanea, actual: Instantanea): Aviso
       return { texto: 'Semáforo detectado', prioridad: 'normal' };
     }
     if (anterior.conexion === 'conectado') {
-      return { texto: 'Brazalete desconectado', prioridad: 'alta' };
+      // Si el brazalete ya no oía al semáforo, se desconectó porque volvió a standby al
+      // alejarse: es lo normal y no se anuncia como un error (guía, sección 3)
+      return anterior.telemetria?.extendida?.paquetesSemaforo === 0
+        ? { texto: 'Semáforo fuera de alcance', prioridad: 'normal' }
+        : { texto: 'Brazalete desconectado', prioridad: 'alta' };
     }
-    if (actual.conexion === 'sin-permisos' || actual.conexion === 'bluetooth-apagado') {
+    if (
+      actual.conexion === 'sin-permisos' ||
+      actual.conexion === 'bluetooth-apagado' ||
+      actual.conexion === 'no-compatible'
+    ) {
       return { texto: FRASES_CONEXION[actual.conexion], prioridad: 'normal' };
     }
     return null;

@@ -12,6 +12,10 @@ const config: ExpoConfig = {
     icon: './assets/expo.icon',
     bundleIdentifier: 'com.snt8.acpi',
     supportsTablet: false,
+    infoPlist: {
+      // Seguir buscando y recibiendo la telemetría con la app en segundo plano
+      UIBackgroundModes: ['bluetooth-central'],
+    },
   },
   android: {
     package: 'com.snt8.acpi',
@@ -45,6 +49,10 @@ const config: ExpoConfig = {
       'react-native-ble-manager',
       {
         bluetoothAlwaysPermission: 'ACPI usa Bluetooth para conectarse a tu brazalete.',
+        // Android 12+: BLUETOOTH_SCAN con neverForLocation, para buscar el brazalete sin
+        // pedir la ubicación (ble/decisiones.ts, permisosAndroid). La ubicación la sigue
+        // declarando expo-location para el GPS.
+        neverForLocation: true,
       },
     ],
     '@maplibre/maplibre-react-native',

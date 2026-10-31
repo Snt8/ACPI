@@ -51,11 +51,18 @@ export async function iniciarBrazalete() {
     return;
   }
   const crear = useBrazalete.getState().simulado ? crearClienteSimulado : crearClienteBle;
-  cliente = crear(eventos);
+  const nuevo = crear(eventos);
+  cliente = nuevo;
   try {
-    await cliente.iniciar();
+    // El cliente BLE reintenta solo si falla el Bluetooth; esto es para un error inesperado
+    await nuevo.iniciar();
   } catch (error) {
     registrar(`No se pudo iniciar: ${String(error)}`);
+    // Se suelta para que "Reiniciar conexión" o el próximo arranque lo intenten de nuevo
+    if (cliente === nuevo) {
+      cliente = null;
+      await nuevo.detener().catch(() => {});
+    }
   }
 }
 

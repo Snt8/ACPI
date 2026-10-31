@@ -1,5 +1,4 @@
-import type { ClienteBrazalete, EventosCliente } from '@/ble/cliente';
-import { parsearTelemetria } from '@/protocolo/brazalete';
+import { entregarPaquete, type ClienteBrazalete, type EventosCliente } from '@/ble/cliente';
 
 const INTERVALO_PAQUETES_MS = 500; // igual que INTERVALO_TELEMETRIA_BLE_MS del firmware
 const ESPERA_CONEXION_MS = 2000;
@@ -61,13 +60,10 @@ export function crearClienteSimulado(eventos: EventosCliente): ClienteBrazalete 
         eventos.alCambiarConexion('conectado');
         eventos.alRegistrar('Conectado al brazalete simulado');
         const paquetes = paquetesSimulados();
-        intervalo = setInterval(() => {
-          const texto = paquetes.next().value as string;
-          const telemetria = parsearTelemetria(texto);
-          if (telemetria) {
-            eventos.alRecibirTelemetria(telemetria, texto);
-          }
-        }, INTERVALO_PAQUETES_MS);
+        intervalo = setInterval(
+          () => entregarPaquete(eventos, paquetes.next().value as string),
+          INTERVALO_PAQUETES_MS,
+        );
       }, ESPERA_CONEXION_MS);
     },
 

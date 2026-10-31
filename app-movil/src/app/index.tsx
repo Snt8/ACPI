@@ -2,21 +2,13 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { anunciar } from '@/avisos/anunciar';
-import { fraseEstado } from '@/avisos/frases';
+import { fraseEstado, tituloEstado } from '@/avisos/frases';
 import { useBrazalete } from '@/brazalete/estado';
 import { Boton } from '@/components/boton';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Spacing, type ThemeColor } from '@/constants/theme';
 import type { EstadoCruce } from '@/protocolo/brazalete';
-
-const TITULOS: Record<EstadoCruce, string> = {
-  permitido: 'Verde peatonal',
-  prohibido: 'Rojo peatonal',
-  'mal-orientado': 'Gira hacia el cruce',
-  panico: 'Pánico',
-  desconocido: 'Estado desconocido',
-};
 
 const COLORES: Partial<Record<EstadoCruce, ThemeColor>> = {
   permitido: 'permitido',
@@ -30,7 +22,7 @@ export default function PantallaEstado() {
   const simulado = useBrazalete((s) => s.simulado);
   const frase = fraseEstado({ conexion, telemetria });
 
-  const titulo = conexion !== 'conectado' ? 'Sin semáforo' : telemetria ? TITULOS[telemetria.estado] : 'Conectado';
+  const titulo = tituloEstado({ conexion, telemetria });
   const colorTitulo = (telemetria && COLORES[telemetria.estado]) || 'text';
   const repetir = () => anunciar({ texto: frase, prioridad: 'alta' });
 

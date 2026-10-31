@@ -1,9 +1,10 @@
-import type { Comando, Telemetria } from '@/protocolo/brazalete';
+import { parsearTelemetria, type Comando, type Telemetria } from '@/protocolo/brazalete';
 
 export type EstadoConexion =
   | 'apagado' // el cliente no se inició
   | 'sin-permisos'
   | 'bluetooth-apagado'
+  | 'no-compatible' // el teléfono no tiene Bluetooth de bajo consumo
   | 'buscando'
   | 'conectando'
   | 'conectado';
@@ -26,3 +27,13 @@ export interface ClienteBrazalete {
 }
 
 export type CrearCliente = (eventos: EventosCliente) => ClienteBrazalete;
+
+/** Entrega un paquete de telemetría; si no es válido lo deja en el registro y sigue */
+export function entregarPaquete(eventos: EventosCliente, texto: string) {
+  const telemetria = parsearTelemetria(texto);
+  if (telemetria) {
+    eventos.alRecibirTelemetria(telemetria, texto);
+  } else {
+    eventos.alRegistrar(`Paquete descartado: ${texto}`);
+  }
+}

@@ -15,7 +15,7 @@ Si se cambia un campo, hay que cambiarlo en los dos lados y en este documento. E
 
 El brazalete se anuncia con el nombre **`ACPI_Brazalete`** y sólo enciende el BLE cerca de un semáforo: en standby (30 s sin paquetes del semáforo) el BLE está apagado. La app re-escanea y reconecta sola.
 
-- **Servicio**: `12345678-1234-1234-1234-123456789abc` (va en el *advertising*: iOS sólo escanea en segundo plano filtrando por servicio).
+- **Servicio**: `12345678-1234-1234-1234-123456789abc` (va en el *advertising*: iOS sólo escanea en segundo plano filtrando por servicio). La app busca por este UUID y no exige el nombre: el nombre va en la *scan response* e iOS puede mostrar el de un firmware anterior.
 - **TX (Notify)**: `87654321-4321-4321-4321-cba987654321` — telemetría, brazalete → app.
 - **RX (Write)**: `11111111-2222-3333-4444-555555555555` — comandos, app → brazalete.
 - **MTU**: el brazalete acepta hasta **185** (`MTU_BLE` en `movil.cpp`). El paquete mide hasta 160 bytes y una notificación lleva MTU − 3: con el MTU por defecto (23) llegaría cortado. Android lo pide al conectar (`requestMTU(185)` en `cliente-ble.ts`); iOS lo negocia solo.
@@ -52,7 +52,7 @@ Cada **500 ms**, mientras hay un semáforo a la vista y un móvil conectado, el 
 | **`gr`** | Entero | `-180`-`180` | Giro para quedar de frente: positivo = derecha, negativo = izquierda. | Diagnóstico; a futuro, aviso por voz detallado. |
 | **`br`** | Entero | `0`-`2` | Brújula: `0` **sin calibrar** (el brazalete no indica giros ni la luz hasta calibrarla), `1` lectura válida, `2` lectura descartada (muñeca en movimiento, giro brusco o sensor). | Avisar por voz que falta calibrar. |
 | **`pt`** | Entero | `0`-`5` | Patrón que vibra en ese momento: `0` ninguno, `1` semáforo detectado, `2` girar a la derecha, `3` girar a la izquierda, `4` verde, `5` rojo. | Diagnóstico. |
-| **`rx`** | Entero | `0`-`32` | Paquetes del semáforo seguido recibidos en los últimos 10 s. El semáforo manda 2 por segundo: **20 = sin pérdidas**. | Métrica de paquetes ESP-NOW perdidos. |
+| **`rx`** | Entero | `0`-`32` | Paquetes del semáforo seguido recibidos en los últimos 10 s (el brazalete guarda las últimas 32 llegadas, `MAX_LLEGADAS` en `fsm.cpp`). El semáforo manda 2 por segundo: **20 = sin pérdidas**. | Métrica de paquetes ESP-NOW perdidos. |
 | **`rs`** | Entero | `-127`-`0` | Señal (RSSI, dBm) del último paquete del semáforo. `0` = sin dato. | Métrica de alcance. |
 
 La app es tolerante: un JSON cortado o sin `st` se descarta sin cortar la conexión, y un campo de la versión 2 que falte o venga fuera de rango queda como desconocido (`null`) sin descartar el paquete.

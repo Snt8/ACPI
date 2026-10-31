@@ -147,8 +147,9 @@ Reglas del audio:
 
 ### 4.4 Menos pasos
 - Sin cuentas, sin login, sin formularios.
-- Emparejamiento automático por nombre `ACPI_Brazalete`; la lista de dispositivos sólo
-  aparece si hay más de uno.
+- Conexión automática, sin emparejar en los ajustes del sistema: la app busca el UUID
+  del servicio del brazalete (no el nombre, que iOS puede tener guardado de un firmware
+  anterior); la lista de dispositivos sólo aparece si hay más de uno.
 - Los permisos se piden con una explicación hablada antes del diálogo del sistema y,
   si se niegan, la app dice exactamente qué ajuste abrir.
 
@@ -221,8 +222,11 @@ el brazalete sale de standby.
   `neverForLocation`) y `BLUETOOTH_CONNECT` en Android 12+, y pedir excluir la app de
   la optimización de batería (algunos fabricantes matan servicios igual; documentarlo en
   el tutorial).
-- Reintentos de conexión con espera creciente (2 s, 5 s, 10 s… máximo 30 s) mientras
-  la app esté activa.
+- Mientras no está conectada, la app busca sin pausas: con la app al frente, búsquedas
+  de 30 s a máxima velocidad que se encadenan (respetando el límite de Android de 5
+  búsquedas cada 30 s); en segundo plano, búsquedas largas de bajo consumo. Sólo tras
+  un error (búsqueda que no arranca, conexión que falla o tarda más de 10 s) espera
+  2 s, 5 s, 10 s… máximo 30 s. Lógica en `app-movil/src/ble/decisiones.ts`.
 
 ---
 

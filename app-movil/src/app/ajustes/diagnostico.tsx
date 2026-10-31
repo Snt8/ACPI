@@ -10,7 +10,7 @@ import { BottomTabInset, Spacing } from '@/constants/theme';
 import type { Comando } from '@/protocolo/brazalete';
 import { encolar, useEstadoTelemetria, vaciarCola } from '@/telemetria/cola';
 
-/** Equivalente al BLEDebugFragment de la app Kotlin: para el equipo, no para el uso diario */
+/** Conexión, telemetría cruda, comandos de prueba y registro: para el equipo, no para el uso diario */
 export default function PantallaDiagnostico() {
   const conexion = useBrazalete((s) => s.conexion);
   const telemetria = useBrazalete((s) => s.telemetria);

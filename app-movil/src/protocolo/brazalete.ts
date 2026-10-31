@@ -6,6 +6,9 @@ export const UUID_SERVICIO = '12345678-1234-1234-1234-123456789abc';
 export const UUID_TX = '87654321-4321-4321-4321-cba987654321'; // notify: brazalete → app
 export const UUID_RX = '11111111-2222-3333-4444-555555555555'; // write: app → brazalete
 
+// iOS entrega los UUID en mayúsculas y Android en minúsculas
+export const mismoUuid = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+
 // Comandos de diagnóstico que acepta la característica RX. El brazalete los
 // atiende respetando la separación de 3 s entre patrones (patrones.md).
 export type Comando = 'TEST_ALERT' | 'VIBRATE_STOP';
@@ -54,7 +57,7 @@ export interface TelemetriaExtendida {
   giro: number | null; // "gr": grados para quedar de frente, -180..180 (+ derecha)
   brujula: EstadoBrujula | null; // "br"
   patron: PatronVibracion | null; // "pt"
-  paquetesSemaforo: number | null; // "rx": paquetes del semáforo en los últimos 10 s (20 = todos)
+  paquetesSemaforo: number | null; // "rx": paquetes del semáforo en los últimos 10 s, 0-32 (20 = todos)
   rssi: number | null; // "rs": dBm del último paquete del semáforo
 }
 
@@ -86,7 +89,8 @@ function extendida(datos: Record<string, unknown>): TelemetriaExtendida {
     giro: enRango(gr, -180, 180),
     brujula: esEntero(br) ? (BRUJULAS[br] ?? null) : null,
     patron: esEntero(pt) ? (PATRONES[pt] ?? null) : null,
-    paquetesSemaforo: enRango(rx, 0, 255),
+    // El brazalete guarda las últimas 32 llegadas (MAX_LLEGADAS en fsm.cpp)
+    paquetesSemaforo: enRango(rx, 0, 32),
     rssi,
   };
 }

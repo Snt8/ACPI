@@ -108,6 +108,11 @@ describe('parsearTelemetria, versión 2', () => {
   it('la luz llega aunque la persona esté mal orientada', () => {
     expect(parsearTelemetria('{"v":2,"st":2,"ok":false,"lz":0}')?.extendida?.verde).toBe(false);
   });
+
+  it('"rx" va de 0 a 32, como el contador del brazalete', () => {
+    expect(parsearTelemetria('{"v":2,"st":0,"rx":32}')?.extendida?.paquetesSemaforo).toBe(32);
+    expect(parsearTelemetria('{"v":2,"st":0,"rx":33}')?.extendida?.paquetesSemaforo).toBeNull();
+  });
 });
 
 describe('conversión de bytes', () => {
