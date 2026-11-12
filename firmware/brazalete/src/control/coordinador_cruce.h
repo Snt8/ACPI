@@ -58,6 +58,10 @@ public:
     // que se sigue (los de otro id no cuentan)
     bool sinPaquetes(uint32_t ahora) const;
 
+    // true si hay un semáforo y un paquete que confirma su luz llegó hace menos
+    // de LUZ_VIGENTE_MS: sólo entonces la luz de ultimoPaquete() es la actual
+    bool luzVigente(uint32_t ahora) const;
+
     const EvaluadorSemaforo&   evaluador() const { return evaluador_; }
     const ControladorPatrones& patrones() const { return patrones_; }
 
@@ -65,6 +69,9 @@ private:
     ControladorPatrones patrones_;   // debe declararse antes que el evaluador
     EvaluadorSemaforo   evaluador_;
     uint32_t            ultimo_paquete_;
+    // Último paquete que CONFIRMA la luz guardada (no uno "por confirmar"): tras
+    // un corte, el primer paquete con otra luz no vuelve vigente a la vieja
+    uint32_t            ultima_luz_;
     uint32_t            ultimo_muestreo_;
 };
 

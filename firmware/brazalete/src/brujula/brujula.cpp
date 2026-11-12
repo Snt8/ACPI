@@ -6,6 +6,7 @@
 #include <Arduino.h>
 #include <Preferences.h>
 #include <math.h>
+#include <string.h>
 #include "../config.h"
 #include "../constantes.h"
 #include "../utils/calcular_direccion.h"
@@ -30,6 +31,10 @@ bool calibracion_cargada = false;  // ya se intentó leer la guardada
 const char* const NVS_ESPACIO = "brujula";
 const char* const NVS_CLAVE   = "cal_v2";  // v2: con detección de ejes (obliga a recalibrar)
 const char* const NVS_CLAVE_EJES = "ejes_acel";
+const char* const NVS_CLAVE_RECALIBRAR = "recal";  // 1 = calibrar en el próximo arranque
+
+// Por qué la última lectura no sirvió (se muestra en [HDG])
+const char* motivo_invalida = "sin leer";
 
 // Orientación del acelerómetro respecto al magnetómetro (ejes_acelerometro.h).
 // Se detecta al calibrar y se guarda; mientras no haya una guardada se usa la
@@ -66,35 +71,35 @@ void guardarMuestraEjes(const float g[3], const float m[3]) {
     n_muestras_ejes++;
 }
 
-// Con la calibración ya lista, elige la orientación del acelerómetro y la guarda
-void detectarEjes(const CalibracionMagnetica& cal) {
-    for (int i = 0; i < n_muestras_ejes; i++) cal.corregir(muestras_m[i], muestras_m[i]);
+// Copia corregida de las muestras del magnetómetro: evaluarEjes() se llama
+// varias veces durante la calibración y no puede pisar las originales
+float muestras_m_corr[MAX_MUESTRAS_EJES][3];
+
+struct ResultadoEjes {
+    int   orientacion;  // -1 si no hubo muestras quietas suficientes
+    bool  clara;        // orientacionAcelClara(): se puede guardar
+    float variacion;    // de la elegida, grados
+    float segunda;      // de la siguiente mejor, grados
+    float inclinadas;   // fracción de muestras inclinadas (0-1)
+};
+
+// Elige la orientación del acelerómetro con la calibración actual
+ResultadoEjes evaluarEjes(const CalibracionMagnetica& cal) {
+    for (int i = 0; i < n_muestras_ejes; i++) cal.corregir(muestras_m[i], muestras_m_corr[i]);
     float disp[NUM_ORIENTACIONES_ACEL];
-    int o = detectarOrientacionAcel(muestras_g, muestras_m, n_muestras_ejes, disp);
-    if (o < 0) {
-        Serial.println(F("[CALIBRACION] No hubo muestras quietas para revisar los ejes del acelerometro"));
-        return;
-    }
-    // La segunda mejor, para ver si la elección es clara
-    float segunda = 1e9f;
+    ResultadoEjes r;
+    r.orientacion = detectarOrientacionAcel(muestras_g, muestras_m_corr, n_muestras_ejes, disp);
+    r.inclinadas  = fraccionInclinadaAcel(muestras_g, n_muestras_ejes, INCLINACION_MINIMA_EJES_GRADOS);
+    r.variacion = r.segunda = 0.0f;
+    r.clara = false;
+    if (r.orientacion < 0) return r;
+    r.variacion = disp[r.orientacion];
+    r.segunda = 1e9f;
     for (int k = 0; k < NUM_ORIENTACIONES_ACEL; k++) {
-        if (k != o && disp[k] < segunda) segunda = disp[k];
+        if (k != r.orientacion && disp[k] < r.segunda) r.segunda = disp[k];
     }
-    Serial.printf("[CALIBRACION] Acelerometro girado %s respecto al magnetometro "
-                  "(variacion %.1f deg; la siguiente opcion %.1f deg)\n",
-                  nombreOrientacionAcel(o), disp[o], segunda);
-    if (segunda < 2.0f * disp[o]) {
-        Serial.println(F("[CALIBRACION] AVISO: la eleccion no es clara; calibra de nuevo inclinando mas"));
-    }
-    if (o != ROTACION_ACELEROMETRO_GRADOS / 90) {
-        Serial.printf("[CALIBRACION] (config.h decia %d; se usa lo detectado)\n", ROTACION_ACELEROMETRO_GRADOS);
-    }
-    orientacion_acel = o;
-    Preferences prefs;
-    if (prefs.begin(NVS_ESPACIO, false)) {
-        prefs.putUChar(NVS_CLAVE_EJES, (uint8_t)o);
-        prefs.end();
-    }
+    r.clara = orientacionAcelClara(muestras_g, n_muestras_ejes, r.orientacion, disp);
+    return r;
 }
 
 void cargarCalibracion() {
@@ -120,11 +125,20 @@ void cargarCalibracion() {
     }
 }
 
-bool guardarCalibracion() {
+// Guarda la calibración y la orientación del acelerómetro y las vuelve a leer
+// para comprobar que quedaron bien: si sólo quedara una de las dos, al
+// reiniciar el rumbo cambiaría (es lo que se ve como "tras apagarlo quedó
+// desfasado"). false si algo no se escribió o no coincide.
+bool guardarCalibracion(int orientacion) {
     Preferences prefs;
     if (!prefs.begin(NVS_ESPACIO, false)) return false;
-    bool ok = prefs.putBytes(NVS_CLAVE, &calibracion.datos(), sizeof(DatosCalibracion)) ==
-              sizeof(DatosCalibracion);
+    const DatosCalibracion& d = calibracion.datos();
+    bool ok = prefs.putBytes(NVS_CLAVE, &d, sizeof(d)) == sizeof(d);
+    ok = ok && prefs.putUChar(NVS_CLAVE_EJES, (uint8_t)orientacion) == 1;
+    DatosCalibracion leida;
+    ok = ok && prefs.getBytes(NVS_CLAVE, &leida, sizeof(leida)) == sizeof(leida) &&
+         memcmp(&leida, &d, sizeof(d)) == 0 &&
+         prefs.getUChar(NVS_CLAVE_EJES, 0xFF) == (uint8_t)orientacion;
     prefs.end();
     return ok;
 }
@@ -194,6 +208,7 @@ void ControladorBrujula::obtenerHeading() {
     // Si cualquier sensor falló, invalidar lectura inmediatamente — no continuar
     if (!sensores_ok) {
         lecturaValida = false;
+        motivo_invalida = "fallo de lectura de un sensor";
         tiempoUltimaLectura = ahora;  // Resetear referencia para evitar bypass del safety check
         return;
     }
@@ -201,6 +216,7 @@ void ControladorBrujula::obtenerHeading() {
     // 2. Sin calibración el rumbo puede estar desviado decenas de grados
     if (!calibracion.lista()) {
         lecturaValida = false;
+        motivo_invalida = "brujula sin calibrar";
         Serial.println(F("[BRUJULA] Sin calibrar: no se indica orientacion"));
         return;
     }
@@ -209,6 +225,7 @@ void ControladorBrujula::obtenerHeading() {
     float g_norma = sqrtf(g[0] * g[0] + g[1] * g[1] + g[2] * g[2]);
     if (fabsf(g_norma - 1.0f) > TOLERANCIA_GRAVEDAD_G) {
         lecturaValida = false;
+        motivo_invalida = "muneca en movimiento";
         tiempoUltimaLectura = ahora;
         Serial.printf("[BRUJULA] Muneca en movimiento (%.2f g) — lectura invalida\n", g_norma);
         return;
@@ -235,6 +252,7 @@ void ControladorBrujula::obtenerHeading() {
         if (delta > UMBRAL_DELTA_HEADING) {
             // Lectura rechazada: cambio de heading demasiado rápido
             lecturaValida = false;
+            motivo_invalida = "giro brusco";
             Serial.printf("[BRUJULA] Safety: delta=%.1f deg en %lums — lectura invalida\n",
                           delta, dt);
             tiempoUltimaLectura = ahora;
@@ -248,6 +266,7 @@ void ControladorBrujula::obtenerHeading() {
     headingAnterior     = nuevo_heading;
     tiempoUltimaLectura = ahora;
     lecturaValida       = true;
+    motivo_invalida     = "";
 }
 
 // ── Estado de validez de la última lectura ────────────────────────────────────
@@ -255,25 +274,44 @@ bool ControladorBrujula::headingValido() {
     return lecturaValida;
 }
 
+const char* ControladorBrujula::motivoInvalida() {
+    return lecturaValida ? "" : motivo_invalida;
+}
+
 // ── Calibración ──────────────────────────────────────────────────────────────
 bool ControladorBrujula::calibrada() {
     return calibracion.lista();
 }
 
-void ControladorBrujula::borrarCalibracion() {
+void ControladorBrujula::pedirRecalibracion() {
     Preferences prefs;
     if (prefs.begin(NVS_ESPACIO, false)) {
-        prefs.remove(NVS_CLAVE);
-        prefs.remove(NVS_CLAVE_EJES);
+        prefs.putUChar(NVS_CLAVE_RECALIBRAR, 1);
         prefs.end();
     }
-    calibracion.reiniciar();
-    lecturaValida = false;
+}
+
+bool ControladorBrujula::recalibracionPedida() {
+    Preferences prefs;
+    if (!prefs.begin(NVS_ESPACIO, true)) return false;
+    bool pedida = prefs.getUChar(NVS_CLAVE_RECALIBRAR, 0) == 1;
+    prefs.end();
+    return pedida;
 }
 
 bool ControladorBrujula::calibrar() {
-    Serial.println(F("[CALIBRACION] Gira el brazalete en todas direcciones (tambien boca abajo),"));
-    Serial.println(F("[CALIBRACION] como dibujando un 8, lejos de objetos metalicos y del celular."));
+    Serial.println(F("[CALIBRACION] Gira el brazalete en todas direcciones: de lado, muneca arriba y"));
+    Serial.println(F("[CALIBRACION] abajo, boca abajo, como dibujando un 8, lejos de metales y del celular."));
+    Serial.println(F("[CALIBRACION] Al terminar bien vibra 1 vez largo; si falla, 3 veces corto."));
+    // El pedido se atiende una sola vez: si esta calibración falla o se corta
+    // la batería, el próximo arranque no vuelve a calibrar solo
+    {
+        Preferences prefs;
+        if (prefs.begin(NVS_ESPACIO, false)) {
+            prefs.remove(NVS_CLAVE_RECALIBRAR);
+            prefs.end();
+        }
+    }
     calibracion.reiniciar();
     n_muestras_ejes = 0;
     paso_muestras = 1;
@@ -283,6 +321,7 @@ bool ControladorBrujula::calibrar() {
     unsigned long ultimo_crecimiento = inicio;
     unsigned long ultimo_aviso = inicio;
     float spans_ref[3] = {0, 0, 0};
+    ResultadoEjes ejes = {-1, false, 0.0f, 0.0f, 0.0f};
 
     while (millis() - inicio < CALIBRACION_DURACION_MAX_MS) {
         float m[3];
@@ -308,26 +347,69 @@ bool ControladorBrujula::calibrar() {
 
         if (ahora - ultimo_aviso >= 1000) {
             ultimo_aviso = ahora;
-            Serial.printf("[CALIBRACION] Recorrido X %4.0f  Y %4.0f  Z %4.0f  (minimo %.0f c/u)%s\n",
+            // Los ejes del acelerómetro se revisan una vez por segundo (cuesta
+            // unos milisegundos) y sólo con la esfera ya ajustada
+            if (calibracion.lista()) ejes = evaluarEjes(calibracion);
+            Serial.printf("[CALIBRACION] Recorrido X %4.0f  Y %4.0f  Z %4.0f  (minimo %.0f c/u)  "
+                          "inclinado %2.0f%% (minimo %.0f%%)%s\n",
                           calibracion.span(0), calibracion.span(1), calibracion.span(2),
-                          calibracion.spanMinimo(), calibracion.lista() ? "  LISTA, sigue girando" : "");
+                          calibracion.spanMinimo(), ejes.inclinadas * 100.0f,
+                          FRACCION_INCLINADA_MINIMA * 100.0f,
+                          !calibracion.lista() ? ""
+                          : ejes.clara        ? "  LISTA, sigue girando"
+                                              : "  falta inclinar mas (muneca arriba/abajo, de lado)");
         }
 
-        if (calibracion.lista() && ahora - ultimo_crecimiento >= CALIBRACION_ESTABLE_MS) {
-            bool guardada = guardarCalibracion();
-            const DatosCalibracion& d = calibracion.datos();
-            Serial.printf("[CALIBRACION] Lista: centro (%.0f, %.0f, %.0f) LSB%s\n",
-                          d.centro[0], d.centro[1], d.centro[2],
-                          guardada ? ", guardada" : " — [ERROR] no se pudo guardar");
-            detectarEjes(calibracion);
-            lecturaValida = false;
-            return true;
+        // Termina cuando la esfera está lista y estable. Los ejes del
+        // acelerómetro NO la detienen: si todavía no quedaron claros se da un
+        // rato más para inclinarlo (CALIBRACION_ESPERA_EJES_MS) y después
+        // termina igual, conservando la orientación que ya había.
+        if (calibracion.lista() && ahora - ultimo_crecimiento >= CALIBRACION_ESTABLE_MS &&
+            (ejes.clara || ahora - inicio >= CALIBRACION_ESPERA_EJES_MS)) {
+            break;
         }
         delay(CALIBRACION_INTERVALO_MS);
     }
 
-    Serial.println(F("[CALIBRACION] [ERROR] No se completo: el brazalete no indicara orientacion."));
-    Serial.println(F("[CALIBRACION] Envia 'c' por el monitor serie para intentarlo de nuevo."));
-    calibracion.reiniciar();
-    return false;
+    // Sin esfera lista no hay calibración nueva: se vuelve a la guardada (si
+    // había una), así una recalibración fallida no deja al brazalete sin rumbo.
+    // Con la esfera lista se acepta aunque el tiempo se haya acabado.
+    if (!calibracion.lista()) {
+        Serial.println(F("[CALIBRACION] [ERROR] No se completo la calibracion nueva."));
+        calibracion.reiniciar();
+        cargarCalibracion();
+        if (calibracion.lista()) {
+            Serial.println(F("[CALIBRACION] Se sigue usando la calibracion anterior."));
+        } else {
+            Serial.println(F("[CALIBRACION] No hay calibracion: no se indicara orientacion. Envia 'c' para reintentar."));
+        }
+        return false;
+    }
+
+    // Esfera lista. Si los ejes no quedaron claros al acabar el tiempo, se usa
+    // la calibración igual (el hard-iron sí sirve) con la orientación que ya
+    // había: guardar una dudosa podría cruzar los ejes.
+    ejes = evaluarEjes(calibracion);
+    if (ejes.orientacion >= 0) {
+        Serial.printf("[CALIBRACION] Acelerometro girado %s respecto al magnetometro "
+                      "(variacion %.1f deg; la siguiente opcion %.1f deg; inclinado %.0f%%)\n",
+                      nombreOrientacionAcel(ejes.orientacion), ejes.variacion, ejes.segunda,
+                      ejes.inclinadas * 100.0f);
+    }
+    if (ejes.clara) {
+        orientacion_acel = ejes.orientacion;
+    } else {
+        Serial.printf("[CALIBRACION] AVISO: la orientacion del acelerometro no quedo clara; se conserva "
+                      "%s. Para mas precision, recalibra inclinando mas el brazalete.\n",
+                      nombreOrientacionAcel(orientacion_acel));
+    }
+
+    bool guardada = guardarCalibracion(orientacion_acel);
+    const DatosCalibracion& d = calibracion.datos();
+    Serial.printf("[CALIBRACION] Lista: centro (%.0f, %.0f, %.0f) LSB, acelerometro %s%s\n",
+                  d.centro[0], d.centro[1], d.centro[2], nombreOrientacionAcel(orientacion_acel),
+                  guardada ? ", guardada y verificada"
+                           : " — [ERROR] no se pudo guardar: se usa hasta reiniciar");
+    lecturaValida = false;
+    return true;
 }

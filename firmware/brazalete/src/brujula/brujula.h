@@ -43,6 +43,8 @@ public:
     // Retorna true si la última lectura de heading fue considerada válida
     // (brújula calibrada, sensores bien, muñeca quieta y sin giro brusco).
     static bool headingValido();
+    // Por qué la última lectura no sirvió ("" si sirvió): para el monitor serie
+    static const char* motivoInvalida();
 
     // ── Calibración ──────────────────────────────────────────────────────────
     static bool calibrada();
@@ -51,8 +53,11 @@ public:
     // en todas direcciones (también boca abajo), como dibujando un 8. Si
     // termina bien la guarda. Los motores deben estar apagados.
     static bool calibrar();
-    // Borra la calibración guardada (la siguiente vez que arranque, calibra)
-    static void borrarCalibracion();
+    // Pide calibrar en el próximo arranque SIN borrar la calibración actual:
+    // si la nueva no se completa, se sigue usando la anterior. Así una
+    // recalibración fallida nunca deja al brazalete sin orientación.
+    static void pedirRecalibracion();
+    static bool recalibracionPedida();
 
     // Para saber si la persona está de frente al cruce se usa
     // desviacionEnfrentamiento() de utils/calcular_direccion.h, y la decisión

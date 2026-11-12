@@ -66,7 +66,10 @@ public:
 
     // Si el controlador está libre y hay un evento pendiente, inicia su patrón.
     // Devuelve el patrón iniciado, o NINGUNO. Llamar en cada vuelta del loop.
-    Patron orquestar(uint32_t ahora);
+    // luz_vigente = false (sin paquetes recientes, ver LUZ_VIGENTE_MS): la luz
+    // guardada puede ser vieja y NO se avisa; queda pendiente hasta que vuelvan
+    // los paquetes. El resto de avisos (detectado, giros) sigue igual.
+    Patron orquestar(uint32_t ahora, bool luz_vigente = true);
 
     bool haySemaforo() const { return hay_semaforo_; }
     bool orientado() const { return orientado_; }
@@ -76,7 +79,7 @@ public:
 private:
     // Decide el patrón que corresponde ahora y marca su evento como atendido.
     // Sólo se llama cuando el controlador está libre, así el patrón se inicia seguro.
-    Patron decidir(uint32_t ahora);
+    Patron decidir(uint32_t ahora, bool luz_vigente);
 
     ControladorPatrones& patrones_;
 

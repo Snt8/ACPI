@@ -1,6 +1,6 @@
 import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, View } from 'react-native';
 
 import { enviarComando, reiniciarConexion, useBrazalete } from '@/brazalete/estado';
 import { Boton } from '@/components/boton';
@@ -27,6 +27,30 @@ export default function PantallaDiagnostico() {
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
+  }
+
+  function confirmarReinicio() {
+    Alert.alert(
+      'Reiniciar brazalete',
+      'El brazalete se reinicia y se desconecta unos segundos. La calibración de la brújula se conserva.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Reiniciar', style: 'destructive', onPress: () => void enviar('RESTART') },
+      ],
+    );
+  }
+
+  function confirmarRecalibracion() {
+    Alert.alert(
+      'Recalibrar brújula',
+      'El brazalete se reinicia para calibrar (si no se completa, conserva la calibración actual). Gíralo en todas direcciones (de lado, muñeca ' +
+        'arriba y abajo, boca abajo) lejos de metales hasta que vibre una vez largo. Tres vibraciones ' +
+        'cortas: no se completó, inténtalo de nuevo.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Recalibrar', style: 'destructive', onPress: () => void enviar('RECALIBRATE') },
+      ],
+    );
   }
 
   const conectado = conexion === 'conectado';
@@ -77,6 +101,20 @@ export default function PantallaDiagnostico() {
               onPress={() => enviar('VIBRATE_STOP')}
             />
             <Boton texto="Reiniciar conexión" variante="secundario" onPress={() => void reiniciarConexion()} />
+            <Boton
+              texto="Reiniciar brazalete"
+              pista="Envía RESTART: el firmware del brazalete arranca de nuevo"
+              variante="secundario"
+              disabled={!conectado}
+              onPress={confirmarReinicio}
+            />
+            <Boton
+              texto="Recalibrar brújula"
+              pista="Envía RECALIBRATE: el brazalete calibra al reiniciar y, si falla, conserva la calibración actual"
+              variante="secundario"
+              disabled={!conectado}
+              onPress={confirmarRecalibracion}
+            />
 
             <ThemedText type="smallBold" accessibilityRole="header">
               Envío al servidor

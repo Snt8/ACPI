@@ -16,6 +16,7 @@ describe('parsearTelemetria', () => {
     [1, 'permitido'],
     [2, 'mal-orientado'],
     [3, 'panico'],
+    [4, 'sin-senal'],
     [9, 'desconocido'],
   ])('st = %i es "%s"', (st, estado) => {
     expect(parsearTelemetria(`{"hd":0,"st":${st},"ok":false,"tr":0,"bt":-1}`)?.estado).toBe(estado);
@@ -103,6 +104,12 @@ describe('parsearTelemetria, versión 2', () => {
       paquetesSemaforo: null,
       rssi: null,
     });
+  });
+
+  it('sin señal del semáforo la luz llega como null', () => {
+    const t = parsearTelemetria('{"v":2,"st":4,"ok":true,"lz":null}');
+    expect(t?.estado).toBe('sin-senal');
+    expect(t?.extendida?.verde).toBeNull();
   });
 
   it('la luz llega aunque la persona esté mal orientada', () => {

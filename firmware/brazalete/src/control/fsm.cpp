@@ -9,6 +9,7 @@
 #include "../config.h"
 #include "../constantes.h"
 #include <Arduino.h>
+#include <esp_attr.h>
 
 // ── Definición de variables estáticas ────────────────────────────────────────
 EstadoBrazalete MaquinaEstados::estadoActual = EstadoBrazalete::BOOTING;
@@ -19,6 +20,12 @@ namespace {
 // clase que usan las pruebas de escenario de test/; aquí se le conectan la
 // brújula y los motores reales.
 CoordinadorCruce cruce;
+
+// Sobrevive a ESP.restart() (no a quitar la batería): marca que el reinicio lo
+// pidió la FSM para volver a standby. Al encender trae basura, por eso se
+// compara con un valor de 32 bits y no con un bool.
+const uint32_t MARCA_REINICIO_STANDBY = 0x53544259u;  // "STBY"
+RTC_NOINIT_ATTR uint32_t marca_reinicio;
 
 unsigned long ultimo_envio_ble_ms = 0;
 
@@ -82,8 +89,9 @@ Orientacion leerOrientacion(const estado_semaforo& semaforo, void*) {
     o.desviacion = desviacionEnfrentamiento(hp, hs);
     o.giro       = giroParaEnfrentar(hp, hs);
 
-    Serial.printf("[HDG] Brazalete=%.1f  Semaforo=%d  Desviacion=%.1f  Giro=%.1f%s\n",
-                  hp, (int)hs, o.desviacion, o.giro, o.valida ? "" : "  (lectura invalida)");
+    Serial.printf("[HDG] Brazalete=%.1f  Semaforo=%d  Desviacion=%.1f  Giro=%.1f%s%s%s\n",
+                  hp, (int)hs, o.desviacion, o.giro, o.valida ? "" : "  (lectura invalida: ",
+                  ControladorBrujula::motivoInvalida(), o.valida ? "" : ")");
     ultima_orientacion = o;
     hubo_lectura = true;
     return o;
@@ -134,14 +142,18 @@ void registrarVuelta(const estado_semaforo& paquete, const VueltaCruce& v) {
 void enviarTelemetria(uint32_t ahora) {
     const estado_semaforo& s = cruce.evaluador().ultimoPaquete();
     bool orientado = cruce.evaluador().orientado();
+    // Sin paquetes recientes la última luz recibida puede ser vieja: no se informa
+    bool luz_vigente = cruce.luzVigente(ahora);
 
     uint8_t st;
-    if (!orientado) {
+    if (!luz_vigente) {
+        st = 4;  // Sin señal del semaforo: luz desconocida
+    } else if (!orientado) {
         st = 2;  // Orientacion incorrecta
     } else if (s.permitidoCruce) {
-        st = 1;  // Cruce permitido: orientado, semaforo rojo para autos (verde peaton)
+        st = 1;  // De frente y verde peatonal: puede cruzar
     } else {
-        st = 0;  // Cruce prohibido: orientado pero semaforo verde para autos (rojo peaton)
+        st = 0;  // De frente y rojo peatonal: debe esperar
     }
 
     TelemetriaBle t;
@@ -153,6 +165,7 @@ void enviarTelemetria(uint32_t ahora) {
     t.bateria        = -1;  // la PCB v3.5 no mide la batería
     t.semaforo       = s.id;
     t.verde          = s.permitidoCruce != 0;
+    t.luz_conocida   = luz_vigente;
     t.rumbo_semaforo = s.grados;
     t.giro           = hubo_lectura ? (int16_t)lroundf(ultima_orientacion.giro) : 0;
     if (!ControladorBrujula::calibrada()) {
@@ -168,6 +181,18 @@ void enviarTelemetria(uint32_t ahora) {
     ComunicadorMovil::enviarTelemetria(t);
 }
 
+// Apaga los motores y reinicia el ESP32. Con borrar_calibracion, el arranque
+// vuelve a calibrar (vibra 1 vez largo al terminar bien, 3 cortas si falla).
+// La pausa deja salir la respuesta BLE a la escritura y el monitor serie.
+void reiniciarBrazalete(bool borrar_calibracion) {
+    cruce.detenerVibracion();
+    ControladorMotores::detenerMotor(ControladorMotores::AMBOS);
+    if (borrar_calibracion) ControladorBrujula::pedirRecalibracion();
+    Serial.flush();
+    delay(200);
+    ESP.restart();
+}
+
 // Comandos de Diagnóstico de la app
 void atenderComandoMovil(uint32_t ahora) {
     switch (ComunicadorMovil::tomarComando()) {
@@ -181,6 +206,15 @@ void atenderComandoMovil(uint32_t ahora) {
         case ComandoMovil::DETENER_VIBRACION:
             cruce.detenerVibracion();
             Serial.println(F("[BLE] VIBRATE_STOP: patron cortado"));
+            break;
+        case ComandoMovil::REINICIAR:
+            // La calibración de la brújula está en la memoria no volátil: no se pierde
+            Serial.println(F("[BLE] RESTART: reiniciando el brazalete..."));
+            reiniciarBrazalete(false);
+            break;
+        case ComandoMovil::RECALIBRAR:
+            Serial.println(F("[BLE] RECALIBRATE: reiniciando para calibrar (si falla, se conserva la actual)..."));
+            reiniciarBrazalete(true);
             break;
         default:
             break;
@@ -199,6 +233,22 @@ EstadoBrazalete MaquinaEstados::obtenerEstadoActual() {
     return estadoActual;
 }
 
+void MaquinaEstados::reiniciarEnStandby(const char* motivo) {
+    Serial.printf("[FSM] Reinicio limpio para volver a standby (%s)\n", motivo);
+    cruce.salir();
+    ControladorMotores::detenerMotor(ControladorMotores::AMBOS);
+    marca_reinicio = MARCA_REINICIO_STANDBY;
+    Serial.flush();
+    delay(50);
+    ESP.restart();
+}
+
+bool MaquinaEstados::arranqueTrasStandby() {
+    bool fue = (marca_reinicio == MARCA_REINICIO_STANDBY);
+    marca_reinicio = 0;
+    return fue;
+}
+
 const estado_semaforo& MaquinaEstados::ultimoPaquete() {
     return cruce.evaluador().ultimoPaquete();
 }
@@ -210,6 +260,14 @@ void MaquinaEstados::setEstado(EstadoBrazalete nuevoEstado) {
     Serial.printf("[FSM] Transicion: %d -> %d\n", (int)estadoActual, (int)nuevoEstado);
 
     EstadoBrazalete anterior = estadoActual;
+
+    // De un cruce a standby: reinicio limpio en vez de apagar el BLE y el WiFi
+    // en caliente (ese camino dejaba al brazalete sin volver a encontrar al
+    // semáforo). El arranque entra en standby y escucha de inmediato.
+    if (anterior == EstadoBrazalete::SENSING_CROSSING &&
+        nuevoEstado == EstadoBrazalete::STANDBY_LOW_POWER) {
+        reiniciarEnStandby("sin paquetes del semaforo");
+    }
 
     if (anterior == EstadoBrazalete::SENSING_CROSSING) {
         // Se corta cualquier patrón y se olvida el semáforo

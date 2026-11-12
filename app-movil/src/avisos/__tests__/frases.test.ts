@@ -20,6 +20,11 @@ describe('fraseEstado', () => {
     expect(fraseEstado(conectado('prohibido', 1))).toBe('Paso peatonal en rojo, quedan 1 segundo');
   });
 
+  it('sin señal del semáforo no repite la luz vieja', () => {
+    expect(fraseEstado(conectado('sin-senal'))).toMatch(/no se sabe en qué luz/);
+    expect(tituloEstado(conectado('sin-senal'))).toBe('Sin señal del semáforo');
+  });
+
   it('sin conexión habla de la conexión', () => {
     expect(fraseEstado({ conexion: 'buscando', telemetria: null })).toBe('Buscando el brazalete');
     expect(fraseEstado({ conexion: 'conectado', telemetria: null })).toMatch(/esperando datos/);
@@ -80,6 +85,10 @@ describe('detectarAviso', () => {
     );
     // Mismo estado, sólo baja la cuenta regresiva: nada
     expect(detectarAviso(conectado('permitido', 25), conectado('permitido', 24))).toBeNull();
+  });
+
+  it('avisa cuando se pierde la señal del semáforo', () => {
+    expect(detectarAviso(conectado('permitido'), conectado('sin-senal'))?.texto).toMatch(/señal del semáforo/);
   });
 
   it('no habla por la orientación: de eso se encarga la vibración', () => {

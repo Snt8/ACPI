@@ -39,6 +39,9 @@
 // más de un 1 %, o al llegar al tiempo máximo (entonces queda sin calibrar)
 #define CALIBRACION_ESTABLE_MS         5000UL
 #define CALIBRACION_DURACION_MAX_MS    90000UL
+// Con la esfera ya lista, cuánto se espera como máximo (desde el inicio) a que
+// los ejes del acelerómetro queden claros antes de terminar igual
+#define CALIBRACION_ESPERA_EJES_MS     45000UL
 #define CALIBRACION_INTERVALO_MS       50UL
 
 // ── Lectura de la brújula ────────────────────────────────────────────────────
@@ -93,6 +96,19 @@ static_assert(UMBRAL_TIEMPO_SAFETY_MS > INTERVALO_MUESTREO_MS,
 
 static_assert(VENTANA_ESCUCHA_STANDBY_MS > 2 * INTERVALO_ENVIO_SEMAFORO_MS,
               "La ventana de escucha debe abarcar al menos dos envios del semaforo");
+
+// Si pasa este tiempo sin paquetes del semáforo (6 envíos perdidos seguidos),
+// la luz que se recibió por última vez ya no se informa a la app: la telemetría
+// manda "st":4 y "lz":null hasta que vuelva a llegar un paquete. Antes se
+// seguía diciendo la luz vieja hasta 30 s (hasta entrar en standby).
+// 3 s y no menos: con mucho 2.4 GHz alrededor (una feria) se pierden ráfagas
+// de paquetes, y la app no debe alternar entre "sin señal" y el color.
+#define LUZ_VIGENTE_MS                 3000UL
+
+static_assert(LUZ_VIGENTE_MS >= 3 * INTERVALO_ENVIO_SEMAFORO_MS,
+              "Un par de paquetes perdidos no debe dejar la luz como desconocida");
+static_assert(LUZ_VIGENTE_MS < TIEMPO_SIN_PAQUETES_STANDBY_MS,
+              "La luz debe darse por desconocida antes de entrar en standby");
 static_assert(VENTANA_ESCUCHA_STANDBY_MS < INTERVALO_ESCUCHA_STANDBY_MS,
               "La ventana de escucha debe ser mas corta que el intervalo");
 

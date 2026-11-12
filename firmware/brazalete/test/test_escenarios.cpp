@@ -344,3 +344,63 @@ PRUEBA(escenario_prueba_de_vibracion_desde_la_app) {
     VERIFICAR(cruce.probarVibracion(1000 + ControladorPatrones::duracion(Patron::SEMAFORO_DETECTADO) +
                                     SEPARACION_MINIMA_EVENTOS_MS));
 }
+
+PRUEBA(escenario_luz_vieja_no_se_informa_sin_paquetes) {
+    // La app sólo recibe la luz mientras siguen llegando paquetes: con 2 s sin
+    // ninguno ya no se sabe si cambió (el semáforo se apagó o quedó lejos)
+    CoordinadorCruce cruce;
+    Orientacion quieta = {true, 90.0f, 90.0f};
+    auto leer = [](const estado_semaforo&, void* c) { return *static_cast<Orientacion*>(c); };
+    cruce.entrar(0);
+    VERIFICAR(!cruce.luzVigente(0));                     // todavía no llegó ninguno
+    estado_semaforo p{};
+    firmarPaqueteSemaforo(&p);
+    p.id = 1;
+    p.grados = 90;
+    p.permitidoCruce = 1;
+    cruce.paso(100, &p, leer, &quieta);
+    VERIFICAR(cruce.luzVigente(100));
+    VERIFICAR(cruce.luzVigente(100 + LUZ_VIGENTE_MS - 1));
+    VERIFICAR(!cruce.luzVigente(100 + LUZ_VIGENTE_MS));
+    VERIFICAR(!cruce.sinPaquetes(100 + LUZ_VIGENTE_MS)); // pero sigue sin pasar a standby
+    cruce.paso(5000, &p, leer, &quieta);                 // vuelve a llegar
+    VERIFICAR(cruce.luzVigente(5000));
+    p.id = 2;                                            // otro semáforo no la renueva
+    cruce.paso(6000, &p, leer, &quieta);
+    VERIFICAR(!cruce.luzVigente(5000 + LUZ_VIGENTE_MS));
+}
+
+PRUEBA(escenario_sin_paquetes_no_vibra_una_luz_vieja) {
+    // Llega verde, se cortan los paquetes y la persona queda de frente: no debe
+    // vibrar "verde" con un dato viejo. Al volver los paquetes, avisa la luz real.
+    CoordinadorCruce cruce;
+    Orientacion mal = {true, 90.0f, 90.0f};
+    Orientacion frente = {true, 0.0f, 0.0f};
+    Orientacion* actual = &mal;
+    auto leer = [](const estado_semaforo&, void* c) { return **static_cast<Orientacion**>(c); };
+    estado_semaforo p{};
+    firmarPaqueteSemaforo(&p);
+    p.id = 1;
+    p.grados = 90;
+    p.permitidoCruce = 1;
+    cruce.entrar(0);
+    std::vector<Patron> iniciados;
+    for (uint32_t t = 0; t < 30000; t += 10) {
+        bool llega = (t < 2000 || t >= 20000) && t % INTERVALO_ENVIO_SEMAFORO_MS == 0;
+        if (t >= 20000) p.permitidoCruce = 0;           // al volver ya está en rojo
+        if (t >= 6000) actual = &frente;                // queda de frente sin paquetes
+        VueltaCruce v = cruce.paso(t, llega ? &p : nullptr, leer, &actual);
+        if (v.iniciado != Patron::NINGUNO) {
+            VERIFICAR(!(t >= 2000 + LUZ_VIGENTE_MS && t < 20000 &&
+                        (v.iniciado == Patron::CRUCE_PERMITIDO || v.iniciado == Patron::CRUCE_PROHIBIDO)));
+            iniciados.push_back(v.iniciado);
+        }
+    }
+    bool aviso_verde = false, aviso_rojo = false;
+    for (Patron x : iniciados) {
+        aviso_verde = aviso_verde || x == Patron::CRUCE_PERMITIDO;
+        aviso_rojo  = aviso_rojo  || x == Patron::CRUCE_PROHIBIDO;
+    }
+    VERIFICAR(!aviso_verde);   // el verde viejo nunca se avisó
+    VERIFICAR(aviso_rojo);     // el rojo real sí, al volver los paquetes
+}

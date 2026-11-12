@@ -40,6 +40,8 @@ function fraseCruce(t: Telemetria): string {
       return 'No estás de frente al cruce. El brazalete vibra hacia donde girar';
     case 'panico':
       return 'Alerta de pánico activada';
+    case 'sin-senal':
+      return 'Se perdió la señal del semáforo: no se sabe en qué luz está';
     default:
       return 'Estado del semáforo desconocido';
   }
@@ -67,6 +69,7 @@ const TITULOS_CRUCE: Record<EstadoCruce, string> = {
   prohibido: 'Rojo peatonal',
   'mal-orientado': 'Mal orientado',
   panico: 'Pánico',
+  'sin-senal': 'Sin señal del semáforo',
   desconocido: 'Estado desconocido',
 };
 
@@ -96,8 +99,9 @@ export function fraseEstado({ conexion, telemetria }: Instantanea): string {
 }
 
 // Estados que se anuncian solos al cambiar. "mal-orientado" no: el brazalete ya
-// vibra hacia donde girar cada 3 s, y la voz encima sólo estorbaría.
-const CRUCE_ANUNCIADO: ReadonlySet<EstadoCruce> = new Set(['permitido', 'prohibido', 'panico']);
+// vibra hacia donde girar cada 3 s, y la voz encima sólo estorbaría. "sin-senal" sí:
+// la luz que se dijo antes ya no es confiable.
+const CRUCE_ANUNCIADO: ReadonlySet<EstadoCruce> = new Set(['permitido', 'prohibido', 'panico', 'sin-senal']);
 
 /**
  * Decide si un cambio entre dos instantáneas merece un aviso de voz. Cada evento se

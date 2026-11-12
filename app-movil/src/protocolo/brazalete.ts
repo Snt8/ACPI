@@ -9,19 +9,29 @@ export const UUID_RX = '11111111-2222-3333-4444-555555555555'; // write: app →
 // iOS entrega los UUID en mayúsculas y Android en minúsculas
 export const mismoUuid = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 
-// Comandos de diagnóstico que acepta la característica RX. El brazalete los
-// atiende respetando la separación de 3 s entre patrones (patrones.md).
-export type Comando = 'TEST_ALERT' | 'VIBRATE_STOP';
+// Comandos de diagnóstico que acepta la característica RX. Los de vibración
+// respetan la separación de 3 s entre patrones (patrones.md); RESTART reinicia
+// el brazalete (la calibración de la brújula no se pierde) y RECALIBRATE la
+// borra y reinicia para calibrar de nuevo.
+export type Comando = 'TEST_ALERT' | 'VIBRATE_STOP' | 'RESTART' | 'RECALIBRATE';
 
 // Valores de "st" tal como los envía el firmware (fsm.cpp, enviarTelemetria).
-// "panico" (3) está documentado pero el brazalete aún no lo envía.
-export type EstadoCruce = 'prohibido' | 'permitido' | 'mal-orientado' | 'panico' | 'desconocido';
+// "panico" (3) está documentado pero el brazalete aún no lo envía. "sin-senal" (4):
+// el brazalete lleva 3 s sin paquetes del semáforo y no sabe en qué luz está.
+export type EstadoCruce =
+  | 'prohibido'
+  | 'permitido'
+  | 'mal-orientado'
+  | 'panico'
+  | 'sin-senal'
+  | 'desconocido';
 
 const ESTADOS: Record<number, EstadoCruce> = {
   0: 'prohibido',
   1: 'permitido',
   2: 'mal-orientado',
   3: 'panico',
+  4: 'sin-senal',
 };
 
 // "br": si la brújula del brazalete sirve
@@ -52,7 +62,7 @@ const PATRONES: Record<number, PatronVibracion> = {
 export interface TelemetriaExtendida {
   secuencia: number | null; // "n": sube 1 por paquete (0-65535); un salto = paquetes perdidos
   semaforoId: number | null; // "id" del semáforo que sigue el brazalete
-  verde: boolean | null; // "lz": luz peatonal, aunque la persona esté mal orientada
+  verde: boolean | null; // "lz": luz peatonal, aunque la persona esté mal orientada; null sin señal
   rumboSemaforo: number | null; // "hs": 0-359°
   giro: number | null; // "gr": grados para quedar de frente, -180..180 (+ derecha)
   brujula: EstadoBrujula | null; // "br"

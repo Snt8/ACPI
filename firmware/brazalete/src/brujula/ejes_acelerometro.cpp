@@ -55,3 +55,44 @@ int detectarOrientacionAcel(const float (*g)[3], const float (*m)[3], int n,
     }
     return mejor;
 }
+
+namespace {
+// Sólo las muestras con la muñeca sin acelerar, como en detectarOrientacionAcel
+bool quieta(const float g[3], float& norma) {
+    norma = sqrtf(g[0] * g[0] + g[1] * g[1] + g[2] * g[2]);
+    return norma >= 0.9f && norma <= 1.1f;
+}
+}  // namespace
+
+float fraccionInclinadaAcel(const float (*g)[3], int n, float grados) {
+    double media[3] = {0.0, 0.0, 0.0};
+    int usadas = 0;
+    for (int i = 0; i < n; i++) {
+        float ng;
+        if (!quieta(g[i], ng)) continue;
+        for (int k = 0; k < 3; k++) media[k] += g[i][k] / ng;
+        usadas++;
+    }
+    if (usadas == 0) return 0.0f;
+    double nm = sqrt(media[0] * media[0] + media[1] * media[1] + media[2] * media[2]);
+    if (nm < 1e-6) return 1.0f;  // poses opuestas que se anulan: muy variadas
+    const double umbral = cos(grados / RAD_A_GRADOS);
+    int inclinadas = 0;
+    for (int i = 0; i < n; i++) {
+        float ng;
+        if (!quieta(g[i], ng)) continue;
+        double c = (g[i][0] * media[0] + g[i][1] * media[1] + g[i][2] * media[2]) / (ng * nm);
+        if (c < umbral) inclinadas++;
+    }
+    return (float)inclinadas / (float)usadas;
+}
+
+bool orientacionAcelClara(const float (*g)[3], int n, int o,
+                          const float dispersion[NUM_ORIENTACIONES_ACEL]) {
+    if (o < 0 || o >= NUM_ORIENTACIONES_ACEL) return false;
+    if (fraccionInclinadaAcel(g, n, INCLINACION_MINIMA_EJES_GRADOS) < FRACCION_INCLINADA_MINIMA) return false;
+    for (int k = 0; k < NUM_ORIENTACIONES_ACEL; k++) {
+        if (k != o && !(dispersion[k] >= MARGEN_SEGUNDA_EJES * dispersion[o])) return false;
+    }
+    return true;
+}
