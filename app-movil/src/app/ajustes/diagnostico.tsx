@@ -53,6 +53,19 @@ export default function PantallaDiagnostico() {
     );
   }
 
+  function confirmarAlineacion() {
+    Alert.alert(
+      'Alinear con el semáforo',
+      'Ponte con el brazalete exactamente de frente al semáforo y quédate quieto. Al tocar Alinear, ' +
+        'esa postura pasa a contar como "de frente" y el brazalete lo guarda. Vibra 3 veces cortas si ' +
+        'quedó alineado; el giro de esta pantalla debe quedar cerca de 0°.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Alinear', onPress: () => void enviar('ALIGN') },
+      ],
+    );
+  }
+
   const conectado = conexion === 'conectado';
   const ext = telemetria?.extendida;
   const datos = telemetria
@@ -107,6 +120,13 @@ export default function PantallaDiagnostico() {
               variante="secundario"
               disabled={!conectado}
               onPress={confirmarReinicio}
+            />
+            <Boton
+              texto="Alinear con el semáforo"
+              pista="Envía ALIGN: la postura actual pasa a contar como de frente al semáforo"
+              variante="secundario"
+              disabled={!conectado}
+              onPress={confirmarAlineacion}
             />
             <Boton
               texto="Recalibrar brújula"

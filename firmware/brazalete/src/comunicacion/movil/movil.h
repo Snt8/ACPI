@@ -11,7 +11,8 @@ enum class ComandoMovil : uint8_t {
     PROBAR_VIBRACION,   // "TEST_ALERT"
     DETENER_VIBRACION,  // "VIBRATE_STOP"
     RECALIBRAR,         // "RECALIBRATE": borra la calibración y reinicia; el arranque calibra
-    REINICIAR           // "RESTART": reinicia el ESP32 (la calibración se conserva)
+    REINICIAR,          // "RESTART": reinicia el ESP32 (la calibración se conserva)
+    ALINEAR             // "ALIGN": la postura actual pasa a ser "de frente al semáforo"
 };
 
 class ComunicadorMovil {

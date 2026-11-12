@@ -46,6 +46,14 @@ public:
 
     // ── Calibración ──────────────────────────────────────────────────────────
     static bool calibrada();
+
+    // ── Alineación con el semáforo ───────────────────────────────────────────
+    // Con la persona bien de frente al semáforo, 'giro' es lo que el brazalete
+    // cree que le falta girar (giroParaEnfrentar). Se suma a la corrección del
+    // rumbo y se guarda en la memoria no volátil, así desde ahí esa postura
+    // cuenta como de frente. Recalibrar no la borra. false si no se pudo guardar.
+    static bool alinear(float giro);
+    static float alineacion();  // grados que se suman hoy, (-180, 180]
     // Bloquea hasta que la calibración esté lista y estable o pasen
     // CALIBRACION_DURACION_MAX_MS. Mientras tanto hay que girar el brazalete
     // en todas direcciones (también boca abajo), como dibujando un 8. Si

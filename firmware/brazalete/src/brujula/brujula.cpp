@@ -31,6 +31,12 @@ bool calibracion_cargada = false;  // ya se intentó leer la guardada
 const char* const NVS_ESPACIO = "brujula";
 const char* const NVS_CLAVE   = "cal_v2";  // v2: con detección de ejes (obliga a recalibrar)
 const char* const NVS_CLAVE_EJES = "ejes_acel";
+const char* const NVS_CLAVE_ALINEACION = "alinear";
+
+// Grados que se suman al rumbo para que, de frente al semáforo, quede
+// enfrentado a él (ver ControladorBrujula::alinear). Corrige que el "frente" del
+// brazalete y el del semáforo no coincidan con el eje X de sus magnetómetros.
+float alineacion_grados = 0.0f;
 
 // Orientación del acelerómetro respecto al magnetómetro (ejes_acelerometro.h).
 // Se detecta al calibrar y se guarda; mientras no haya una guardada se usa la
@@ -112,7 +118,12 @@ void cargarCalibracion() {
               calibracion.cargar(d);
     uint8_t ejes = prefs.getUChar(NVS_CLAVE_EJES, 0xFF);
     if (ejes < NUM_ORIENTACIONES_ACEL) orientacion_acel = ejes;
+    float alineacion = prefs.getFloat(NVS_CLAVE_ALINEACION, 0.0f);
+    if (isfinite(alineacion) && fabsf(alineacion) <= 180.0f) alineacion_grados = alineacion;
     prefs.end();
+    if (alineacion_grados != 0.0f) {
+        Serial.printf("[BRUJULA] Alineacion con el semaforo: %+.1f deg\n", alineacion_grados);
+    }
     if (ok) {
         Serial.printf("[BRUJULA] Acelerometro girado %s respecto al magnetometro\n",
                       nombreOrientacionAcel(orientacion_acel));
@@ -229,7 +240,7 @@ void ControladorBrujula::obtenerHeading() {
     float m[3];
     calibracion.corregir(mag, m);
     float nuevo_heading = rumboCompensado(m[0], m[1], m[2], g[0], g[1], g[2]);
-    nuevo_heading = fmodf(nuevo_heading + CORRECCION_MONTAJE_GRADOS + GRADOS_CIRCUNFERENCIA,
+    nuevo_heading = fmodf(nuevo_heading + CORRECCION_MONTAJE_GRADOS + alineacion_grados + GRADOS_CIRCUNFERENCIA,
                           GRADOS_CIRCUNFERENCIA);
 
     // ── Safety check ──────────────────────────────────────────────────────────
@@ -267,6 +278,27 @@ bool ControladorBrujula::headingValido() {
 }
 
 // ── Calibración ──────────────────────────────────────────────────────────────
+bool ControladorBrujula::alinear(float giro) {
+    // La alineación se acumula: con la anterior ya aplicada, el giro que falta
+    // es justo lo que hay que sumarle. Queda en (-180, 180].
+    float nueva = calcularDireccion(alineacion_grados + giro, 0.0f);
+    Preferences prefs;
+    if (!prefs.begin(NVS_ESPACIO, false)) return false;
+    bool ok = prefs.putFloat(NVS_CLAVE_ALINEACION, nueva) == sizeof(float);
+    prefs.end();
+    if (!ok) return false;
+    alineacion_grados = nueva;
+    // El rumbo actual y la referencia del safety check se corren lo mismo: si
+    // no, la próxima lectura parecería un giro brusco y se descartaría
+    headingActual   = fmodf(headingActual + giro + 2.0f * GRADOS_CIRCUNFERENCIA, GRADOS_CIRCUNFERENCIA);
+    headingAnterior = fmodf(headingAnterior + giro + 2.0f * GRADOS_CIRCUNFERENCIA, GRADOS_CIRCUNFERENCIA);
+    return true;
+}
+
+float ControladorBrujula::alineacion() {
+    return alineacion_grados;
+}
+
 bool ControladorBrujula::calibrada() {
     return calibracion.lista();
 }

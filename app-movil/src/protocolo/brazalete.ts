@@ -13,7 +13,7 @@ export const mismoUuid = (a: string, b: string) => a.toLowerCase() === b.toLower
 // respetan la separación de 3 s entre patrones (patrones.md); RESTART reinicia
 // el brazalete (la calibración de la brújula no se pierde) y RECALIBRATE la
 // borra y reinicia para calibrar de nuevo.
-export type Comando = 'TEST_ALERT' | 'VIBRATE_STOP' | 'RESTART' | 'RECALIBRATE';
+export type Comando = 'TEST_ALERT' | 'VIBRATE_STOP' | 'RESTART' | 'RECALIBRATE' | 'ALIGN';
 
 // Valores de "st" tal como los envía el firmware (fsm.cpp, enviarTelemetria).
 // "panico" (3) está documentado pero el brazalete aún no lo envía. "sin-senal" (4):

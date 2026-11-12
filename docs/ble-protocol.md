@@ -66,6 +66,7 @@ Texto ASCII exacto, sin `\0` ni salto de línea, por **RX**:
 - **`TEST_ALERT`**: vibración de prueba con el patrón de "semáforo detectado" (3 pulsos cortos, ambos motores). Respeta las reglas de las soldaduras: si sonó otro patrón hace menos de 3 s (o terminó hace menos de 1 s), se ignora y el monitor serie lo dice.
 - **`VIBRATE_STOP`**: corta el patrón que esté sonando. Cortar no adelanta los 3 s hasta el siguiente.
 - **`RESTART`**: apaga los motores y reinicia el ESP32, como apagar y prender. La conexión BLE se corta y la app se reconecta cuando el brazalete vuelve a oír al semáforo. La calibración de la brújula se conserva.
+- **`ALIGN`**: con la persona bien de frente al semáforo y quieta, el brazalete toma lo que cree que le falta girar (`gr`) como el desfase entre los dos, lo suma a la corrección de su rumbo y lo guarda en la memoria no volátil (recalibrar no lo borra). Si salió bien suena el patrón de prueba (3 pulsos cortos, si los motores están libres) y `gr` queda cerca de 0. Se ignora sin semáforo o sin una lectura válida.
 - **`RECALIBRATE`**: igual que `c` por el monitor serie: borra la calibración y reinicia; el arranque calibra. Hay que girar el brazalete en todas direcciones (también inclinado y boca abajo) hasta que vibre **1 vez largo** (lista y guardada). **3 vibraciones cortas** = no se completó en 90 s; se repite el comando.
 
 El brazalete atiende como mucho un comando cada 200 ms y sólo con un semáforo a la vista (fuera de eso el BLE está apagado).

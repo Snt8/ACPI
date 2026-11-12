@@ -88,6 +88,8 @@ class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
             comandoPendiente = ComandoMovil::RECALIBRAR;
         } else if (esComando(value, largo, "RESTART")) {
             comandoPendiente = ComandoMovil::REINICIAR;
+        } else if (esComando(value, largo, "ALIGN")) {
+            comandoPendiente = ComandoMovil::ALINEAR;
         }
         if (largo > 0) {
             Serial.print("[BLE RX] Datos recibidos: ");

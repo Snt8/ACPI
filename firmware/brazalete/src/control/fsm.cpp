@@ -205,6 +205,25 @@ void atenderComandoMovil(uint32_t ahora) {
             Serial.println(F("[BLE] RESTART: reiniciando el brazalete..."));
             reiniciar(false);
             break;
+        case ComandoMovil::ALINEAR: {
+            // La persona está bien de frente al semáforo: lo que el brazalete
+            // cree que le falta girar es el desfase entre los dos, y se corrige.
+            // Hace falta un paquete del semáforo y una lectura válida (quieto).
+            if (!cruce.evaluador().haySemaforo() || !ControladorBrujula::headingValido()) {
+                Serial.println(F("[BLE] ALIGN ignorado: hace falta el semaforo y estar quieto"));
+                break;
+            }
+            float giro = giroParaEnfrentar(ControladorBrujula::headingActual,
+                                           (float)cruce.evaluador().ultimoPaquete().grados);
+            if (ControladorBrujula::alinear(giro)) {
+                Serial.printf("[BLE] ALIGN: corregidos %+.1f deg (alineacion total %+.1f deg)\n",
+                              giro, ControladorBrujula::alineacion());
+                cruce.probarVibracion(ahora);  // confirmación (si los motores están libres)
+            } else {
+                Serial.println(F("[BLE] [ERROR] ALIGN: no se pudo guardar la alineacion"));
+            }
+            break;
+        }
         default:
             break;
     }
