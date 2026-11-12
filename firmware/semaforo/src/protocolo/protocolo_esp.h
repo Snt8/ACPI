@@ -21,7 +21,7 @@ typedef struct {
     char firma[FIRMA_SEMAFORO_LARGO]; //Siempre "ACPI" (sin terminador '\0')
     uint8_t id; //Identificador del semaforo en la red local
     uint16_t grados; //Contiene el heading del cruce (grados, 0-359)
-    uint8_t permitidoCruce; //1 = el peaton puede cruzar (rojo para autos), 0 = debe esperar
+    uint8_t permitidoCruce; //1 = verde peatonal (el peaton puede cruzar), 0 = rojo peatonal (debe esperar)
     uint8_t tiempo; //Tiempo restante para que el semaforo cambie de estado (s)
     uint8_t verificacion; //CRC-8 de todos los bytes anteriores (ver crc8Semaforo)
 } estado_semaforo;

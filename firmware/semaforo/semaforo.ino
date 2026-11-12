@@ -8,16 +8,22 @@
 #include "src/brujula/controlador_brujula.h"
 #include "src/comunicacion/comunicador_brazalete.h"
 
-// Estados del semáforo (punto de vista de los autos)
-enum class EstadoSemaforoAutos {
-    ROJO,  // Autos se detienen -> Peatón puede cruzar (permitidoCruce = 1)
-    VERDE  // Autos avanzan    -> Peatón espera (permitidoCruce = 0)
+// Luz del semáforo PEATONAL (la que muestran los LEDs)
+enum class LuzPeatonal {
+    VERDE,  // El peatón puede cruzar  (LED verde, permitidoCruce = 1)
+    ROJO    // El peatón debe esperar  (LED rojo,  permitidoCruce = 0)
 };
 
-// Variables de estado
-EstadoSemaforoAutos estadoActualAutos = EstadoSemaforoAutos::VERDE;
+// Variables de estado: arranca en rojo, lo seguro
+LuzPeatonal luzActual = LuzPeatonal::ROJO;
 unsigned long tiempoInicioEstado = 0;
-unsigned long duracionEstadoActual = DURACION_VERDE_MS;
+unsigned long duracionEstadoActual = DURACION_ROJO_MS;
+
+// Enciende sólo el LED de la luz indicada
+void mostrarLuz(LuzPeatonal luz) {
+    digitalWrite(PIN_LED_VERDE, luz == LuzPeatonal::VERDE ? HIGH : LOW);
+    digitalWrite(PIN_LED_ROJO,  luz == LuzPeatonal::ROJO  ? HIGH : LOW);
+}
 
 // Timers no bloqueantes
 unsigned long ultimoEnvioEspNow = 0;
@@ -32,14 +38,13 @@ void setup() {
     pinMode(PIN_LED_ROJO, OUTPUT);
     pinMode(PIN_LED_VERDE, OUTPUT);
     
-    // Estado inicial: Verde para autos (LED verde ON, LED rojo OFF)
-    digitalWrite(PIN_LED_ROJO, LOW);
-    digitalWrite(PIN_LED_VERDE, HIGH);
+    // Estado inicial: rojo peatonal (esperar)
+    mostrarLuz(luzActual);
 
     // Inicializar I2C y Brújula
     Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
     if (!ControladorBrujulaSemaforo::inicializar()) {
-        Serial.println("[SEMAFORO] [ERROR] No se pudo inicializar la brújula QMC5883L!");
+        Serial.println("[SEMAFORO] [ERROR] No se pudo inicializar la brújula QMC6308!");
     } else {
         Serial.println("[SEMAFORO] Brújula inicializada correctamente.");
     }
@@ -87,19 +92,16 @@ void loop() {
         Serial.printf("[DIAG] Rumbo promedio al terminar la luz: %.1f deg\n",
                       ControladorBrujulaSemaforo::headingActual);
         // Cambiar de estado
-        if (estadoActualAutos == EstadoSemaforoAutos::VERDE) {
-            estadoActualAutos = EstadoSemaforoAutos::ROJO;
-            duracionEstadoActual = DURACION_ROJO_MS;
-            digitalWrite(PIN_LED_ROJO, HIGH);
-            digitalWrite(PIN_LED_VERDE, LOW);
-            Serial.println("[SEMAFORO] Estado cambiado a: ROJO (Peatones pueden cruzar)");
-        } else {
-            estadoActualAutos = EstadoSemaforoAutos::VERDE;
+        if (luzActual == LuzPeatonal::ROJO) {
+            luzActual = LuzPeatonal::VERDE;
             duracionEstadoActual = DURACION_VERDE_MS;
-            digitalWrite(PIN_LED_ROJO, LOW);
-            digitalWrite(PIN_LED_VERDE, HIGH);
-            Serial.println("[SEMAFORO] Estado cambiado a: VERDE (Autos avanzan, Peatones esperan)");
+            Serial.println("[SEMAFORO] Luz peatonal: VERDE (puede cruzar)");
+        } else {
+            luzActual = LuzPeatonal::ROJO;
+            duracionEstadoActual = DURACION_ROJO_MS;
+            Serial.println("[SEMAFORO] Luz peatonal: ROJO (debe esperar)");
         }
+        mostrarLuz(luzActual);
         tiempoInicioEstado = ahora;
     }
 
@@ -129,7 +131,7 @@ void loop() {
         firmarPaqueteSemaforo(&payload); // "ACPI": el brazalete descarta paquetes sin firma
         payload.id = 1; // ID del semáforo en la red local
         payload.grados = ControladorBrujulaSemaforo::gradosParaEnviar();
-        payload.permitidoCruce = (estadoActualAutos == EstadoSemaforoAutos::ROJO) ? 1 : 0;
+        payload.permitidoCruce = (luzActual == LuzPeatonal::VERDE) ? 1 : 0;  // verde peatonal = cruzar
         payload.tiempo = tiempoRestante;
         sellarPaqueteSemaforo(&payload); // CRC-8: siempre después de llenar los campos
 

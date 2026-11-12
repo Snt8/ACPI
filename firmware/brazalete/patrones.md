@@ -99,8 +99,8 @@ Ambos  ████████████████████
 - **Evento:** la persona queda de frente con `permitidoCruce = 0`, o la luz cambia a
   rojo peatonal mientras está de frente.
 
-> "Verde" y "rojo" se refieren al **semáforo peatonal**. En el paquete,
-> `permitidoCruce = 1` significa rojo para los autos, es decir, verde para la persona.
+> "Verde" y "rojo" se refieren al **semáforo peatonal**, el mismo que muestran los LEDs
+> del semáforo: `permitidoCruce = 1` es verde (cruzar) y `0` es rojo (esperar).
 
 ---
 

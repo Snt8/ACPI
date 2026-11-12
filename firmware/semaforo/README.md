@@ -3,7 +3,7 @@
 ## Descripción General
 Este es el código fuente principal del **Nodo Esclavo (Semáforo)** del proyecto ACPI. Está diseñado para ejecutarse en una placa de desarrollo **ESP32 DevKit V1** (o compatible) anclada de manera estática y fija en la intersección peatonal.
 
-Su misión principal es leer el campo magnético direccional permanente hacia donde cruza la calle (su propia orientación), simular visualmente mediante LEDs el estado de permiso de vía (Verde/Rojo para vehículos), y disparar de forma constante la información (telemetría) a los brazaletes cercanos usando difusión de radio (Broadcast).
+Su misión principal es leer el campo magnético direccional permanente hacia donde cruza la calle (su propia orientación), simular visualmente mediante LEDs la luz peatonal (verde = el peatón cruza, rojo = espera), y disparar de forma constante la información (telemetría) a los brazaletes cercanos usando difusión de radio (Broadcast).
 
 Se compila con **Arduino IDE** o con **ESP-IDF**, con la misma estructura que el firmware del brazalete; ya no necesita PlatformIO.
 

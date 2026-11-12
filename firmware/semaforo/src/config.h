@@ -12,16 +12,17 @@
 #define PIN_I2C_SCL 22
 
 // ── LEDs de simulación del semáforo ─────────────────────────────────────────
-// LED_ROJO encendido  → semáforo en rojo para autos  → peatón puede cruzar
-// LED_VERDE encendido → semáforo en verde para autos → peatón debe esperar
+// Es un semáforo PEATONAL: los LEDs muestran la luz del peatón.
+// LED_VERDE encendido → el peatón puede cruzar (permitidoCruce = 1)
+// LED_ROJO encendido  → el peatón debe esperar (permitidoCruce = 0)
 #define PIN_LED_ROJO  25
 #define PIN_LED_VERDE 26
 
 // ── Tiempos del ciclo del semáforo (milisegundos) ───────────────────────────
 // 25 s por luz: cada fase dura menos que los 30 s sin paquetes que mandan al
 // brazalete a standby (TIEMPO_SIN_PAQUETES_STANDBY_MS en su constantes.h).
-#define DURACION_VERDE_MS 25000UL   // 25 s verde para autos (peatón espera)
-#define DURACION_ROJO_MS  25000UL   // 25 s rojo para autos  (peatón puede cruzar)
+#define DURACION_VERDE_MS 25000UL   // 25 s verde peatonal (puede cruzar)
+#define DURACION_ROJO_MS  25000UL   // 25 s rojo peatonal  (debe esperar)
 
 // ── Comunicación ESP-NOW ─────────────────────────────────────────────────────
 // Intervalo de envío del paquete de estado al brazalete.
