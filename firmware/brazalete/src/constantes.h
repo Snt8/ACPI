@@ -13,15 +13,16 @@
 
 // ── Motores ───────────────────────────────────────────────────────────────────
 #define APAGAR_MOTOR            0
-// En la PCB v3.5 el motor ve VBAT (3.7–4.2 V): a 180/255 vibraba tan fuerte que
-// amenazaba las soldaduras, y 120 seguía siendo mucho. 100/255 ≈ 39 % de duty.
-// Si a este valor un motor no llega a arrancar, verlo con el barrido 'b' de la
-// prueba 03, que muestra desde qué duty arranca cada uno.
-#define INTENSIDAD_MOTOR        100
+// En la PCB v3.5 el motor ve VBAT (3.7–4.2 V). Sobre la mesa, 180/255 vibraba
+// tan fuerte que amenazaba las soldaduras y se bajó a 100; montado en la
+// pulsera, 100 no se siente. 170/255 ≈ 67 % de duty (12 nov 2026). Vigilar las
+// soldaduras de los módulos, que se pueden agrietar con la vibración.
+// El barrido 'b' de la prueba 03 muestra desde qué duty arranca cada motor.
+#define INTENSIDAD_MOTOR        170
 // Motor izquierdo (GPIO 10). Antes llevaba +15 para igualar la sensación, un
 // valor heredado que nunca se confirmó en esta placa: queda igual al derecho
 // hasta medirlo con los dos motores soldados.
-#define INTENSIDAD_MOTOR_IZQUIERDO 100
+#define INTENSIDAD_MOTOR_IZQUIERDO 170
 
 // ── Acelerómetro MPU6050 (rango ±2g por defecto) ────────────────────────────
 // Datasheet: 16384 LSB/g en rango ±2g.
@@ -39,9 +40,6 @@
 // más de un 1 %, o al llegar al tiempo máximo (entonces queda sin calibrar)
 #define CALIBRACION_ESTABLE_MS         5000UL
 #define CALIBRACION_DURACION_MAX_MS    90000UL
-// Con la esfera ya lista, cuánto se espera como máximo (desde el inicio) a que
-// los ejes del acelerómetro queden claros antes de terminar igual
-#define CALIBRACION_ESPERA_EJES_MS     45000UL
 #define CALIBRACION_INTERVALO_MS       50UL
 
 // ── Lectura de la brújula ────────────────────────────────────────────────────
@@ -96,19 +94,6 @@ static_assert(UMBRAL_TIEMPO_SAFETY_MS > INTERVALO_MUESTREO_MS,
 
 static_assert(VENTANA_ESCUCHA_STANDBY_MS > 2 * INTERVALO_ENVIO_SEMAFORO_MS,
               "La ventana de escucha debe abarcar al menos dos envios del semaforo");
-
-// Si pasa este tiempo sin paquetes del semáforo (6 envíos perdidos seguidos),
-// la luz que se recibió por última vez ya no se informa a la app: la telemetría
-// manda "st":4 y "lz":null hasta que vuelva a llegar un paquete. Antes se
-// seguía diciendo la luz vieja hasta 30 s (hasta entrar en standby).
-// 3 s y no menos: con mucho 2.4 GHz alrededor (una feria) se pierden ráfagas
-// de paquetes, y la app no debe alternar entre "sin señal" y el color.
-#define LUZ_VIGENTE_MS                 3000UL
-
-static_assert(LUZ_VIGENTE_MS >= 3 * INTERVALO_ENVIO_SEMAFORO_MS,
-              "Un par de paquetes perdidos no debe dejar la luz como desconocida");
-static_assert(LUZ_VIGENTE_MS < TIEMPO_SIN_PAQUETES_STANDBY_MS,
-              "La luz debe darse por desconocida antes de entrar en standby");
 static_assert(VENTANA_ESCUCHA_STANDBY_MS < INTERVALO_ESCUCHA_STANDBY_MS,
               "La ventana de escucha debe ser mas corta que el intervalo");
 

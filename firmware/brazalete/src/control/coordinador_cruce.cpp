@@ -2,7 +2,7 @@
 #include "../constantes.h"
 
 CoordinadorCruce::CoordinadorCruce()
-    : evaluador_(patrones_), ultimo_paquete_(0), ultima_luz_(0), ultimo_muestreo_(0) {}
+    : evaluador_(patrones_), ultimo_paquete_(0), ultimo_muestreo_(0) {}
 
 void CoordinadorCruce::entrar(uint32_t ahora) {
     ultimo_paquete_  = ahora;
@@ -27,9 +27,6 @@ VueltaCruce CoordinadorCruce::paso(uint32_t ahora, const estado_semaforo* paquet
         if (v.cambio != CambioPaquete::IGNORADO) {
             ultimo_paquete_ = ahora;
         }
-        if (v.cambio != CambioPaquete::IGNORADO && v.cambio != CambioPaquete::CAMBIO_POR_CONFIRMAR) {
-            ultima_luz_ = ahora;
-        }
     }
 
     // 2. Cerrar el patrón que ya terminó, para que el muestreo no se salte
@@ -45,8 +42,7 @@ VueltaCruce CoordinadorCruce::paso(uint32_t ahora, const estado_semaforo* paquet
     }
 
     // 4. Un patrón sólo empieza si hay un evento y el controlador está libre
-    //    (la luz sólo se avisa si el último paquete es reciente)
-    v.iniciado = evaluador_.orquestar(ahora, luzVigente(ahora));
+    v.iniciado = evaluador_.orquestar(ahora);
 
     // 5. Los motores siguen exactamente lo que dice el controlador
     v.salida = patrones_.actualizar(ahora);
@@ -59,10 +55,6 @@ bool CoordinadorCruce::probarVibracion(uint32_t ahora) {
 
 void CoordinadorCruce::detenerVibracion() {
     patrones_.cancelar();
-}
-
-bool CoordinadorCruce::luzVigente(uint32_t ahora) const {
-    return evaluador_.haySemaforo() && (uint32_t)(ahora - ultima_luz_) < LUZ_VIGENTE_MS;
 }
 
 bool CoordinadorCruce::sinPaquetes(uint32_t ahora) const {

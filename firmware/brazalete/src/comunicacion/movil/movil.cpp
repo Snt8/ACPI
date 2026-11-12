@@ -84,10 +84,10 @@ class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
             comandoPendiente = ComandoMovil::PROBAR_VIBRACION;
         } else if (esComando(value, largo, "VIBRATE_STOP")) {
             comandoPendiente = ComandoMovil::DETENER_VIBRACION;
-        } else if (esComando(value, largo, "RESTART")) {
-            comandoPendiente = ComandoMovil::REINICIAR;
         } else if (esComando(value, largo, "RECALIBRATE")) {
             comandoPendiente = ComandoMovil::RECALIBRAR;
+        } else if (esComando(value, largo, "RESTART")) {
+            comandoPendiente = ComandoMovil::REINICIAR;
         }
         if (largo > 0) {
             Serial.print("[BLE RX] Datos recibidos: ");

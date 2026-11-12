@@ -27,14 +27,12 @@ enum class EstadoBrujulaBle : uint8_t {
 struct TelemetriaBle {
     uint16_t secuencia;       // n:  sube 1 por paquete (vuelve a 0 tras 65535): detecta perdidos
     uint16_t rumbo;           // hd: rumbo del brazalete, 0-359
-    uint8_t  estado;          // st: 0 rojo de frente, 1 verde de frente, 2 mal orientado, 3 pánico,
-                              //     4 sin señal del semáforo (luz desconocida)
+    uint8_t  estado;          // st: 0 rojo de frente, 1 verde de frente, 2 mal orientado, 3 pánico
     bool     orientado;       // ok: de frente al cruce
     uint8_t  tiempo;          // tr: segundos que le quedan a la luz actual
     int8_t   bateria;         // bt: %, o -1 si no se mide
     uint8_t  semaforo;        // id: id del semáforo que se sigue
     bool     verde;           // lz: luz peatonal (1 verde / 0 rojo), aunque esté mal orientada
-    bool     luz_conocida;    // false: "lz":null (sin paquetes recientes del semáforo)
     uint16_t rumbo_semaforo;  // hs: rumbo que envía el semáforo, 0-359
     int16_t  giro;            // gr: grados para quedar de frente, -180..180 (+ derecha)
     EstadoBrujulaBle brujula; // br

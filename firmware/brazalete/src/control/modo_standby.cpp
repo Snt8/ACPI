@@ -1,7 +1,6 @@
 #include "modo_standby.h"
 #include "ciclo_escucha.h"
 #include "../comunicacion/semaforo/semaforo.h"
-#include "fsm.h"
 #include "../config.h"
 #include "../constantes.h"
 #include <Arduino.h>
@@ -9,11 +8,6 @@
 #include <driver/gpio.h>
 
 static CicloEscucha ciclo;
-
-// Ventanas seguidas en las que ESP-NOW no encendió. Sin radio el brazalete
-// nunca volvería a encontrar al semáforo: tras unas cuantas, reinicio limpio.
-static uint8_t fallos_radio = 0;
-static const uint8_t MAX_FALLOS_RADIO = 3;
 
 // true si hay un cable USB con datos conectado. Con "USB CDC On Boot" el
 // Serial es el USB nativo del C3; el light sleep lo desconectaría, así que
@@ -58,13 +52,8 @@ bool ModoStandby::actualizar(uint32_t ahora) {
 
     switch (ciclo.actualizar(ahora)) {
         case CicloEscucha::Accion::ENCENDER_RADIO:
-            if (ComunicadorSemaforo::inicializar()) {
-                fallos_radio = 0;
-            } else {
+            if (!ComunicadorSemaforo::inicializar()) {
                 Serial.println(F("[STANDBY] [ERROR] No se pudo encender ESP-NOW"));
-                if (++fallos_radio >= MAX_FALLOS_RADIO) {
-                    MaquinaEstados::reiniciarEnStandby("ESP-NOW no enciende");
-                }
             }
             break;
         case CicloEscucha::Accion::APAGAR_RADIO:

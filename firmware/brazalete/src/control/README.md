@@ -11,7 +11,7 @@ persona.
 ## Contenido
 - `fsm.h` / `fsm.cpp` -> Clase `MaquinaEstados` y enumeración `EstadoBrazalete`. Corre en cada `loop()`.
 - `evaluador_semaforo.h` / `.cpp` -> Clase `EvaluadorSemaforo`: compara cada paquete del semáforo con el anterior, sigue la orientación y orquesta al `ControladorPatrones` (`src/vibracion/`).
-- `modo_standby.h` / `.cpp` -> Clase `ModoStandby`: apaga las radios y escucha al semáforo una ventana corta cada 5 s (light sleep entre ventanas sólo si `STANDBY_LIGHT_SLEEP` es 1; desde el 12 nov 2026 vale 0). Volver de un cruce a standby es un **reinicio limpio** del ESP32 (`MaquinaEstados::reiniciarEnStandby`), no un apagado del BLE y el WiFi en caliente.
+- `modo_standby.h` / `.cpp` -> Clase `ModoStandby`: apaga las radios y escucha al semáforo una ventana corta cada 5 s, durmiendo en light sleep entre ventanas.
 - `ciclo_escucha.h` / `.cpp` -> Clase `CicloEscucha`: decide cuándo abrir y cerrar cada ventana de escucha (sin Arduino, probada en `test/`).
 - `coordinador_cruce.h` / `.cpp` -> Clase `CoordinadorCruce`: una vuelta de `SENSING_CROSSING` sin hardware. La FSM le conecta la brújula y los motores, y las pruebas de escenario de `test/` la usan con lecturas simuladas, así ambas ejecutan la misma lógica.
 

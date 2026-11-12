@@ -131,17 +131,17 @@ bool EvaluadorSemaforo::acercandose() const {
 }
 
 // ── Orquestación ─────────────────────────────────────────────────────────────
-Patron EvaluadorSemaforo::orquestar(uint32_t ahora, bool luz_vigente) {
+Patron EvaluadorSemaforo::orquestar(uint32_t ahora) {
     if (!patrones_.libre(ahora)) return Patron::NINGUNO;
 
-    Patron patron = decidir(ahora, luz_vigente);
+    Patron patron = decidir(ahora);
     if (patron != Patron::NINGUNO) {
         patrones_.iniciar(patron, ahora);  // siempre acepta: se comprobó libre()
     }
     return patron;
 }
 
-Patron EvaluadorSemaforo::decidir(uint32_t ahora, bool luz_vigente) {
+Patron EvaluadorSemaforo::decidir(uint32_t ahora) {
     if (!hay_semaforo_) return Patron::NINGUNO;
 
     // 1. El aviso de semáforo detectado no depende de la brújula
@@ -175,7 +175,6 @@ Patron EvaluadorSemaforo::decidir(uint32_t ahora, bool luz_vigente) {
     //    cono y suena la luz, o deja de estar de frente y se indica el giro.
     if (!cruce_notificado_) {
         if (desviacion_ >= UMBRAL_CRUCE_GRADOS) return Patron::NINGUNO;
-        if (!luz_vigente) return Patron::NINGUNO;  // nunca avisar una luz vieja
         cruce_notificado_ = true;
         return anterior_.permitidoCruce ? Patron::CRUCE_PERMITIDO : Patron::CRUCE_PROHIBIDO;
     }

@@ -4,11 +4,8 @@
 #include <stdint.h>
 
 // ── Modo standby (bajo consumo) ──────────────────────────────────────────────
-// Se activa al arrancar. Tras TIEMPO_SIN_PAQUETES_STANDBY_MS (30 s) sin
-// paquetes del semáforo, la FSM reinicia el ESP32 (MaquinaEstados::
-// reiniciarEnStandby) y así se vuelve siempre por el arranque, con el BLE y el
-// WiFi desde cero. Si ESP-NOW no enciende 3 ventanas seguidas, también reinicia.
-// Mientras dura:
+// Se activa tras TIEMPO_SIN_PAQUETES_STANDBY_MS (30 s) sin paquetes del
+// semáforo, y al arrancar. Mientras dura:
 //   - no se leen los sensores ni vibran los motores (la FSM no los toca);
 //   - el BLE está apagado (la FSM lo apaga antes de llamar a entrar());
 //   - el WiFi está apagado, salvo una ventana corta cada 5 s en la que la

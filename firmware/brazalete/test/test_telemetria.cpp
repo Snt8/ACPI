@@ -18,7 +18,6 @@ TelemetriaBle ejemplo() {
     t.bateria = -1;
     t.semaforo = 1;
     t.verde = true;
-    t.luz_conocida = true;
     t.rumbo_semaforo = 200;
     t.giro = -1;
     t.brujula = EstadoBrujulaBle::VALIDA;
@@ -51,7 +50,7 @@ PRUEBA(telemetria_conserva_los_campos_de_la_version_1) {
 PRUEBA(telemetria_el_peor_caso_cabe_en_una_notificacion) {
     TelemetriaBle t;
     t.secuencia = 65535; t.rumbo = 359; t.estado = 255; t.orientado = false; t.tiempo = 255;
-    t.bateria = -128; t.semaforo = 255; t.verde = false; t.luz_conocida = false; t.rumbo_semaforo = 359; t.giro = -180;
+    t.bateria = -128; t.semaforo = 255; t.verde = false; t.rumbo_semaforo = 359; t.giro = -180;
     t.brujula = (EstadoBrujulaBle)255; t.patron = 255; t.recibidos = 255; t.rssi = -128;
     char buf[300];
     size_t largo = formatearTelemetria(t, buf, sizeof(buf));
@@ -75,16 +74,4 @@ PRUEBA(telemetria_sin_espacio_no_escribe_medio_json) {
     char buf[40];
     VERIFICAR_IGUAL(formatearTelemetria(ejemplo(), buf, sizeof(buf)), (size_t)0);
     VERIFICAR_IGUAL(buf[0], '\0');
-}
-
-PRUEBA(telemetria_sin_senal_manda_luz_null) {
-    // Sin paquetes recientes del semáforo: "st":4 y la luz como null, nunca la vieja
-    TelemetriaBle t = ejemplo();
-    t.estado = 4;
-    t.luz_conocida = false;
-    char buf[200];
-    formatearTelemetria(t, buf, sizeof(buf));
-    std::string s(buf);
-    VERIFICAR(s.find("\"st\":4,") != std::string::npos);
-    VERIFICAR(s.find("\"lz\":null,") != std::string::npos);
 }

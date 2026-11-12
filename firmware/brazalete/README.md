@@ -93,13 +93,13 @@ El código también compila con el core 2.x (los cambios de API de LEDC y ESP-NO
 3. Configurar en **Herramientas**:
    - Placa: **ESP32C3 Dev Module**
    - USB CDC On Boot: **Enabled** (sin esto el monitor serie no muestra nada)
-   - Partition Scheme: la de por defecto alcanza, pero justa (el firmware ocupa ~96 %: ~1 268 000 de 1 310 720 bytes). Si crece, usar **Huge APP**.
+   - Partition Scheme: **Huge APP (3MB No OTA/1MB SPIFFS)**. El firmware ocupa ~1 275 000 bytes: el 97 % de la partición por defecto (1,25 MB) y el 40 % de Huge APP (3 MB). Casi todo son las pilas de WiFi (ESP-NOW) y BLE; el código propio pesa ~26 KB. La carpeta trae `partitions.csv` (copia de Huge APP), que el core usa aunque el menú diga otra cosa; el menú sólo cambia el límite con que el IDE avisa que no cabe. La NVS (calibración) queda en el mismo lugar en las dos tablas, así que cambiar de una a otra no la borra.
    - Si la placa se reinicia en bucle después de cargar, probar Flash Mode: **DIO**.
 4. Subir y abrir el monitor serie a **115200** baudios.
 
 Lo mismo desde la terminal con `arduino-cli`:
 ```bash
-arduino-cli compile --fqbn esp32:esp32:esp32c3:CDCOnBoot=cdc firmware/brazalete
+arduino-cli compile --fqbn esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=huge_app firmware/brazalete
 ```
 
 ## Compilar con ESP-IDF

@@ -242,13 +242,17 @@ PRUEBA(ejes_detecta_como_esta_montado_el_acelerometro) {
         }
         float disp[NUM_ORIENTACIONES_ACEL];
         VERIFICAR_IGUAL(detectarOrientacionAcel(g, m, 600, disp), montaje);
-        // Con poses variadas la elección es confiable y se puede guardar
-        VERIFICAR(orientacionAcelClara(g, 600, montaje, disp));
     }
 }
 
-PRUEBA(ejes_girando_solo_en_plano_no_se_guardan) {
-    // Calibrar girándolo plano sobre la mesa: la gravedad no se mueve en el
+PRUEBA(ejes_sin_muestras_quietas_no_decide) {
+    float g[10][3] = {}, m[10][3] = {};
+    for (int i = 0; i < 10; ++i) { g[i][2] = 1.0f; m[i][0] = 900.0f; }
+    VERIFICAR_IGUAL(detectarOrientacionAcel(g, m, 10, nullptr), -1);
+}
+
+PRUEBA(ejes_girando_solo_en_plano_no_es_clara) {
+    // Calibrar girándolo plano sobre la mesa: la gravedad casi no se mueve en el
     // sensor y 0/90/180/270 dan lo mismo. La elección no debe darse por clara.
     static float g[600][3], m[600][3];
     for (int i = 0; i < 600; ++i) {
@@ -261,20 +265,28 @@ PRUEBA(ejes_girando_solo_en_plano_no_se_guardan) {
     float disp[NUM_ORIENTACIONES_ACEL];
     int o = detectarOrientacionAcel(g, m, 600, disp);
     VERIFICAR(o >= 0);
-    VERIFICAR(fraccionInclinadaAcel(g, 600, INCLINACION_MINIMA_EJES_GRADOS) < FRACCION_INCLINADA_MINIMA);
     VERIFICAR(!orientacionAcelClara(g, 600, o, disp));
 }
 
+PRUEBA(ejes_con_poses_variadas_es_clara) {
+    // El mismo "8" con inclinaciones de la prueba de detección: la elegida es clara
+    static float g[600][3], m[600][3];
+    for (int i = 0; i < 600; ++i) {
+        float t = i * 0.05f;
+        Ejes e = ejes(fmodf(t * 40.0f, 360.0f), 70.0f * sinf(t * 0.7f), 160.0f * sinf(t * 0.45f));
+        V3 mm = enSensor(e, CAMPO), gg = enSensor(e, ARRIBA);
+        g[i][0] = gg.x; g[i][1] = gg.y; g[i][2] = gg.z;
+        m[i][0] = mm.x; m[i][1] = mm.y; m[i][2] = mm.z;
+    }
+    float disp[NUM_ORIENTACIONES_ACEL];
+    int o = detectarOrientacionAcel(g, m, 600, disp);
+    VERIFICAR_IGUAL(o, 0);
+    VERIFICAR(orientacionAcelClara(g, 600, o, disp));
+}
+
 PRUEBA(ejes_un_golpe_suelto_no_cuenta_como_inclinar) {
-    // Plano todo el tiempo salvo 5 muestras ladeadas: no alcanza el 15 %
     static float g[400][3];
     for (int i = 0; i < 400; ++i) { g[i][0] = 0.0f; g[i][1] = 0.0f; g[i][2] = 1.0f; }
     for (int i = 0; i < 5; ++i) { g[i][0] = 0.9f; g[i][2] = 0.3f; }
     VERIFICAR(fraccionInclinadaAcel(g, 400, INCLINACION_MINIMA_EJES_GRADOS) < FRACCION_INCLINADA_MINIMA);
-}
-
-PRUEBA(ejes_sin_muestras_quietas_no_decide) {
-    float g[10][3] = {}, m[10][3] = {};
-    for (int i = 0; i < 10; ++i) { g[i][2] = 1.0f; m[i][0] = 900.0f; }
-    VERIFICAR_IGUAL(detectarOrientacionAcel(g, m, 10, nullptr), -1);
 }

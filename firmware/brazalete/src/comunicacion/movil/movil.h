@@ -10,8 +10,8 @@ enum class ComandoMovil : uint8_t {
     NINGUNO,
     PROBAR_VIBRACION,   // "TEST_ALERT"
     DETENER_VIBRACION,  // "VIBRATE_STOP"
-    REINICIAR,          // "RESTART": reinicia el ESP32 (como desconectar y conectar la batería)
-    RECALIBRAR          // "RECALIBRATE": borra la calibración y reinicia; el arranque calibra
+    RECALIBRAR,         // "RECALIBRATE": borra la calibración y reinicia; el arranque calibra
+    REINICIAR           // "RESTART": reinicia el ESP32 (la calibración se conserva)
 };
 
 class ComunicadorMovil {

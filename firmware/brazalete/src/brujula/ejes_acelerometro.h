@@ -37,8 +37,8 @@ int detectarOrientacionAcel(const float (*g)[3], const float (*m)[3], int n,
 // Cuánto se movió la gravedad en el sensor durante la calibración: la fracción
 // (0-1) de muestras quietas cuya gravedad se aparta más de 'grados' de la
 // dirección media. Girando el brazalete sólo en plano (como en una mesa) da 0,
-// y entonces las orientaciones 0/90/180/270 son indistinguibles. Con una
-// fracción (y no el ángulo máximo) un golpe suelto no la infla.
+// y entonces las orientaciones 0/90/180/270 son indistinguibles: la elegida
+// sale casi al azar y el rumbo se desvía al inclinar la muñeca.
 float fraccionInclinadaAcel(const float (*g)[3], int n, float grados);
 
 // Mínimos para confiar en la orientación detectada
@@ -46,10 +46,8 @@ const float INCLINACION_MINIMA_EJES_GRADOS = 35.0f;  // poses inclinadas...
 const float FRACCION_INCLINADA_MINIMA      = 0.15f;  // ...en al menos el 15 % de las muestras
 const float MARGEN_SEGUNDA_EJES            = 2.0f;   // la segunda varía al menos el doble
 
-// true si la orientación 'o' que eligió detectarOrientacionAcel es confiable:
-// hubo poses inclinadas variadas y la segunda mejor queda claramente detrás.
-// Si no lo es, NO hay que guardarla: con los ejes cruzados el rumbo se desvía
-// decenas de grados al inclinar la muñeca (hasta 90° a 60° de inclinación).
+// true si la orientación 'o' que eligió detectarOrientacionAcel es confiable.
+// Si no lo es, no hay que guardarla: se sigue usando la que ya había.
 bool orientacionAcelClara(const float (*g)[3], int n, int o,
                           const float dispersion[NUM_ORIENTACIONES_ACEL]);
 

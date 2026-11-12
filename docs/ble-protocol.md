@@ -35,7 +35,7 @@ Cada **500 ms**, mientras hay un semáforo a la vista y un móvil conectado, el 
 | Clave | Tipo | Rango | Descripción |
 |---|---|---|---|
 | **`hd`** | Entero | `0`-`359` | Rumbo magnético del brazalete, con calibración y compensación de inclinación. |
-| **`st`** | Entero | `0`-`4` | Estado del cruce:<br>• `0`: de frente al cruce, paso peatonal **en rojo**.<br>• `1`: de frente al cruce, paso peatonal **en verde**.<br>• `2`: mal orientada (no está de frente; el brazalete vibra hacia dónde girar).<br>• `3`: pánico (reservado: el brazalete todavía no lo envía).<br>• `4`: **sin señal del semáforo**: lleva 3 s sin paquetes (`LUZ_VIGENTE_MS`) y no sabe en qué luz está. Tiene prioridad sobre los demás. |
+| **`st`** | Entero | `0`-`3` | Estado del cruce:<br>• `0`: de frente al cruce, paso peatonal **en rojo**.<br>• `1`: de frente al cruce, paso peatonal **en verde**.<br>• `2`: mal orientada (no está de frente; el brazalete vibra hacia dónde girar).<br>• `3`: pánico (reservado: el brazalete todavía no lo envía). |
 | **`ok`** | Booleano | | `true` si está de frente al cruce: desviación menor a **5°** (confirmada con 2 lecturas seguidas). Se pierde al pasar de 10°, o de 5° si la luz todavía no se avisó (ver `firmware/brazalete/patrones.md`). |
 | **`tr`** | Entero | `0`-`255` | Segundos que le quedan a la luz actual. |
 | **`bt`** | Entero | `-1` o `0`-`100` | Batería en %. La PCB v3.5 no la mide: siempre **`-1`**. |
@@ -47,7 +47,7 @@ Cada **500 ms**, mientras hay un semáforo a la vista y un móvil conectado, el 
 | **`v`** | Entero | `2` | Versión del paquete. Sin `v`, es un firmware de la versión 1. | Saber si vienen los campos de abajo. |
 | **`n`** | Entero | `0`-`65535` | Secuencia: sube 1 por paquete y vuelve a 0 tras 65535. | Contar notificaciones BLE perdidas (saltos). |
 | **`id`** | Entero | `0`-`255` | `id` del semáforo que sigue el brazalete (el primero que escuchó al salir de standby). | Unir la sesión con el semáforo. |
-| **`lz`** | Entero o `null` | `0`/`1`/`null` | Luz peatonal: `1` verde, `0` rojo. A diferencia de `st`, llega **aunque esté mal orientada**. `null` cuando `st` es `4` (sin paquetes recientes: nunca se repite la luz vieja). | Diagnóstico y métricas de espera. |
+| **`lz`** | Entero | `0`/`1` | Luz peatonal: `1` verde, `0` rojo. A diferencia de `st`, llega **aunque esté mal orientada**. | Diagnóstico y métricas de espera. |
 | **`hs`** | Entero | `0`-`359` | Rumbo que envía el semáforo. De frente al cruce es mirar hacia `hs + 180`. | Diagnóstico (error de orientación). |
 | **`gr`** | Entero | `-180`-`180` | Giro para quedar de frente: positivo = derecha, negativo = izquierda. | Diagnóstico; a futuro, aviso por voz detallado. |
 | **`br`** | Entero | `0`-`2` | Brújula: `0` **sin calibrar** (el brazalete no indica giros ni la luz hasta calibrarla), `1` lectura válida, `2` lectura descartada (muñeca en movimiento, giro brusco o sensor). | Avisar por voz que falta calibrar. |
@@ -65,7 +65,7 @@ Texto ASCII exacto, sin `\0` ni salto de línea, por **RX**:
 
 - **`TEST_ALERT`**: vibración de prueba con el patrón de "semáforo detectado" (3 pulsos cortos, ambos motores). Respeta las reglas de las soldaduras: si sonó otro patrón hace menos de 3 s (o terminó hace menos de 1 s), se ignora y el monitor serie lo dice.
 - **`VIBRATE_STOP`**: corta el patrón que esté sonando. Cortar no adelanta los 3 s hasta el siguiente.
-- **`RESTART`**: apaga los motores y reinicia el ESP32, igual que quitar y poner la batería. La conexión BLE se corta; el brazalete vuelve a standby y se reconecta al oír al semáforo. La calibración de la brújula (memoria no volátil) se conserva.
-- **`RECALIBRATE`**: reinicia y calibra la brújula al arrancar, sin borrar antes la calibración actual (si la nueva no se completa, se sigue usando la anterior): hay que girar el brazalete en todas direcciones (también inclinado y boca abajo) hasta que vibre **1 vez largo** (lista y guardada). **3 vibraciones cortas** = no se completó en 90 s y quedó la calibración anterior; se vuelve a intentar con otro `RECALIBRATE` o con `c` por el monitor serie. La orientación del acelerómetro detectada antes se conserva.
+- **`RESTART`**: apaga los motores y reinicia el ESP32, como apagar y prender. La conexión BLE se corta y la app se reconecta cuando el brazalete vuelve a oír al semáforo. La calibración de la brújula se conserva.
+- **`RECALIBRATE`**: igual que `c` por el monitor serie: borra la calibración y reinicia; el arranque calibra. Hay que girar el brazalete en todas direcciones (también inclinado y boca abajo) hasta que vibre **1 vez largo** (lista y guardada). **3 vibraciones cortas** = no se completó en 90 s; se repite el comando.
 
 El brazalete atiende como mucho un comando cada 200 ms y sólo con un semáforo a la vista (fuera de eso el BLE está apagado).

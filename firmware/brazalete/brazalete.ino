@@ -35,7 +35,7 @@ namespace {
 }
 
 // Al terminar la calibración del arranque, para saber sin monitor serie cómo
-// salió: 1 vibración larga = lista; 3 cortas = falló (no indicará orientación)
+// salió: 1 vibración larga = lista y guardada; 3 cortas = no se completó
 void avisarCalibracion(bool lista) {
     const int veces = lista ? 1 : 3;
     const unsigned long encendido = lista ? 800 : 200;
@@ -56,15 +56,12 @@ void setup() {
     //    base queda flotando y un motor podría dar un tirón. Cuanto antes se
     //    fijen los pines en 0, más corto es ese intervalo.
     bool motores_ok = ControladorMotores::inicializar();
-    // Antes que nada más: la marca se borra al leerla
-    bool tras_standby = MaquinaEstados::arranqueTrasStandby();
 
     Serial.begin(BAUD_RATE);
     delay(500);
     Serial.printf("\n[BOOT] Iniciando Brazalete ACPI (PCB v3.5, telemetria BLE v%d)...\n",
                   TELEMETRIA_VERSION);
-    Serial.printf("[BOOT] Motivo del ultimo reinicio: %s%s\n", motivoReinicio(),
-                  tras_standby ? " (vuelta a standby)" : "");
+    Serial.printf("[BOOT] Motivo del ultimo reinicio: %s\n", motivoReinicio());
     Serial.println(motores_ok ? "[BOOT] Motores listos (apagados)."
                               : "[BOOT] [ERROR] Fallo al inicializar motores!");
 
@@ -80,9 +77,7 @@ void setup() {
     }
     // Sin calibración guardada (primer arranque o tras enviar 'c') se calibra
     // aquí, con los motores todavía apagados y antes de activar el watchdog
-    // (Tras una vuelta a standby no: si la calibración había fallado, el
-    // brazalete se pondría a calibrar y a vibrar después de cada cruce)
-    if ((!ControladorBrujula::calibrada() || ControladorBrujula::recalibracionPedida()) && !tras_standby) {
+    if (!ControladorBrujula::calibrada()) {
         avisarCalibracion(ControladorBrujula::calibrar());
     }
 
@@ -108,9 +103,9 @@ void setup() {
 void atenderMonitorSerie() {
     while (Serial.available() > 0) {
         if (Serial.read() == 'c') {
-            Serial.println("[CALIBRACION] Reiniciando para calibrar de nuevo (si falla, se conserva la actual)...");
+            Serial.println("[CALIBRACION] Calibracion borrada; reiniciando para calibrar de nuevo...");
             ControladorMotores::detenerMotor(ControladorMotores::AMBOS);
-            ControladorBrujula::pedirRecalibracion();
+            ControladorBrujula::borrarCalibracion();
             Serial.flush();
             ESP.restart();
         }

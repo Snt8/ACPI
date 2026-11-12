@@ -47,10 +47,6 @@
 // 1: entre escuchas la CPU duerme en light sleep (menor consumo). Sólo se usa
 // sin cable USB conectado, porque el light sleep corta el monitor serie.
 // 0: espera con delay() aunque no haya USB (útil para depurar con UART).
-// 0 desde el 12 nov 2026 (Infomatrix): con batería, el camino de light sleep
-// nunca se probó volviendo a encontrar al semáforo. La radio sigue apagada
-// entre escuchas; la CPU despierta gasta más batería. Volver a 1 cuando se
-// pruebe en la placa, sin USB, que sale de standby.
-#define STANDBY_LIGHT_SLEEP     0
+#define STANDBY_LIGHT_SLEEP     1
 
 #endif // CONFIG_H
